@@ -1,0 +1,23 @@
+{
+  "name": "@x402/tron-client-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
+  },
+  "dependencies": {
+    "@x402/core": "workspace:*",
+    "@x402/mechanism-tron": "workspace:*",
+    "@x402/signer-tron": "workspace:*",
+    "@x402/http-fetch": "workspace:*",
+    "dotenv": "^16.4.7",
+    "tronweb": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
