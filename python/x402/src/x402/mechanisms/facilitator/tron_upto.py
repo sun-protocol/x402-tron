@@ -8,7 +8,7 @@ import time
 from typing import Any, TYPE_CHECKING
 import base58
 
-from x402.abi import PAYMENT_PERMIT_ABI, MERCHANT_ABI, get_abi_json
+from x402.abi import PAYMENT_PERMIT_ABI, MERCHANT_ABI, get_abi_json, get_payment_permit_eip712_types
 from x402.config import NetworkConfig
 from x402.mechanisms.facilitator.base import FacilitatorMechanism
 from x402.types import (
@@ -147,32 +147,28 @@ class UptoTronFacilitatorMechanism(FacilitatorMechanism):
         message["meta"]["kind"] = kind_num
         
         # Convert TRON addresses to EVM format for EIP-712 compatibility
+        message["buyer"] = tron_address_to_evm(message["buyer"])
         message["caller"] = tron_address_to_evm(message["caller"])
         message["payment"]["payToken"] = tron_address_to_evm(message["payment"]["payToken"])
         message["payment"]["payTo"] = tron_address_to_evm(message["payment"]["payTo"])
         message["fee"]["feeTo"] = tron_address_to_evm(message["fee"]["feeTo"])
         message["delivery"]["receiveToken"] = tron_address_to_evm(message["delivery"]["receiveToken"])
         
-        # Remove 'buyer' from message - contract's typehash doesn't include it
-        # The buyer is passed as 'owner' parameter to permitTransferFrom
-        del message["buyer"]
-        
-        # Get payment permit contract address for domain
+        # Get payment permit contract address and chain ID for domain
+        from x402.config import NetworkConfig
         permit_address = self._get_payment_permit_address(requirements.network)
         permit_address_evm = tron_address_to_evm(permit_address)
+        chain_id = NetworkConfig.get_chain_id(requirements.network)
         
-        # TRON Nile chainId
-        chain_id = 3448148188
-        
+        # Note: Contract EIP712Domain only has (name, chainId, verifyingContract) - NO version!
         is_valid = await self._signer.verify_typed_data(
             address=permit.buyer,
             domain={
                 "name": "PaymentPermit",
-                "version": "1",
                 "chainId": chain_id,
                 "verifyingContract": permit_address_evm,
             },
-            types=self._get_eip712_types(),
+            types=get_payment_permit_eip712_types(),
             message=message,
             signature=signature,
         )
@@ -346,40 +342,4 @@ class UptoTronFacilitatorMechanism(FacilitatorMechanism):
         """Get merchant contract ABI"""
         return get_abi_json(MERCHANT_ABI)
 
-    def _get_eip712_types(self) -> dict[str, Any]:
-        """Get EIP-712 type definitions
-        
-        Note: Must match the contract's PermitHash.sol typehash definitions.
-        The contract uses PaymentPermit without 'buyer' field in the signature.
-        """
-        return {
-            "PermitMeta": [
-                {"name": "kind", "type": "uint8"},
-                {"name": "paymentId", "type": "bytes16"},
-                {"name": "nonce", "type": "uint256"},
-                {"name": "validAfter", "type": "uint256"},
-                {"name": "validBefore", "type": "uint256"},
-            ],
-            "Payment": [
-                {"name": "payToken", "type": "address"},
-                {"name": "maxPayAmount", "type": "uint256"},
-                {"name": "payTo", "type": "address"},
-            ],
-            "Fee": [
-                {"name": "feeTo", "type": "address"},
-                {"name": "feeAmount", "type": "uint256"},
-            ],
-            "Delivery": [
-                {"name": "receiveToken", "type": "address"},
-                {"name": "miniReceiveAmount", "type": "uint256"},
-                {"name": "tokenId", "type": "uint256"},
-            ],
-            # Must match: PaymentPermit(PermitMeta meta,address caller,Payment payment,Fee fee,Delivery delivery)
-            "PaymentPermit": [
-                {"name": "meta", "type": "PermitMeta"},
-                {"name": "caller", "type": "address"},
-                {"name": "payment", "type": "Payment"},
-                {"name": "fee", "type": "Fee"},
-                {"name": "delivery", "type": "Delivery"},
-            ],
-        }
+

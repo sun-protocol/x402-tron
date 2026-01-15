@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any
 
-from x402.abi import ERC20_ABI
+from x402.abi import ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE, EIP712_DOMAIN_TYPE
 from x402.config import NetworkConfig
 from x402.signers.client.base import ClientSigner
 
@@ -80,21 +80,23 @@ class TronClientSigner(ClientSigner):
         types: dict[str, Any],
         message: dict[str, Any],
     ) -> str:
-        """签名 EIP-712 类型化数据"""
-        # Determine primaryType from types dict
-        primary_type = "PaymentPermit"
+        """签名 EIP-712 类型化数据
+        
+        Note: The primaryType is determined from the types dict.
+        For PaymentPermit contract, it should be "PaymentPermitDetails".
+        """
+        # Determine primary type from types dict (should be the last/main type)
+        # For PaymentPermit, the main type is "PaymentPermitDetails"
+        primary_type = PAYMENT_PERMIT_PRIMARY_TYPE if PAYMENT_PERMIT_PRIMARY_TYPE in types else list(types.keys())[-1]
         logger.info(f"Signing EIP-712 typed data: domain={domain.get('name')}, primaryType={primary_type}")
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data
 
+            # Note: PaymentPermit contract uses EIP712Domain WITHOUT version field
+            # Contract: keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)")
             full_types = {
-                "EIP712Domain": [
-                    {"name": "name", "type": "string"},
-                    {"name": "version", "type": "string"},
-                    {"name": "chainId", "type": "uint256"},
-                    {"name": "verifyingContract", "type": "address"},
-                ],
+                "EIP712Domain": EIP712_DOMAIN_TYPE,
                 **types,
             }
 
@@ -106,22 +108,15 @@ class TronClientSigner(ClientSigner):
             }
 
             signable = encode_typed_data(full_message=typed_data)
+            logger.info(f"typed_data: {typed_data}")
+            logger.info(f"signable: {signable}")
             # Convert hex private key to bytes for eth_account
             private_key_bytes = bytes.fromhex(self._private_key)
-            signed = Account.sign_message(signable, private_key_bytes)
+            logger.info(f"private_key_bytes: {private_key_bytes.hex()}")
+            signed_message = Account.sign_message(signable, private_key_bytes)
             
-            # TRON may expect v value to be 0 or 1 instead of 27 or 28
-            # Adjust v value if needed
-            r = signed.r.to_bytes(32, 'big')
-            s = signed.s.to_bytes(32, 'big')
-            v = signed.v
-            
-            # For TRON compatibility, keep v as 27/28 (standard Ethereum format)
-            # The contract should handle this correctly
-            v_byte = v.to_bytes(1, 'big')
-            signature = (r + s + v_byte).hex()
-            
-            logger.info(f"EIP-712 signature created: {signature[:10]}... (v={v})")
+            signature = signed_message.signature.hex()
+            logger.info(f"EIP-712 signature created: {signature[:10]}...")
             return signature
         except ImportError:
             logger.warning("eth_account not available, using fallback signing")

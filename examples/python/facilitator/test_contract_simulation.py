@@ -1,6 +1,7 @@
 """Simulate contract signature verification to identify the issue"""
 
 import os
+import sys
 import time
 import secrets
 from pathlib import Path
@@ -9,6 +10,10 @@ from eth_account import Account
 from eth_account.messages import encode_typed_data
 from Crypto.Hash import keccak
 import base58
+
+# Add x402 module to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "python" / "x402" / "src"))
+from x402.config import NetworkConfig
 
 load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
@@ -52,6 +57,9 @@ def test_contract_verification():
     print(f"  Payment ID: {payment_id}")
     print(f"  Nonce: {nonce}")
     print()
+    
+    # Get chain ID from config
+    chain_id = NetworkConfig.get_chain_id("tron:nile")
     
     # Test different possible EIP-712 configurations
     test_cases = [
@@ -142,7 +150,7 @@ def test_contract_verification():
     domain = {
         "name": "PaymentPermit",
         "version": "1",
-        "chainId": 3448148188,
+        "chainId": chain_id,
         "verifyingContract": permit_evm,
     }
     

@@ -6,6 +6,7 @@ import logging
 from typing import Any, TYPE_CHECKING
 import base58
 
+from x402.abi import get_payment_permit_eip712_types
 from x402.mechanisms.client.base import ClientMechanism
 from x402.types import (
     PaymentPayload,
@@ -157,22 +158,20 @@ class UptoTronClientMechanism(ClientMechanism):
         message["fee"]["feeTo"] = tron_address_to_evm(message["fee"]["feeTo"])
         message["delivery"]["receiveToken"] = tron_address_to_evm(message["delivery"]["receiveToken"])
         
-        # Get payment permit contract address for domain
+        # Get payment permit contract address and chain ID for domain
         from x402.config import NetworkConfig
         permit_address = NetworkConfig.get_payment_permit_address(requirements.network)
         permit_address_evm = tron_address_to_evm(permit_address)
+        chain_id = NetworkConfig.get_chain_id(requirements.network)
         
-        # TRON Nile chainId
-        chain_id = 3448148188
-        
+        # Note: Contract EIP712Domain only has (name, chainId, verifyingContract) - NO version!
         signature = await self._signer.sign_typed_data(
             domain={
                 "name": "PaymentPermit",
-                "version": "1",
                 "chainId": chain_id,
                 "verifyingContract": permit_address_evm,
             },
-            types=self._get_eip712_types(),
+            types=get_payment_permit_eip712_types(),
             message=message,
         )
 
@@ -187,37 +186,3 @@ class UptoTronClientMechanism(ClientMechanism):
             ),
             extensions={},
         )
-
-    def _get_eip712_types(self) -> dict[str, Any]:
-        """Get EIP-712 type definitions"""
-        return {
-            "PermitMeta": [
-                {"name": "kind", "type": "uint8"},
-                {"name": "paymentId", "type": "bytes16"},
-                {"name": "nonce", "type": "uint256"},
-                {"name": "validAfter", "type": "uint256"},
-                {"name": "validBefore", "type": "uint256"},
-            ],
-            "Payment": [
-                {"name": "payToken", "type": "address"},
-                {"name": "maxPayAmount", "type": "uint256"},
-                {"name": "payTo", "type": "address"},
-            ],
-            "Fee": [
-                {"name": "feeTo", "type": "address"},
-                {"name": "feeAmount", "type": "uint256"},
-            ],
-            "Delivery": [
-                {"name": "receiveToken", "type": "address"},
-                {"name": "miniReceiveAmount", "type": "uint256"},
-                {"name": "tokenId", "type": "uint256"},
-            ],
-            "PaymentPermit": [
-                {"name": "meta", "type": "PermitMeta"},
-                {"name": "buyer", "type": "address"},
-                {"name": "caller", "type": "address"},
-                {"name": "payment", "type": "Payment"},
-                {"name": "fee", "type": "Fee"},
-                {"name": "delivery", "type": "Delivery"},
-            ],
-        }

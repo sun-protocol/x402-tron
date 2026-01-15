@@ -5,6 +5,19 @@ Shared ABI definitions for smart contracts
 import json
 from typing import Any, List
 
+# EIP-712 Primary Type for PaymentPermit
+PAYMENT_PERMIT_PRIMARY_TYPE = "PaymentPermitDetails"
+
+# EIP-712 Domain Type
+# Both TRON and EVM use the same domain definition (name, chainId, verifyingContract)
+# Based on contract: keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)")
+# NO version field!
+EIP712_DOMAIN_TYPE = [
+    {"name": "name", "type": "string"},
+    {"name": "chainId", "type": "uint256"},
+    {"name": "verifyingContract", "type": "address"},
+]
+
 # ERC20 Token ABI
 ERC20_ABI: List[dict[str, Any]] = [
     {
@@ -248,6 +261,51 @@ MERCHANT_ABI: List[dict[str, Any]] = [
 def get_abi_json(abi: List[dict[str, Any]]) -> str:
     """Convert ABI list to JSON string"""
     return json.dumps(abi)
+
+
+def get_payment_permit_eip712_types() -> dict[str, Any]:
+    """Get EIP-712 type definitions for PaymentPermit
+    
+    Based on PermitHash.sol from the contract:
+    - PERMIT_META_TYPEHASH = "PermitMeta(uint8 kind,bytes16 paymentId,uint256 nonce,uint256 validAfter,uint256 validBefore)"
+    - PAYMENT_TYPEHASH = "Payment(address payToken,uint256 maxPayAmount,address payTo)"
+    - FEE_TYPEHASH = "Fee(address feeTo,uint256 feeAmount)"
+    - DELIVERY_TYPEHASH = "Delivery(address receiveToken,uint256 miniReceiveAmount,uint256 tokenId)"
+    - PAYMENT_PERMIT_DETAILS_TYPEHASH = "PaymentPermitDetails(PermitMeta meta,address buyer,address caller,Payment payment,Fee fee,Delivery delivery)..."
+    
+    Note: The primary type name is "PaymentPermitDetails" to match the contract's typehash.
+    """
+    return {
+        "PermitMeta": [
+            {"name": "kind", "type": "uint8"},
+            {"name": "paymentId", "type": "bytes16"},
+            {"name": "nonce", "type": "uint256"},
+            {"name": "validAfter", "type": "uint256"},
+            {"name": "validBefore", "type": "uint256"},
+        ],
+        "Payment": [
+            {"name": "payToken", "type": "address"},
+            {"name": "maxPayAmount", "type": "uint256"},
+            {"name": "payTo", "type": "address"},
+        ],
+        "Fee": [
+            {"name": "feeTo", "type": "address"},
+            {"name": "feeAmount", "type": "uint256"},
+        ],
+        "Delivery": [
+            {"name": "receiveToken", "type": "address"},
+            {"name": "miniReceiveAmount", "type": "uint256"},
+            {"name": "tokenId", "type": "uint256"},
+        ],
+        "PaymentPermitDetails": [
+            {"name": "meta", "type": "PermitMeta"},
+            {"name": "buyer", "type": "address"},
+            {"name": "caller", "type": "address"},
+            {"name": "payment", "type": "Payment"},
+            {"name": "fee", "type": "Fee"},
+            {"name": "delivery", "type": "Delivery"},
+        ],
+    }
 
 
 def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:

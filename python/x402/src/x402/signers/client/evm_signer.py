@@ -4,7 +4,7 @@ EvmClientSigner - EVM 客户端签名器实现
 
 from typing import Any
 
-from x402.abi import ERC20_ABI
+from x402.abi import ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE, EIP712_DOMAIN_TYPE
 from x402.signers.client.base import ClientSigner
 
 
@@ -81,17 +81,16 @@ class EvmClientSigner(ClientSigner):
             from eth_account import Account
             from eth_account.messages import encode_typed_data
 
+            # Note: PaymentPermit contract uses EIP712Domain WITHOUT version field
+            # Contract: keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)")
             full_types = {
-                "EIP712Domain": [
-                    {"name": "name", "type": "string"},
-                    {"name": "version", "type": "string"},
-                ],
+                "EIP712Domain": EIP712_DOMAIN_TYPE,
                 **types,
             }
 
             typed_data = {
                 "types": full_types,
-                "primaryType": "PaymentPermit",
+                "primaryType": PAYMENT_PERMIT_PRIMARY_TYPE,
                 "domain": domain,
                 "message": message,
             }
