@@ -1,5 +1,5 @@
 """
-X402HttpClient - 具有自动 402 支付处理的 HTTP 客户端适配器
+X402HttpClient - HTTP client adapter with automatic 402 payment handling
 """
 
 import logging
@@ -21,9 +21,9 @@ PAYMENT_RESPONSE_HEADER = "PAYMENT-RESPONSE"
 
 class X402HttpClient:
     """
-    具有自动 402 支付处理的 HTTP 客户端适配器。
+    HTTP client adapter with automatic 402 payment handling.
 
-    封装 httpx.AsyncClient 以自动处理 402 需要支付响应。
+    Wraps httpx.AsyncClient to automatically handle 402 Payment Required responses.
     """
 
     def __init__(
@@ -33,12 +33,12 @@ class X402HttpClient:
         selector: PaymentRequirementsSelector | None = None,
     ) -> None:
         """
-        初始化 HTTP 客户端适配器。
+        Initialize HTTP client adapter.
 
-        参数:
-            http_client: httpx.AsyncClient 实例
-            x402_client: X402Client 实例
-            selector: 自定义支付要求选择器（可选）
+        Args:
+            http_client: httpx.AsyncClient instance
+            x402_client: X402Client instance
+            selector: Custom payment requirements selector (optional)
         """
         self._http_client = http_client
         self._x402_client = x402_client
@@ -51,21 +51,21 @@ class X402HttpClient:
         **kwargs: Any,
     ) -> httpx.Response:
         """
-        发起具有自动 402 支付处理的 HTTP 请求。
+        Make HTTP request with automatic 402 payment handling.
 
-        参数:
-            method: HTTP 方法（GET、POST 等）
-            url: 请求 URL
-            **kwargs: 额外的 httpx 请求参数
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Request URL
+            **kwargs: Additional httpx request parameters
 
-        返回:
+        Returns:
             httpx.Response
 
-        流程:
-            1. 发送原始请求
-            2. 如果是 402，解析 PaymentRequired
-            3. 创建支付载荷
-            4. 使用 PAYMENT-SIGNATURE 头重试
+        Flow:
+            1. Send original request
+            2. If 402, parse PaymentRequired
+            3. Create payment payload
+            4. Retry with PAYMENT-SIGNATURE header
         """
         logger.info(f"Making {method} request to {url}")
         response = await self._http_client.request(method, url, **kwargs)
@@ -111,23 +111,23 @@ class X402HttpClient:
         return await self._retry_with_payment(method, url, payment_payload, kwargs)
 
     async def get(self, url: str, **kwargs: Any) -> httpx.Response:
-        """带支付处理的 GET 请求"""
+        """GET request with payment handling"""
         return await self.request_with_payment("GET", url, **kwargs)
 
     async def post(self, url: str, **kwargs: Any) -> httpx.Response:
-        """带支付处理的 POST 请求"""
+        """POST request with payment handling"""
         return await self.request_with_payment("POST", url, **kwargs)
 
     async def put(self, url: str, **kwargs: Any) -> httpx.Response:
-        """带支付处理的 PUT 请求"""
+        """PUT request with payment handling"""
         return await self.request_with_payment("PUT", url, **kwargs)
 
     async def delete(self, url: str, **kwargs: Any) -> httpx.Response:
-        """带支付处理的 DELETE 请求"""
+        """DELETE request with payment handling"""
         return await self.request_with_payment("DELETE", url, **kwargs)
 
     def _parse_payment_required(self, response: httpx.Response) -> PaymentRequired | None:
-        """从 402 响应解析 PaymentRequired"""
+        """Parse PaymentRequired from 402 response"""
         logger.debug("Attempting to parse PaymentRequired from response")
         
         header_value = response.headers.get(PAYMENT_REQUIRED_HEADER)
@@ -162,7 +162,7 @@ class X402HttpClient:
         payment_payload: PaymentPayload,
         kwargs: dict[str, Any],
     ) -> httpx.Response:
-        """使用支付载荷重试请求"""
+        """Retry request with payment payload"""
         logger.info("Retrying request with payment signature")
         encoded_payload = encode_payment_payload(payment_payload)
         logger.debug(f"Encoded payment payload length: {len(encoded_payload)} chars")

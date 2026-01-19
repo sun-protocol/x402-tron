@@ -1,5 +1,5 @@
 """
-X402Client - x402 协议的核心支付客户端
+X402Client - Core payment client for x402 protocol
 """
 
 import logging
@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class ClientMechanism(Protocol):
-    """客户端机制接口"""
+    """Client mechanism interface"""
 
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         ...
 
     async def create_payment_payload(
@@ -27,7 +27,7 @@ class ClientMechanism(Protocol):
         resource: str,
         extensions: dict[str, Any] | None = None,
     ) -> PaymentPayload:
-        """创建支付载荷"""
+        """Create payment payload"""
         ...
 
 
@@ -35,7 +35,7 @@ PaymentRequirementsSelector = Callable[[list[PaymentRequirements]], PaymentRequi
 
 
 class PaymentRequirementsFilter:
-    """选择支付要求的过滤选项"""
+    """Filter options for selecting payment requirements"""
 
     def __init__(
         self,
@@ -49,7 +49,7 @@ class PaymentRequirementsFilter:
 
 
 class MechanismEntry:
-    """已注册的机制条目"""
+    """Registered mechanism entry"""
 
     def __init__(self, pattern: str, mechanism: ClientMechanism, priority: int):
         self.pattern = pattern
@@ -59,9 +59,9 @@ class MechanismEntry:
 
 class X402Client:
     """
-    x402 协议的核心支付客户端。
+    Core payment client for x402 protocol.
 
-    管理支付机制注册表并协调支付流程。
+    Manages payment mechanism registry and coordinates payment flow.
     """
 
     def __init__(self) -> None:
@@ -69,14 +69,14 @@ class X402Client:
 
     def register(self, network_pattern: str, mechanism: ClientMechanism) -> "X402Client":
         """
-        为网络模式注册支付机制。
+        Register a payment mechanism for a network pattern.
 
-        参数:
-            network_pattern: 网络模式（例如 "eip155:*", "tron:shasta"）
-            mechanism: 支付机制实例
+        Args:
+            network_pattern: Network pattern (e.g., "eip155:*", "tron:shasta")
+            mechanism: Payment mechanism instance
 
-        返回:
-            self 以支持链式调用
+        Returns:
+            self for method chaining
         """
         priority = self._calculate_priority(network_pattern)
         logger.info(f"Registering mechanism for pattern '{network_pattern}' with priority {priority}")
@@ -90,17 +90,17 @@ class X402Client:
         filters: PaymentRequirementsFilter | None = None,
     ) -> PaymentRequirements:
         """
-        从可用选项中选择支付要求。
+        Select payment requirements from available options.
 
-        参数:
-            accepts: 可用的支付要求
-            filters: 可选过滤器
+        Args:
+            accepts: Available payment requirements
+            filters: Optional filters
 
-        返回:
-            选定的支付要求
+        Returns:
+            Selected payment requirements
 
-        异常:
-            ValueError: 未找到支持的支付要求
+        Raises:
+            ValueError: No supported payment requirements found
         """
         logger.info(f"Selecting payment requirements from {len(accepts)} options")
         logger.debug(f"Available payment requirements: {[r.model_dump() for r in accepts]}")
@@ -138,15 +138,15 @@ class X402Client:
         extensions: dict[str, Any] | None = None,
     ) -> PaymentPayload:
         """
-        为给定要求创建支付载荷。
+        Create payment payload for given requirements.
 
-        参数:
-            requirements: 选定的支付要求
-            resource: 资源 URL
-            extensions: 可选扩展
+        Args:
+            requirements: Selected payment requirements
+            resource: Resource URL
+            extensions: Optional extensions
 
-        返回:
-            支付载荷
+        Returns:
+            Payment payload
         """
         logger.info(f"Creating payment payload for network={requirements.network}, resource={resource}")
         mechanism = self._find_mechanism(requirements.network)
@@ -167,16 +167,16 @@ class X402Client:
         selector: PaymentRequirementsSelector | None = None,
     ) -> PaymentPayload:
         """
-        处理需要支付的响应。
+        Handle payment required response.
 
-        参数:
-            accepts: 可用的支付要求
-            resource: 资源 URL
-            extensions: 可选扩展
-            selector: 可选自定义选择器
+        Args:
+            accepts: Available payment requirements
+            resource: Resource URL
+            extensions: Optional extensions
+            selector: Optional custom selector
 
-        返回:
-            支付载荷
+        Returns:
+            Payment payload
         """
         if selector:
             requirements = selector(accepts)
@@ -186,14 +186,14 @@ class X402Client:
         return await self.create_payment_payload(requirements, resource, extensions)
 
     def _find_mechanism(self, network: str) -> ClientMechanism | None:
-        """查找网络的机制"""
+        """Find mechanism for network"""
         for entry in self._mechanisms:
             if self._match_pattern(entry.pattern, network):
                 return entry.mechanism
         return None
 
     def _match_pattern(self, pattern: str, network: str) -> bool:
-        """将网络与模式匹配"""
+        """Match network against pattern"""
         if pattern == network:
             return True
         if pattern.endswith(":*"):
@@ -202,7 +202,7 @@ class X402Client:
         return False
 
     def _calculate_priority(self, pattern: str) -> int:
-        """计算模式的优先级（更具体 = 更高优先级）"""
+        """Calculate priority for pattern (more specific = higher priority)"""
         if pattern.endswith(":*"):
             return 1
         return 10

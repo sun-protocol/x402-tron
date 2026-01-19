@@ -1,5 +1,5 @@
 """
-服务器机制基础接口
+Server mechanism base interface
 """
 
 from abc import ABC, abstractmethod
@@ -10,27 +10,27 @@ from x402.types import PaymentRequirements
 
 class ServerMechanism(ABC):
     """
-    服务器支付机制的抽象基类
+    Abstract base class for server payment mechanisms.
 
-    负责解析价格和增强支付要求
+    Responsible for parsing prices and enhancing payment requirements.
     """
 
     @abstractmethod
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         pass
 
     @abstractmethod
     async def parse_price(self, price: str, network: str) -> dict[str, Any]:
         """
-        将价格字符串解析为资产金额
+        Parse a price string into asset amount.
 
         Args:
-            price: 价格字符串（例如 "100 USDC"、"0.01 ETH"）
-            network: 网络标识符
+            price: Price string (e.g., "100 USDC", "0.01 ETH")
+            network: Network identifier
 
         Returns:
-            包含 amount、asset、decimals 的字典
+            Dict containing amount, asset, decimals
         """
         pass
 
@@ -41,26 +41,26 @@ class ServerMechanism(ABC):
         kind: str,
     ) -> PaymentRequirements:
         """
-        使用元数据增强支付要求
+        Enhance payment requirements with metadata.
 
         Args:
-            requirements: 基础支付要求
-            kind: 交付模式（PAYMENT_ONLY 或 PAYMENT_AND_DELIVERY）
+            requirements: Base payment requirements
+            kind: Delivery mode (PAYMENT_ONLY or PAYMENT_AND_DELIVERY)
 
         Returns:
-            增强后的 PaymentRequirements
+            Enhanced PaymentRequirements
         """
         pass
 
     @abstractmethod
     def validate_payment_requirements(self, requirements: PaymentRequirements) -> bool:
         """
-        验证支付要求
+        Validate payment requirements.
 
         Args:
-            requirements: 要验证的支付要求
+            requirements: Payment requirements to validate
 
         Returns:
-            如果有效则返回 True
+            True if valid
         """
         pass

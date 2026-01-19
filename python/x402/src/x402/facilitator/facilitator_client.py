@@ -1,5 +1,5 @@
 """
-FacilitatorClient - 与 facilitator 服务通信的客户端
+FacilitatorClient - Client for communicating with facilitator service
 """
 
 from typing import Any
@@ -18,9 +18,9 @@ from x402.types import (
 
 class FacilitatorClient:
     """
-    与 facilitator 服务通信的客户端
+    Client for communicating with facilitator service.
 
-    处理 verify、settle、fee quote 和 supported 查询
+    Handles verify, settle, fee quote and supported queries.
     """
 
     def __init__(
@@ -30,12 +30,12 @@ class FacilitatorClient:
         facilitator_id: str | None = None,
     ) -> None:
         """
-        初始化 facilitator 客户端
+        Initialize facilitator client.
 
         Args:
-            base_url: Facilitator 服务基础 URL
-            headers: 自定义 HTTP 头（例如 Authorization）
-            facilitator_id: 此 facilitator 的唯一标识符
+            base_url: Facilitator service base URL
+            headers: Custom HTTP headers (e.g., Authorization)
+            facilitator_id: Unique identifier for this facilitator
         """
         self._base_url = base_url.rstrip("/")
         self._headers = headers or {}
@@ -43,7 +43,7 @@ class FacilitatorClient:
         self._http_client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """获取或创建 HTTP 客户端"""
+        """Get or create HTTP client"""
         if self._http_client is None:
             self._http_client = httpx.AsyncClient(
                 base_url=self._base_url,
@@ -53,17 +53,17 @@ class FacilitatorClient:
         return self._http_client
 
     async def close(self) -> None:
-        """关闭 HTTP 客户端"""
+        """Close HTTP client"""
         if self._http_client:
             await self._http_client.aclose()
             self._http_client = None
 
     async def supported(self) -> SupportedResponse:
         """
-        查询 facilitator 支持的能力
+        Query facilitator supported capabilities.
 
         Returns:
-            包含支持的网络/方案的 SupportedResponse
+            SupportedResponse with supported networks/schemes
         """
         client = await self._get_client()
         response = await client.get("/supported")
@@ -76,14 +76,14 @@ class FacilitatorClient:
         context: dict[str, Any] | None = None,
     ) -> FeeQuoteResponse:
         """
-        查询支付要求的费用报价
+        Query fee quote for payment requirements.
 
         Args:
-            accept: 支付要求
-            context: 可选的支付上下文
+            accept: Payment requirements
+            context: Optional payment context
 
         Returns:
-            包含费用信息的 FeeQuoteResponse
+            FeeQuoteResponse with fee information
         """
         client = await self._get_client()
         payload = {
@@ -102,11 +102,11 @@ class FacilitatorClient:
         requirements: PaymentRequirements,
     ) -> VerifyResponse:
         """
-        验证支付签名（不执行链上交易）
+        Verify payment signature (without executing on-chain transaction).
 
         Args:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+            payload: Payment payload from client
+            requirements: Payment requirements
 
         Returns:
             VerifyResponse
@@ -127,14 +127,14 @@ class FacilitatorClient:
         requirements: PaymentRequirements,
     ) -> SettleResponse:
         """
-        执行支付结算（链上交易）
+        Execute payment settlement (on-chain transaction).
 
         Args:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+            payload: Payment payload from client
+            requirements: Payment requirements
 
         Returns:
-            包含 tx_hash 的 SettleResponse
+            SettleResponse with tx_hash
         """
         client = await self._get_client()
         request_body = {

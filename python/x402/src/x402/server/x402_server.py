@@ -1,5 +1,5 @@
 """
-X402Server - x402 协议的核心支付服务器
+X402Server - Core payment server for x402 protocol
 """
 
 from dataclasses import dataclass, field
@@ -21,14 +21,14 @@ from x402.types import (
 
 
 class ServerMechanism(Protocol):
-    """服务器机制接口"""
+    """Server mechanism interface"""
 
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         ...
 
     async def parse_price(self, price: str, network: str) -> dict[str, Any]:
-        """将价格字符串解析为 AssetAmount"""
+        """Parse price string to AssetAmount"""
         ...
 
     async def enhance_payment_requirements(
@@ -36,17 +36,17 @@ class ServerMechanism(Protocol):
         requirements: PaymentRequirements,
         kind: str,
     ) -> PaymentRequirements:
-        """使用元数据增强支付要求"""
+        """Enhance payment requirements with metadata"""
         ...
 
     def validate_payment_requirements(self, requirements: PaymentRequirements) -> bool:
-        """验证支付要求"""
+        """Validate payment requirements"""
         ...
 
 
 @dataclass
 class ResourceConfig:
-    """资源支付配置"""
+    """Resource payment configuration"""
 
     scheme: str
     network: str
@@ -58,9 +58,9 @@ class ResourceConfig:
 
 class X402Server:
     """
-    x402 协议的核心支付服务器。
+    Core payment server for x402 protocol.
 
-    管理支付机制和中间层客户端，协调支付流程。
+    Manages payment mechanisms and facilitator clients, coordinates payment flow.
     """
 
     def __init__(self) -> None:
@@ -69,26 +69,26 @@ class X402Server:
 
     def register(self, network: str, mechanism: ServerMechanism) -> "X402Server":
         """
-        为网络注册支付机制。
+        Register a payment mechanism for a network.
 
-        参数:
-            network: 网络标识符（例如 "eip155:8453", "tron:mainnet"）
-            mechanism: 服务器机制实例
+        Args:
+            network: Network identifier (e.g., "eip155:8453", "tron:mainnet")
+            mechanism: Server mechanism instance
 
-        返回:
-            self 以支持链式调用
+        Returns:
+            self for method chaining
         """
         self._mechanisms[network] = mechanism
         return self
 
     def add_facilitator(self, client: "FacilitatorClient") -> "X402Server":
-        """添加 facilitator 客户端。
+        """Add a facilitator client.
 
         Args:
-            client: FacilitatorClient 实例
+            client: FacilitatorClient instance
 
         Returns:
-            self 以支持链式调用
+            self for method chaining
         """
         self._facilitators.append(client)
         return self
@@ -97,10 +97,10 @@ class X402Server:
         self,
         config: ResourceConfig,
     ) -> PaymentRequirements:
-        """从资源配置构建支付要求。
+        """Build payment requirements from resource configuration.
 
         Args:
-            config: 资源配置
+            config: Resource configuration
 
         Returns:
             PaymentRequirements
@@ -140,18 +140,18 @@ class X402Server:
         valid_after: int | None = None,
         valid_before: int | None = None,
     ) -> PaymentRequired:
-        """创建 402 Payment Required 响应。
+        """Create 402 Payment Required response.
 
         Args:
-            requirements: 支付要求列表
-            resource_info: 资源信息
-            payment_id: 用于跟踪的支付 ID (hex format with 0x prefix)
-            nonce: 幂等性 nonce
-            valid_after: 有效起始时间戳
-            valid_before: 有效截止时间戳
+            requirements: List of payment requirements
+            resource_info: Resource information
+            payment_id: Payment ID for tracking (hex format with 0x prefix)
+            nonce: Idempotency nonce
+            valid_after: Valid from timestamp
+            valid_before: Valid until timestamp
 
         Returns:
-            PaymentRequired 响应
+            PaymentRequired response
         """
         import time
         import uuid
@@ -189,11 +189,11 @@ class X402Server:
         requirements: PaymentRequirements,
     ) -> VerifyResponse:
         """
-        验证支付签名和有效性
+        Verify payment signature and validity.
 
         Args:
-            payload: 客户端支付载荷
-            requirements: 原始支付要求
+            payload: Client payment payload
+            requirements: Original payment requirements
 
         Returns:
             VerifyResponse
@@ -213,14 +213,14 @@ class X402Server:
         requirements: PaymentRequirements,
     ) -> SettleResponse:
         """
-        执行支付结算
+        Execute payment settlement.
 
         Args:
-            payload: 客户端支付载荷
-            requirements: 支付要求
+            payload: Client payment payload
+            requirements: Payment requirements
 
         Returns:
-            包含 tx_hash 的 SettleResponse
+            SettleResponse with tx_hash
         """
         facilitator = self._find_facilitator_for_payload(payload)
         if facilitator is None:
@@ -233,7 +233,7 @@ class X402Server:
         payload: PaymentPayload,
         requirements: PaymentRequirements,
     ) -> bool:
-        """验证载荷与要求匹配（防篡改）"""
+        """Validate payload matches requirements (anti-tampering)"""
         permit = payload.payload.payment_permit
 
         if permit.payment.pay_token != requirements.asset:

@@ -1,5 +1,5 @@
 """
-TronFacilitatorSigner - TRON facilitator 签名器实现
+TronFacilitatorSigner - TRON facilitator signer implementation
 """
 
 import json
@@ -11,7 +11,7 @@ from x402.signers.facilitator.base import FacilitatorSigner
 
 
 class TronFacilitatorSigner(FacilitatorSigner):
-    """TRON facilitator 签名器实现"""
+    """TRON facilitator signer implementation"""
 
     def __init__(self, private_key: str, network: str | None = None) -> None:
         clean_key = private_key[2:] if private_key.startswith("0x") else private_key
@@ -22,11 +22,11 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
     @classmethod
     def from_private_key(cls, private_key: str, network: str | None = None) -> "TronFacilitatorSigner":
-        """从私钥创建签名器"""
+        """Create signer from private key"""
         return cls(private_key, network)
 
     def _ensure_tron_client(self) -> Any:
-        """延迟初始化 tron_client"""
+        """Lazy initialize tron_client"""
         if self._tron_client is None and self._network:
             try:
                 from tronpy import Tron
@@ -37,7 +37,7 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
-        """从私钥派生 TRON 地址"""
+        """Derive TRON address from private key"""
         try:
             from tronpy.keys import PrivateKey
             pk = PrivateKey(bytes.fromhex(private_key))
@@ -56,7 +56,7 @@ class TronFacilitatorSigner(FacilitatorSigner):
         message: dict[str, Any],
         signature: str,
     ) -> bool:
-        """验证 EIP-712 签名"""
+        """Verify EIP-712 signature"""
         try:
             import logging
             logger = logging.getLogger(__name__)
@@ -131,9 +131,9 @@ class TronFacilitatorSigner(FacilitatorSigner):
         method: str,
         args: list[Any],
     ) -> str | None:
-        """在 TRON 上执行合约交易
+        """Execute contract transaction on TRON.
         
-        使用 tronpy 原生功能处理 ABI 和 Method ID 计算
+        Uses tronpy native functionality for ABI and Method ID calculation.
         """
         import logging
         import json as json_module
@@ -153,20 +153,20 @@ class TronFacilitatorSigner(FacilitatorSigner):
             # Log contract call parameters in detail
             self._log_contract_parameters(method, args, logger)
             
-            # 使用 tronpy 标准方式 - 让 tronpy 自己计算 Method ID
+            # Use tronpy standard approach - let tronpy calculate Method ID
             abi_list = json_module.loads(abi) if isinstance(abi, str) else abi
             contract = client.get_contract(normalized_address)
             contract.abi = abi_list
             
-            # 获取函数对象
+            # Get function object
             func = getattr(contract.functions, method)
             
-            # 记录 tronpy 计算的 Method ID
+            # Log tronpy calculated Method ID
             logger.info(f"Function: {method}")
             logger.info(f"  Signature: {func.function_signature}")
             logger.info(f"  Method ID: {func.function_signature_hash}")
             
-            # 构建并签名交易
+            # Build and sign transaction
             txn = (
                 func(*args)
                 .with_owner(self._address)
@@ -219,7 +219,7 @@ class TronFacilitatorSigner(FacilitatorSigner):
         tx_hash: str,
         timeout: int = 120,
     ) -> dict[str, Any]:
-        """等待 TRON 交易确认"""
+        """Wait for TRON transaction confirmation"""
         client = self._ensure_tron_client()
         if client is None:
             raise RuntimeError("tronpy client required")

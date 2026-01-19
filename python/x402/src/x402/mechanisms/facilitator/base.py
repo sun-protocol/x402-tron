@@ -1,5 +1,5 @@
 """
-Facilitator 机制基础接口
+Facilitator mechanism base interface
 """
 
 from abc import ABC, abstractmethod
@@ -16,14 +16,14 @@ from x402.types import (
 
 class FacilitatorMechanism(ABC):
     """
-    Facilitator 支付机制的抽象基类
+    Abstract base class for facilitator payment mechanisms.
 
-    负责验证签名和执行结算
+    Responsible for verifying signatures and executing settlements.
     """
 
     @abstractmethod
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         pass
 
     @abstractmethod
@@ -33,14 +33,14 @@ class FacilitatorMechanism(ABC):
         context: dict[str, Any] | None = None,
     ) -> FeeQuoteResponse:
         """
-        计算支付要求的费用报价
+        Calculate fee quote for payment requirements.
 
         Args:
-            accept: 支付要求
-            context: 可选的支付上下文
+            accept: Payment requirements
+            context: Optional payment context
 
         Returns:
-            包含费用信息的 FeeQuoteResponse
+            FeeQuoteResponse with fee information
         """
         pass
 
@@ -51,11 +51,11 @@ class FacilitatorMechanism(ABC):
         requirements: PaymentRequirements,
     ) -> VerifyResponse:
         """
-        验证支付签名（不执行链上交易）
+        Verify payment signature (without executing on-chain transaction).
 
         Args:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+            payload: Payment payload from client
+            requirements: Payment requirements
 
         Returns:
             VerifyResponse
@@ -69,13 +69,13 @@ class FacilitatorMechanism(ABC):
         requirements: PaymentRequirements,
     ) -> SettleResponse:
         """
-        执行支付结算（链上交易）
+        Execute payment settlement (on-chain transaction).
 
         Args:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+            payload: Payment payload from client
+            requirements: Payment requirements
 
         Returns:
-            包含 tx_hash 的 SettleResponse
+            SettleResponse with tx_hash
         """
         pass

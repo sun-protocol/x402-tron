@@ -1,5 +1,5 @@
 """
-客户端机制基础接口
+Client mechanism base interface
 """
 
 from abc import ABC, abstractmethod
@@ -10,14 +10,14 @@ from x402.types import PaymentPayload, PaymentRequirements
 
 class ClientMechanism(ABC):
     """
-    客户端支付机制的抽象基类
+    Abstract base class for client payment mechanisms.
 
-    负责为特定链/方案创建支付载荷
+    Responsible for creating payment payloads for specific chains/schemes.
     """
 
     @abstractmethod
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         pass
 
     @abstractmethod
@@ -28,14 +28,14 @@ class ClientMechanism(ABC):
         extensions: dict[str, Any] | None = None,
     ) -> PaymentPayload:
         """
-        为给定的要求创建支付载荷
+        Create a payment payload for the given requirements.
 
         Args:
-            requirements: 来自服务器的支付要求
-            resource: 资源 URL
-            extensions: 可选扩展（例如 paymentPermitContext）
+            requirements: Payment requirements from server
+            resource: Resource URL
+            extensions: Optional extensions (e.g., paymentPermitContext)
 
         Returns:
-            包含签名的 PaymentPayload
+            PaymentPayload with signature
         """
         pass

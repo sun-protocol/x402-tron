@@ -1,5 +1,5 @@
 """
-x402 协议的类型定义
+Type definitions for x402 protocol
 """
 
 from typing import Any, Literal, Optional
@@ -20,7 +20,7 @@ KIND_MAP = {
 
 
 class PermitMeta(BaseModel):
-    """支付许可元数据"""
+    """Payment permit metadata"""
     kind: DeliveryKind
     payment_id: str = Field(alias="paymentId")
     nonce: str
@@ -32,7 +32,7 @@ class PermitMeta(BaseModel):
 
 
 class Payment(BaseModel):
-    """支付信息"""
+    """Payment information"""
     pay_token: str = Field(alias="payToken")
     max_pay_amount: str = Field(alias="maxPayAmount")
     pay_to: str = Field(alias="payTo")
@@ -42,7 +42,7 @@ class Payment(BaseModel):
 
 
 class Fee(BaseModel):
-    """费用信息"""
+    """Fee information"""
     fee_to: str = Field(alias="feeTo")
     fee_amount: str = Field(alias="feeAmount")
 
@@ -51,7 +51,7 @@ class Fee(BaseModel):
 
 
 class Delivery(BaseModel):
-    """链上交付的交付信息"""
+    """Delivery information for on-chain delivery"""
     receive_token: str = Field(alias="receiveToken")
     mini_receive_amount: str = Field(alias="miniReceiveAmount")
     token_id: str = Field(alias="tokenId")
@@ -61,7 +61,7 @@ class Delivery(BaseModel):
 
 
 class PaymentPermit(BaseModel):
-    """支付许可结构"""
+    """Payment permit structure"""
     meta: PermitMeta
     buyer: str
     caller: str
@@ -71,7 +71,7 @@ class PaymentPermit(BaseModel):
 
 
 class FeeInfo(BaseModel):
-    """支付要求中的费用信息"""
+    """Fee information in payment requirements"""
     facilitator_id: Optional[str] = Field(None, alias="facilitatorId")
     fee_to: str = Field(alias="feeTo")
     fee_amount: str = Field(alias="feeAmount")
@@ -81,14 +81,14 @@ class FeeInfo(BaseModel):
 
 
 class PaymentRequirementsExtra(BaseModel):
-    """支付要求中的额外信息"""
+    """Extra information in payment requirements"""
     name: Optional[str] = None
     version: Optional[str] = None
     fee: Optional[FeeInfo] = None
 
 
 class PaymentRequirements(BaseModel):
-    """来自服务器的支付要求"""
+    """Payment requirements from server"""
     scheme: str
     network: str
     amount: str
@@ -102,7 +102,7 @@ class PaymentRequirements(BaseModel):
 
 
 class PaymentPermitContextMeta(BaseModel):
-    """支付许可上下文中的元信息"""
+    """Meta information in payment permit context"""
     kind: DeliveryKind
     payment_id: str = Field(alias="paymentId")
     nonce: str
@@ -114,7 +114,7 @@ class PaymentPermitContextMeta(BaseModel):
 
 
 class PaymentPermitContextDelivery(BaseModel):
-    """支付许可上下文中的交付信息"""
+    """Delivery information in payment permit context"""
     receive_token: str = Field(alias="receiveToken")
     mini_receive_amount: str = Field(alias="miniReceiveAmount")
     token_id: str = Field(alias="tokenId")
@@ -124,14 +124,14 @@ class PaymentPermitContextDelivery(BaseModel):
 
 
 class PaymentPermitContext(BaseModel):
-    """来自扩展的支付许可上下文"""
+    """Payment permit context from extensions"""
     meta: PaymentPermitContextMeta
-    caller: Optional[str] = None  # 可选的 caller 地址，零地址表示允许任何地址调用
+    caller: Optional[str] = None  # Optional caller address, zero address allows any caller
     delivery: PaymentPermitContextDelivery
 
 
 class ResourceInfo(BaseModel):
-    """资源信息"""
+    """Resource information"""
     url: Optional[str] = None
     description: Optional[str] = None
     mime_type: Optional[str] = Field(None, alias="mimeType")
@@ -141,7 +141,7 @@ class ResourceInfo(BaseModel):
 
 
 class PaymentRequiredExtensions(BaseModel):
-    """PaymentRequired 中的扩展"""
+    """Extensions in PaymentRequired"""
     payment_permit_context: Optional[PaymentPermitContext] = Field(
         None, alias="paymentPermitContext"
     )
@@ -152,7 +152,7 @@ class PaymentRequiredExtensions(BaseModel):
 
 
 class PaymentRequired(BaseModel):
-    """需要支付响应 (402)"""
+    """Payment required response (402)"""
     x402_version: int = Field(alias="x402Version")
     error: Optional[str] = None
     resource: Optional[ResourceInfo] = None
@@ -164,7 +164,7 @@ class PaymentRequired(BaseModel):
 
 
 class PaymentPayloadData(BaseModel):
-    """支付载荷数据"""
+    """Payment payload data"""
     signature: str
     merchant_signature: Optional[str] = Field(None, alias="merchantSignature")
     payment_permit: PaymentPermit = Field(alias="paymentPermit")
@@ -174,7 +174,7 @@ class PaymentPayloadData(BaseModel):
 
 
 class PaymentPayload(BaseModel):
-    """客户端发送的支付载荷"""
+    """Payment payload sent by client"""
     x402_version: int = Field(alias="x402Version")
     resource: Optional[ResourceInfo] = None
     accepted: PaymentRequirements
@@ -186,7 +186,7 @@ class PaymentPayload(BaseModel):
 
 
 class VerifyResponse(BaseModel):
-    """来自中间层的验证响应"""
+    """Verification response from facilitator"""
     is_valid: bool = Field(alias="isValid")
     invalid_reason: Optional[str] = Field(None, alias="invalidReason")
 
@@ -195,14 +195,14 @@ class VerifyResponse(BaseModel):
 
 
 class TransactionInfo(BaseModel):
-    """交易信息"""
+    """Transaction information"""
     hash: str
     block_number: Optional[str] = Field(None, alias="blockNumber")
     status: Optional[str] = None
 
 
 class SettleResponse(BaseModel):
-    """来自中间层的结算响应"""
+    """Settlement response from facilitator"""
     success: bool
     transaction: Optional[str] = None
     network: Optional[str] = None
@@ -213,7 +213,7 @@ class SettleResponse(BaseModel):
 
 
 class SupportedKind(BaseModel):
-    """支持的支付类型"""
+    """Supported payment kind"""
     x402_version: int = Field(alias="x402Version")
     scheme: str
     network: str
@@ -223,7 +223,7 @@ class SupportedKind(BaseModel):
 
 
 class SupportedFee(BaseModel):
-    """支持的费用配置"""
+    """Supported fee configuration"""
     fee_to: str = Field(alias="feeTo")
     pricing: Literal["per_accept", "flat"]
 
@@ -232,13 +232,13 @@ class SupportedFee(BaseModel):
 
 
 class SupportedResponse(BaseModel):
-    """来自中间层的支持响应"""
+    """Supported response from facilitator"""
     kinds: list[SupportedKind]
     fee: Optional[SupportedFee] = None
 
 
 class FeeQuoteResponse(BaseModel):
-    """来自中间层的费用报价响应"""
+    """Fee quote response from facilitator"""
     fee: FeeInfo
     pricing: str
     network: str

@@ -1,5 +1,5 @@
 """
-EvmFacilitatorSigner - EVM facilitator 签名器实现
+EvmFacilitatorSigner - EVM facilitator signer implementation
 """
 
 import json
@@ -10,7 +10,7 @@ from x402.signers.facilitator.base import FacilitatorSigner
 
 
 class EvmFacilitatorSigner(FacilitatorSigner):
-    """EVM facilitator 签名器实现"""
+    """EVM facilitator signer implementation"""
 
     def __init__(self, private_key: str, rpc_url: str | None = None) -> None:
         clean_key = private_key if private_key.startswith("0x") else f"0x{private_key}"
@@ -21,11 +21,11 @@ class EvmFacilitatorSigner(FacilitatorSigner):
 
     @classmethod
     def from_private_key(cls, private_key: str, rpc_url: str | None = None) -> "EvmFacilitatorSigner":
-        """从私钥创建签名器"""
+        """Create signer from private key"""
         return cls(private_key, rpc_url)
 
     def _ensure_web3(self) -> Any:
-        """延迟初始化 web3 客户端"""
+        """Lazy initialize web3 client"""
         if self._web3 is None and self._rpc_url:
             try:
                 from web3 import Web3
@@ -36,7 +36,7 @@ class EvmFacilitatorSigner(FacilitatorSigner):
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
-        """从私钥派生 EVM 地址"""
+        """Derive EVM address from private key"""
         try:
             from eth_account import Account
             account = Account.from_key(private_key)
@@ -55,7 +55,7 @@ class EvmFacilitatorSigner(FacilitatorSigner):
         message: dict[str, Any],
         signature: str,
     ) -> bool:
-        """验证 EIP-712 签名"""
+        """Verify EIP-712 signature"""
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data
@@ -90,7 +90,7 @@ class EvmFacilitatorSigner(FacilitatorSigner):
         method: str,
         args: list[Any],
     ) -> str | None:
-        """在 EVM 上执行合约交易"""
+        """Execute contract transaction on EVM"""
         web3 = self._ensure_web3()
         if web3 is None:
             raise RuntimeError("web3 instance required for contract calls")
@@ -125,7 +125,7 @@ class EvmFacilitatorSigner(FacilitatorSigner):
         tx_hash: str,
         timeout: int = 120,
     ) -> dict[str, Any]:
-        """等待 EVM 交易确认"""
+        """Wait for EVM transaction confirmation"""
         web3 = self._ensure_web3()
         if web3 is None:
             raise RuntimeError("web3 instance required")

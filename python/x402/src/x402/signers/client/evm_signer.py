@@ -1,5 +1,5 @@
 """
-EvmClientSigner - EVM 客户端签名器实现
+EvmClientSigner - EVM client signer implementation
 """
 
 from typing import Any
@@ -9,7 +9,7 @@ from x402.signers.client.base import ClientSigner
 
 
 class EvmClientSigner(ClientSigner):
-    """EVM 客户端签名器实现"""
+    """EVM client signer implementation"""
 
     def __init__(self, private_key: str, rpc_url: str | None = None) -> None:
         clean_key = private_key if private_key.startswith("0x") else f"0x{private_key}"
@@ -20,22 +20,22 @@ class EvmClientSigner(ClientSigner):
 
     @classmethod
     def from_private_key(cls, private_key: str, rpc_url: str | None = None) -> "EvmClientSigner":
-        """从私钥创建签名器
+        """Create signer from private key.
 
         Args:
-            private_key: EVM 私钥（十六进制字符串）
-            rpc_url: 可选的 RPC 端点 URL，用于延迟初始化 web3
+            private_key: EVM private key (hex string)
+            rpc_url: Optional RPC endpoint URL for lazy web3 initialization
 
         Returns:
-            EvmClientSigner 实例
+            EvmClientSigner instance
         """
         return cls(private_key, rpc_url)
 
     def _ensure_web3(self) -> Any:
-        """延迟初始化 web3 客户端
+        """Lazy initialize web3 client.
 
         Returns:
-            web3.Web3 实例或 None
+            web3.Web3 instance or None
         """
         if self._web3 is None and self._rpc_url:
             try:
@@ -47,7 +47,7 @@ class EvmClientSigner(ClientSigner):
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
-        """从私钥派生 EVM 地址"""
+        """Derive EVM address from private key"""
         try:
             from eth_account import Account
             account = Account.from_key(private_key)
@@ -59,7 +59,7 @@ class EvmClientSigner(ClientSigner):
         return self._address
 
     async def sign_message(self, message: bytes) -> str:
-        """使用 ECDSA 签名原始消息"""
+        """Sign raw message using ECDSA"""
         try:
             from eth_account import Account
             from eth_account.messages import encode_defunct
@@ -76,7 +76,7 @@ class EvmClientSigner(ClientSigner):
         types: dict[str, Any],
         message: dict[str, Any],
     ) -> str:
-        """签名 EIP-712 类型化数据"""
+        """Sign EIP-712 typed data"""
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data

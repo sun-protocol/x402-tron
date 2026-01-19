@@ -1,5 +1,5 @@
 """
-客户端签名器基础接口
+Client signer base interface
 """
 
 from abc import ABC, abstractmethod
@@ -8,26 +8,26 @@ from typing import Any
 
 class ClientSigner(ABC):
     """
-    客户端签名器的抽象基类
+    Abstract base class for client signers.
 
-    负责签名消息和管理授权额度
+    Responsible for signing messages and managing token allowances.
     """
 
     @abstractmethod
     def get_address(self) -> str:
-        """获取签名器的账户地址"""
+        """Get the signer's account address"""
         pass
 
     @abstractmethod
     async def sign_message(self, message: bytes) -> str:
         """
-        签名原始消息
+        Sign a raw message.
 
         Args:
-            message: 原始消息字节
+            message: Raw message bytes
 
         Returns:
-            签名字符串（十六进制）
+            Signature string (hex)
         """
         pass
 
@@ -39,15 +39,15 @@ class ClientSigner(ABC):
         message: dict[str, Any],
     ) -> str:
         """
-        签名类型化数据（EIP-712）
+        Sign typed data (EIP-712).
 
         Args:
-            domain: EIP-712 域
-            types: 类型定义
-            message: 要签名的消息
+            domain: EIP-712 domain
+            types: Type definitions
+            message: Message to sign
 
         Returns:
-            签名字符串（十六进制）
+            Signature string (hex)
         """
         pass
 
@@ -59,15 +59,15 @@ class ClientSigner(ABC):
         network: str,
     ) -> int:
         """
-        检查代币授权额度
+        Check token allowance.
 
         Args:
-            token: 代币合约地址
-            amount: 所需金额
-            network: 网络标识符
+            token: Token contract address
+            amount: Required amount
+            network: Network identifier
 
         Returns:
-            当前授权额度
+            Current allowance
         """
         pass
 
@@ -80,15 +80,15 @@ class ClientSigner(ABC):
         mode: str = "auto",
     ) -> bool:
         """
-        确保有足够的授权额度
+        Ensure sufficient token allowance.
 
         Args:
-            token: 代币合约地址
-            amount: 所需金额
-            network: 网络标识符
-            mode: 授权模式（auto、interactive、skip）
+            token: Token contract address
+            amount: Required amount
+            network: Network identifier
+            mode: Approval mode (auto, interactive, skip)
 
         Returns:
-            如果授权额度足够则返回 True
+            True if allowance is sufficient
         """
         pass

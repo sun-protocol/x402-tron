@@ -1,5 +1,5 @@
 """
-X402Facilitator - x402 协议的核心支付处理器
+X402Facilitator - Core payment processor for x402 protocol
 """
 
 from typing import Any, Protocol
@@ -16,10 +16,10 @@ from x402.types import (
 
 
 class FacilitatorMechanism(Protocol):
-    """中间层机制接口"""
+    """Facilitator mechanism interface"""
 
     def scheme(self) -> str:
-        """获取支付方案名称"""
+        """Get the payment scheme name"""
         ...
 
     async def fee_quote(
@@ -27,7 +27,7 @@ class FacilitatorMechanism(Protocol):
         accept: PaymentRequirements,
         context: dict[str, Any] | None = None,
     ) -> FeeQuoteResponse:
-        """计算费用报价"""
+        """Calculate fee quote"""
         ...
 
     async def verify(
@@ -35,7 +35,7 @@ class FacilitatorMechanism(Protocol):
         payload: PaymentPayload,
         requirements: PaymentRequirements,
     ) -> VerifyResponse:
-        """验证支付签名"""
+        """Verify payment signature"""
         ...
 
     async def settle(
@@ -43,15 +43,15 @@ class FacilitatorMechanism(Protocol):
         payload: PaymentPayload,
         requirements: PaymentRequirements,
     ) -> SettleResponse:
-        """执行支付结算"""
+        """Execute payment settlement"""
         ...
 
 
 class X402Facilitator:
     """
-    x402 协议的核心支付处理器。
+    Core payment processor for x402 protocol.
 
-    管理支付机制并协调验证/结算。
+    Manages payment mechanisms and coordinates verification/settlement.
     """
 
     def __init__(self) -> None:
@@ -63,14 +63,14 @@ class X402Facilitator:
         mechanism: FacilitatorMechanism,
     ) -> "X402Facilitator":
         """
-        为多个网络注册支付机制。
+        Register a payment mechanism for multiple networks.
 
-        参数:
-            networks: 网络标识符列表
-            mechanism: 中间层机制实例
+        Args:
+            networks: List of network identifiers
+            mechanism: Facilitator mechanism instance
 
-        返回:
-            self 以支持链式调用
+        Returns:
+            self for method chaining
         """
         scheme = mechanism.scheme()
         for network in networks:
@@ -81,10 +81,10 @@ class X402Facilitator:
 
     def supported(self) -> SupportedResponse:
         """
-        返回支持的网络/方案组合
+        Return supported network/scheme combinations.
 
         Returns:
-            包含所有支持能力的 SupportedResponse
+            SupportedResponse with all supported capabilities
         """
         kinds: list[SupportedKind] = []
         for network, schemes in self._mechanisms.items():
@@ -104,14 +104,14 @@ class X402Facilitator:
         context: dict[str, Any] | None = None,
     ) -> FeeQuoteResponse:
         """
-        计算支付要求的费用报价
+        Calculate fee quote for payment requirements.
 
         Args:
-            accept: 支付要求
-            context: 可选的支付上下文
+            accept: Payment requirements
+            context: Optional payment context
 
         Returns:
-            包含费用信息的 FeeQuoteResponse
+            FeeQuoteResponse with fee information
         """
         mechanism = self._find_mechanism(accept.network, accept.scheme)
         if mechanism is None:
@@ -126,13 +126,13 @@ class X402Facilitator:
         requirements: PaymentRequirements,
     ) -> VerifyResponse:
         """
-        验证支付签名和有效性。
+        Verify payment signature and validity.
 
-        参数:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+        Args:
+            payload: Payment payload from client
+            requirements: Payment requirements
 
-        返回:
+        Returns:
             VerifyResponse
         """
         mechanism = self._find_mechanism(requirements.network, requirements.scheme)
@@ -149,14 +149,14 @@ class X402Facilitator:
         requirements: PaymentRequirements,
     ) -> SettleResponse:
         """
-        执行支付结算。
+        Execute payment settlement.
 
-        参数:
-            payload: 来自客户端的支付载荷
-            requirements: 支付要求
+        Args:
+            payload: Payment payload from client
+            requirements: Payment requirements
 
-        返回:
-            包含 tx_hash 的 SettleResponse
+        Returns:
+            SettleResponse with tx_hash
         """
         mechanism = self._find_mechanism(requirements.network, requirements.scheme)
         if mechanism is None:
@@ -169,7 +169,7 @@ class X402Facilitator:
     def _find_mechanism(
         self, network: str, scheme: str
     ) -> FacilitatorMechanism | None:
-        """查找网络和方案对应的机制"""
+        """Find mechanism for network and scheme"""
         network_mechanisms = self._mechanisms.get(network)
         if network_mechanisms is None:
             return None

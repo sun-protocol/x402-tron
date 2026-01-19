@@ -1,5 +1,5 @@
 """
-Facilitator 签名器基础接口
+Facilitator signer base interface
 """
 
 from abc import ABC, abstractmethod
@@ -8,14 +8,14 @@ from typing import Any
 
 class FacilitatorSigner(ABC):
     """
-    Facilitator 签名器的抽象基类
+    Abstract base class for facilitator signers.
 
-    负责验证签名和执行链上交易
+    Responsible for verifying signatures and executing on-chain transactions.
     """
 
     @abstractmethod
     def get_address(self) -> str:
-        """获取 facilitator 的账户地址"""
+        """Get the facilitator's account address"""
         pass
 
     @abstractmethod
@@ -28,17 +28,17 @@ class FacilitatorSigner(ABC):
         signature: str,
     ) -> bool:
         """
-        验证 EIP-712 类型化数据签名
+        Verify EIP-712 typed data signature.
 
         Args:
-            address: 预期的签名者地址
-            domain: EIP-712 域
-            types: 类型定义
-            message: 已签名的消息
-            signature: 要验证的签名
+            address: Expected signer address
+            domain: EIP-712 domain
+            types: Type definitions
+            message: Signed message
+            signature: Signature to verify
 
         Returns:
-            如果签名有效则返回 True
+            True if signature is valid
         """
         pass
 
@@ -51,16 +51,16 @@ class FacilitatorSigner(ABC):
         args: list[Any],
     ) -> str | None:
         """
-        执行合约写入交易
+        Execute a contract write transaction.
 
         Args:
-            contract_address: 合约地址
-            abi: 合约 ABI（JSON 字符串）
-            method: 方法名称
-            args: 方法参数
+            contract_address: Contract address
+            abi: Contract ABI (JSON string)
+            method: Method name
+            args: Method arguments
 
         Returns:
-            交易哈希，失败则返回 None
+            Transaction hash, or None on failure
         """
         pass
 
@@ -71,13 +71,13 @@ class FacilitatorSigner(ABC):
         timeout: int = 120,
     ) -> dict[str, Any]:
         """
-        等待交易确认
+        Wait for transaction confirmation.
 
         Args:
-            tx_hash: 交易哈希
-            timeout: 超时时间（秒）
+            tx_hash: Transaction hash
+            timeout: Timeout in seconds
 
         Returns:
-            交易回执
+            Transaction receipt
         """
         pass

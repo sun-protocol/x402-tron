@@ -399,17 +399,17 @@ def get_payment_permit_eip712_types() -> dict[str, Any]:
 
 
 def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
-    """从 ABI 动态计算函数的 Method ID
+    """Calculate Method ID from ABI dynamically.
     
     Args:
-        abi: 合约 ABI 定义列表
-        method_name: 函数名称
+        abi: Contract ABI definition list
+        method_name: Function name
         
     Returns:
-        Method ID (8位十六进制字符串)
+        Method ID (8 hex characters)
         
     Raises:
-        ValueError: 如果函数在 ABI 中不存在
+        ValueError: If function not found in ABI
         
     Example:
         >>> method_id = calculate_method_id(PAYMENT_PERMIT_ABI, "permitTransferFrom")
@@ -417,7 +417,7 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
     """
     from Crypto.Hash import keccak
     
-    # 从 ABI 中找到对应的函数定义
+    # Find function definition in ABI
     func_abi = None
     for item in abi:
         if item.get("type") == "function" and item.get("name") == method_name:
@@ -427,13 +427,13 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
     if not func_abi:
         raise ValueError(f"Function '{method_name}' not found in ABI")
     
-    # 构建函数签名
+    # Build function signature
     def get_type_string(param: dict[str, Any]) -> str:
-        """递归构建参数类型字符串"""
+        """Recursively build parameter type string"""
         param_type = param["type"]
         
         if param_type == "tuple":
-            # 对于 tuple，递归构建其 components
+            # For tuple, recursively build its components
             components = param.get("components", [])
             if not components:
                 return "tuple"
@@ -442,11 +442,11 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
         else:
             return param_type
     
-    # 构建完整的函数签名
+    # Build complete function signature
     input_types = [get_type_string(inp) for inp in func_abi.get("inputs", [])]
     function_signature = f"{method_name}({','.join(input_types)})"
     
-    # 计算 Method ID (Keccak256 的前 4 字节)
+    # Calculate Method ID (first 4 bytes of Keccak256)
     k = keccak.new(digest_bits=256)
     k.update(function_signature.encode())
     method_id = k.hexdigest()[:8]
@@ -455,14 +455,14 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
 
 
 def get_function_signature(abi: List[dict[str, Any]], method_name: str) -> str:
-    """获取函数的完整签名字符串
+    """Get complete function signature string.
     
     Args:
-        abi: 合约 ABI 定义列表
-        method_name: 函数名称
+        abi: Contract ABI definition list
+        method_name: Function name
         
     Returns:
-        函数签名字符串，例如: "permitTransferFrom(((uint8,bytes16,uint256,uint256,uint256),...),(...),address,bytes)"
+        Function signature string, e.g.: "permitTransferFrom(((uint8,bytes16,uint256,uint256,uint256),...),(...),address,bytes)"
         
     Example:
         >>> sig = get_function_signature(PAYMENT_PERMIT_ABI, "permitTransferFrom")
@@ -495,13 +495,13 @@ def get_function_signature(abi: List[dict[str, Any]], method_name: str) -> str:
 
 
 def get_all_method_ids(abi: List[dict[str, Any]]) -> dict[str, str]:
-    """获取 ABI 中所有函数的 Method ID
+    """Get Method IDs for all functions in ABI.
     
     Args:
-        abi: 合约 ABI 定义列表
+        abi: Contract ABI definition list
         
     Returns:
-        字典，键为函数名，值为 Method ID
+        Dict with function names as keys and Method IDs as values
         
     Example:
         >>> method_ids = get_all_method_ids(PAYMENT_PERMIT_ABI)
@@ -523,4 +523,3 @@ def get_all_method_ids(abi: List[dict[str, Any]]) -> dict[str, str]:
                 except Exception:
                     pass
     return result
-
