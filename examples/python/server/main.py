@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from x402.server import X402Server
 from x402.fastapi import x402_protected
 from x402.facilitator import FacilitatorClient
-from x402.mechanisms.server import UptoTronServerMechanism
+from x402.config import NetworkConfig
 
 load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
@@ -24,9 +24,7 @@ app.add_middleware(
 )
 
 # Configuration
-TRON_NETWORK = "tron:nile"  # Hardcoded network
 MERCHANT_CONTRACT_ADDRESS = os.getenv("MERCHANT_CONTRACT_ADDRESS", "")
-USDT_TOKEN_ADDRESS = os.getenv("USDT_TOKEN_ADDRESS", "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf")
 # Hardcoded server configuration
 FACILITATOR_URL = "http://localhost:8001"
 SERVER_HOST = "0.0.0.0"
@@ -38,19 +36,15 @@ PROTECTED_IMAGE_PATH = Path(__file__).parent / "protected.png"
 if not MERCHANT_CONTRACT_ADDRESS:
     raise ValueError("MERCHANT_CONTRACT_ADDRESS environment variable is required")
 
-# Initialize server with mechanism and facilitator
+# Initialize server (TRON mechanisms auto-registered by default)
 server = X402Server()
-# Register TRON mechanism
-tron_mechanism = UptoTronServerMechanism()
-server.register(TRON_NETWORK, tron_mechanism)
 # Add facilitator
 facilitator = FacilitatorClient(base_url=FACILITATOR_URL)
 server.add_facilitator(facilitator)
 
 print(f"Server Configuration:")
-print(f"  Network: {TRON_NETWORK}")
+print(f"  Network: {NetworkConfig.TRON_NILE}")
 print(f"  Merchant Contract: {MERCHANT_CONTRACT_ADDRESS}")
-print(f"  USDT Token: {USDT_TOKEN_ADDRESS}")
 print(f"  Facilitator URL: {FACILITATOR_URL}")
 
 @app.get("/")
@@ -59,7 +53,6 @@ async def root():
     return {
         "service": "X402 Protected Resource Server",
         "status": "running",
-        "network": TRON_NETWORK,
         "merchant_contract": MERCHANT_CONTRACT_ADDRESS,
         "facilitator": FACILITATOR_URL,
     }
@@ -68,11 +61,40 @@ async def root():
 @x402_protected(
     server=server,
     price="1 USDT",  # 1 USDT = 1000000 (6 decimals)
-    network=TRON_NETWORK,
+    network=NetworkConfig.TRON_NILE,
     pay_to=MERCHANT_CONTRACT_ADDRESS,
 )
 async def protected_endpoint(request: Request):
     """Serve the protected image directly"""
+    if not PROTECTED_IMAGE_PATH.exists():
+        return {"error": "Protected image not found"}
+    return FileResponse(PROTECTED_IMAGE_PATH, media_type="image/png")
+
+
+@app.get("/protected-trx")
+@x402_protected(
+    server=server,
+    price="1 TRX",  # 1 TRX = 1000000 (6 decimals)
+    network=NetworkConfig.TRON_NILE,
+    pay_to=MERCHANT_CONTRACT_ADDRESS,
+)
+async def protected_trx_endpoint(request: Request):
+    """Serve protected content with TRX payment"""
+    if not PROTECTED_IMAGE_PATH.exists():
+        return {"error": "Protected image not found"}
+    return FileResponse(PROTECTED_IMAGE_PATH, media_type="image/png")
+
+
+@app.get("/protected-delivery")
+@x402_protected(
+    server=server,
+    price="1 USDT",
+    network=NetworkConfig.TRON_NILE,
+    pay_to=MERCHANT_CONTRACT_ADDRESS,
+    delivery_mode=True,  # Enable delivery mode
+)
+async def protected_delivery_endpoint(request: Request):
+    """Serve protected content with delivery mode (PAYMENT_AND_DELIVERY)"""
     if not PROTECTED_IMAGE_PATH.exists():
         return {"error": "Protected image not found"}
     return FileResponse(PROTECTED_IMAGE_PATH, media_type="image/png")

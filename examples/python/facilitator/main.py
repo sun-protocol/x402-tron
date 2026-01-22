@@ -117,23 +117,16 @@ async def supported():
     from x402.types import SupportedResponse, SupportedKind, SupportedFee
     
     return SupportedResponse(
-        schemes=["exact"],
-        networks=[f"tron:{TRON_NETWORK}"],
         kinds=[
             SupportedKind(
-                kind="PAYMENT_ONLY",
-                description="Payment only without delivery"
+                x402Version=1,
+                scheme="exact",
+                network=f"tron:{TRON_NETWORK}"
             ),
-            SupportedKind(
-                kind="PAYMENT_AND_DELIVERY",
-                description="Payment with on-chain delivery"
-            )
         ],
         fee=SupportedFee(
-            facilitatorId=facilitator_address,
             feeTo=facilitator_address,
-            pricing="per_accept",
-            baseAmount=str(BASE_FEE)
+            pricing="per_accept"
         )
     )
 

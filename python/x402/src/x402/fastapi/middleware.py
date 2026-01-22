@@ -81,22 +81,25 @@ class X402Middleware:
                 try:
                     payload = decode_payment_payload(payment_header, PaymentPayload)
                 except Exception:
-                    return await self._return_payment_required(
-                        request, config, error="Invalid payment payload"
+                    return JSONResponse(
+                        content={"error": "Invalid payment payload"},
+                        status_code=400
                     )
 
                 requirements = await self._server.build_payment_requirements(config)
 
                 verify_result = await self._server.verify_payment(payload, requirements)
                 if not verify_result.is_valid:
-                    return await self._return_payment_required(
-                        request, config, error=f"Verification failed: {verify_result.invalid_reason}"
+                    return JSONResponse(
+                        content={"error": f"Verification failed: {verify_result.invalid_reason}"},
+                        status_code=400
                     )
 
                 settle_result = await self._server.settle_payment(payload, requirements)
                 if not settle_result.success:
-                    return await self._return_payment_required(
-                        request, config, error=f"Settlement failed: {settle_result.error_reason}"
+                    return JSONResponse(
+                        content={"error": f"Settlement failed: {settle_result.error_reason}"},
+                        status_code=500
                     )
 
                 response = await func(request, *args, **kwargs)

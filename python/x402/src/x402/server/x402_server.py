@@ -18,6 +18,7 @@ from x402.types import (
     FeeQuoteResponse,
     PAYMENT_ONLY,
 )
+from x402.config import NetworkConfig
 
 
 class ServerMechanism(Protocol):
@@ -63,9 +64,18 @@ class X402Server:
     Manages payment mechanisms and facilitator clients, coordinates payment flow.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, auto_register_tron: bool = True) -> None:
+        """
+        Initialize X402Server.
+        
+        Args:
+            auto_register_tron: If True, automatically register TRON mechanisms for all networks
+        """
         self._mechanisms: dict[str, ServerMechanism] = {}
         self._facilitators: list["FacilitatorClient"] = []
+        
+        if auto_register_tron:
+            self._register_default_tron_mechanisms()
 
     def register(self, network: str, mechanism: ServerMechanism) -> "X402Server":
         """
@@ -80,6 +90,15 @@ class X402Server:
         """
         self._mechanisms[network] = mechanism
         return self
+
+    def _register_default_tron_mechanisms(self) -> None:
+        """Register default TRON mechanisms for all networks"""
+        from x402.mechanisms.server import UptoTronServerMechanism
+        
+        tron_mechanism = UptoTronServerMechanism()
+        self.register(NetworkConfig.TRON_MAINNET, tron_mechanism)
+        self.register(NetworkConfig.TRON_SHASTA, tron_mechanism)
+        self.register(NetworkConfig.TRON_NILE, tron_mechanism)
 
     def add_facilitator(self, client: "FacilitatorClient") -> "X402Server":
         """Add a facilitator client.

@@ -75,6 +75,12 @@ class TokenRegistry:
                 name="Tether USD",
                 symbol="USDT",
             ),
+            "TRX": TokenInfo(
+                address="T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+                decimals=6,
+                name="TRON",
+                symbol="TRX",
+            ),
         },
         "tron:nile": {
             "USDT": TokenInfo(
@@ -82,6 +88,12 @@ class TokenRegistry:
                 decimals=6,
                 name="Tether USD",
                 symbol="USDT",
+            ),
+            "TRX": TokenInfo(
+                address="T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+                decimals=6,
+                name="TRON",
+                symbol="TRX",
             ),
         },
     }

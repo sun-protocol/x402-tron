@@ -9,6 +9,11 @@ from typing import Dict
 class NetworkConfig:
     """Network configuration for contract addresses and chain IDs"""
 
+    # Default networks
+    TRON_MAINNET = "tron:mainnet"
+    TRON_SHASTA = "tron:shasta"
+    TRON_NILE = "tron:nile"
+
     # TRON Chain IDs
     CHAIN_IDS: Dict[str, int] = {
         "tron:mainnet": 728126428,   # 0x2b6653dc
