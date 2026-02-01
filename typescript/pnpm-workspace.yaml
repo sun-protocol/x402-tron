@@ -1,0 +1,5 @@
+packages:
+  - 'packages/core'
+  - 'packages/mechanisms/*'
+  - 'packages/signers/*'
+  - 'packages/http/*'

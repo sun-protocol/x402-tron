@@ -1,0 +1,21 @@
+[project]
+name = "x402-workspace"
+version = "0.1.0"
+description = "x402 Payment Protocol Workspace"
+authors = [{ name = "x402", email = "dev@x402.io" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[tool.uv.sources]
+x402 = { workspace = true }
+
+[tool.uv.workspace]
+members = ["python/x402", "examples/python/client", "examples/python/server"]
