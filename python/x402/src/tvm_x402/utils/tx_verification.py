@@ -256,27 +256,19 @@ def get_verifier_for_network(network: str, rpc_url: str | None = None) -> BaseTr
     """
     Factory function to get appropriate transaction verifier for a network.
     
-    Automatically detects network type (TRON or EVM) and returns the appropriate verifier.
-    
     Args:
-        network: Network identifier (e.g., "tron:nile", "eip155:8453")
-        rpc_url: Optional custom RPC URL for EVM networks
+        network: Network identifier (e.g., "tron:nile")
+        rpc_url: Optional custom RPC URL (unused, kept for API compatibility)
         
     Returns:
         Transaction verifier instance
         
     Examples:
         >>> verifier = get_verifier_for_network("tron:nile")
-        >>> verifier = get_verifier_for_network("eip155:8453")  # Base Mainnet
-        >>> verifier = get_verifier_for_network("eip155:1", rpc_url="https://my-node.com")
     """
     if network.startswith("tron:"):
         from tvm_x402.utils.tron_verification import TronTransactionVerifier
         tron_network = network.split(":")[1] if ":" in network else "nile"
         return TronTransactionVerifier(network=tron_network)
-    
-    if network.startswith("eip155:"):
-        from tvm_x402.utils.evm_verification import EvmTransactionVerifier
-        return EvmTransactionVerifier(network=network, rpc_url=rpc_url)
     
     raise ValueError(f"No transaction verifier available for network: {network}")

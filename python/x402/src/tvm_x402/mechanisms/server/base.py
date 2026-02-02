@@ -45,7 +45,7 @@ class ServerMechanism(ABC):
 
         Args:
             requirements: Base payment requirements
-            kind: Delivery mode (PAYMENT_ONLY or PAYMENT_AND_DELIVERY)
+            kind: Delivery mode (PAYMENT_ONLY)
 
         Returns:
             Enhanced PaymentRequirements

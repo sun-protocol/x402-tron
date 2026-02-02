@@ -9,10 +9,6 @@ export const CHAIN_IDS: Record<string, number> = {
   'tron:mainnet': 728126428,   // 0x2b6653dc
   'tron:shasta': 2494104990,   // 0x94a9059e
   'tron:nile': 3448148188,     // 0xcd8690dc
-  // EVM networks
-  'eip155:1': 1,               // Ethereum Mainnet
-  'eip155:8453': 8453,         // Base
-  'eip155:84532': 84532,       // Base Sepolia
 };
 
 /** PaymentPermit contract addresses */
@@ -20,7 +16,6 @@ export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
   'tron:mainnet': 'T...',  // TODO: Deploy
   'tron:shasta': 'T...',   // TODO: Deploy
   'tron:nile': 'TCR6EaRtLRYjWPr7YWHqt4uL81rfevtE8p',
-  // EVM addresses would be 0x format
 };
 
 /** Zero addresses for different network types */
@@ -52,13 +47,6 @@ export function getPaymentPermitAddress(network: string): string {
  */
 export function isTronNetwork(network: string): boolean {
   return network.startsWith('tron:');
-}
-
-/**
- * Check if network is EVM
- */
-export function isEvmNetwork(network: string): boolean {
-  return network.startsWith('eip155:');
 }
 
 /**

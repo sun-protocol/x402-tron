@@ -19,7 +19,6 @@ from tvm_x402.utils.tx_verification import (
     get_verifier_for_network,
 )
 from tvm_x402.utils.tron_verification import TronTransactionVerifier
-from tvm_x402.utils.evm_verification import EvmTransactionVerifier
 
 __all__ = [
     "normalize_tron_address",
@@ -36,6 +35,5 @@ __all__ = [
     "TransactionVerifier",
     "BaseTransactionVerifier",
     "TronTransactionVerifier",
-    "EvmTransactionVerifier",
     "get_verifier_for_network",
 ]

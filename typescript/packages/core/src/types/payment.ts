@@ -3,11 +3,11 @@
  */
 
 /** Delivery mode for payment */
-export type DeliveryKind = 'PAYMENT_ONLY' | 'PAYMENT_AND_DELIVERY';
+export type DeliveryKind = 'PAYMENT_ONLY';
 
 /** Payment permit metadata */
 export interface PermitMeta {
-  /** Delivery type: PAYMENT_ONLY or PAYMENT_AND_DELIVERY */
+  /** Delivery type: PAYMENT_ONLY */
   kind: DeliveryKind;
   /** Business order ID for reconciliation */
   paymentId: string;

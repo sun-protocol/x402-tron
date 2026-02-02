@@ -9,7 +9,7 @@ import time
 from abc import abstractmethod
 from typing import Any, TYPE_CHECKING
 
-from tvm_x402.abi import PAYMENT_PERMIT_ABI, MERCHANT_ABI, get_abi_json, get_payment_permit_eip712_types
+from tvm_x402.abi import PAYMENT_PERMIT_ABI, get_abi_json, get_payment_permit_eip712_types
 from tvm_x402.address import AddressConverter
 from tvm_x402.config import NetworkConfig
 from tvm_x402.exceptions import PermitValidationError
@@ -22,7 +22,6 @@ from tvm_x402.types import (
     FeeQuoteResponse,
     FeeInfo,
     KIND_MAP,
-    PAYMENT_AND_DELIVERY,
 )
 from tvm_x402.utils import convert_permit_to_eip712_message, payment_id_to_bytes
 
@@ -143,13 +142,9 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
 
         signature = payload.payload.signature
 
-        # Choose settlement method based on delivery mode
-        if permit.meta.kind == PAYMENT_AND_DELIVERY:
-            self._logger.info("Settling with delivery via merchant contract...")
-            tx_hash = await self._settle_with_delivery(permit, signature, requirements)
-        else:
-            self._logger.info("Settling payment only via PaymentPermit contract...")
-            tx_hash = await self._settle_payment_only(permit, signature, requirements)
+        # Always use payment only settlement
+        self._logger.info("Settling payment only via PaymentPermit contract...")
+        tx_hash = await self._settle_payment_only(permit, signature, requirements)
 
         if tx_hash is None:
             self._logger.error("Settlement transaction failed: no transaction hash returned")
@@ -268,16 +263,6 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
         requirements: PaymentRequirements,
     ) -> str | None:
         """Payment only settlement (no on-chain delivery), implemented by subclasses"""
-        pass
-
-    @abstractmethod
-    async def _settle_with_delivery(
-        self,
-        permit: Any,
-        signature: str,
-        requirements: PaymentRequirements,
-    ) -> str | None:
-        """Settlement with on-chain delivery, implemented by subclasses"""
         pass
 
     def _build_permit_tuple(self, permit: Any) -> tuple:

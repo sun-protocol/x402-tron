@@ -4,7 +4,7 @@ UptoTronFacilitatorMechanism - "upto" 支付方案的 TRON facilitator 机制
 
 from typing import Any
 
-from tvm_x402.abi import PAYMENT_PERMIT_ABI, MERCHANT_ABI, get_abi_json, get_payment_permit_eip712_types
+from tvm_x402.abi import PAYMENT_PERMIT_ABI, get_abi_json, get_payment_permit_eip712_types
 from tvm_x402.address import AddressConverter, TronAddressConverter
 from tvm_x402.config import NetworkConfig
 from tvm_x402.mechanisms.facilitator.base_upto import BaseUptoFacilitatorMechanism
@@ -93,22 +93,3 @@ class UptoTronFacilitatorMechanism(BaseUptoFacilitatorMechanism):
             args=args,
         )
 
-    async def _settle_with_delivery(
-        self,
-        permit: Any,
-        signature: str,
-        requirements: PaymentRequirements,
-    ) -> str | None:
-        """带链上交付的结算"""
-        merchant_address = requirements.pay_to
-        self._logger.info(f"Calling settle on merchant contract={merchant_address}")
-
-        permit_tuple = self._build_permit_tuple(permit)
-        sig_bytes = bytes.fromhex(signature[2:] if signature.startswith("0x") else signature)
-
-        return await self._signer.write_contract(
-            contract_address=merchant_address,
-            abi=get_abi_json(MERCHANT_ABI),
-            method="settle",
-            args=[permit_tuple, sig_bytes],
-        )

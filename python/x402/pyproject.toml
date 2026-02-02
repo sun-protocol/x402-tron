@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.21.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "x402", email = "dev@x402.io" }
 ]
-keywords = ["x402", "payment", "blockchain", "tron", "evm", "solana"]
+keywords = ["x402", "payment", "blockchain", "tron"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -38,12 +38,10 @@ dev-dependencies = [
 
 [project.optional-dependencies]
 tron = ["tronpy>=0.4.0"]
-evm = ["web3>=6.0.0"]
 fastapi = ["fastapi>=0.100.0"]
 flask = ["flask>=2.0.0"]
 all = [
     "tronpy>=0.4.0",
-    "web3>=6.0.0",
     "fastapi>=0.100.0",
     "flask>=2.0.0",
 ]

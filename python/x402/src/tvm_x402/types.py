@@ -8,14 +8,12 @@ from pydantic import BaseModel, Field
 
 # Delivery Kind constants
 PAYMENT_ONLY = "PAYMENT_ONLY"
-PAYMENT_AND_DELIVERY = "PAYMENT_AND_DELIVERY"
 
-DeliveryKind = Literal["PAYMENT_ONLY", "PAYMENT_AND_DELIVERY"]
+DeliveryKind = Literal["PAYMENT_ONLY"]
 
 # Kind mapping for EIP-712 (string to numeric)
 KIND_MAP = {
     PAYMENT_ONLY: 0,
-    PAYMENT_AND_DELIVERY: 1,
 }
 
 
