@@ -16,7 +16,7 @@ interface PaymentState {
 }
 
 export function PaymentDemo() {
-  const { address, connected } = useWallet();
+  const { connected } = useWallet();
   const [state, setState] = useState<PaymentState>({ status: 'idle' });
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
 
@@ -94,14 +94,14 @@ export function PaymentDemo() {
       {/* Connect Wallet or Loading State */}
       {!connected && state.status === 'idle' && (
         <div className="text-center">
-          <WalletActionButton className="btn-primary text-lg inline-flex items-center gap-2" />
+          <WalletActionButton className="inline-flex gap-2 items-center text-lg btn-primary" />
         </div>
       )}
 
       {/* Loading State */}
       {state.status === 'loading' && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="py-12 text-center">
+          <div className="inline-block w-12 h-12 rounded-full border-b-2 border-gray-900 animate-spin"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       )}

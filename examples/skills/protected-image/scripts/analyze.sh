@@ -3,9 +3,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FETCH_SCRIPT="$SCRIPT_DIR/fetch_image.ts"
 
-URL="${1:-${IMAGE_FINDER_URL:-http://localhost:8000/protected}}"
-
-IMAGE_FINDER_URL="$URL" npx tsx "$FETCH_SCRIPT" \
+npx -y "github:sun-protocol/tvm-x402#feat/for_skill" x402-tools fetch-image \
   </dev/null

@@ -16,7 +16,7 @@ interface PaymentState {
 }
 
 export function Protected() {
-  const { address, connected } = useWallet();
+  const { connected } = useWallet();
   const [state, setState] = useState<PaymentState>({ status: 'idle' });
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
 

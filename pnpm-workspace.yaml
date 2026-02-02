@@ -1,0 +1,4 @@
+packages:
+  - 'typescript/packages/*'
+  - 'typescript/packages/*/*'
+  - 'examples/typescript/*'

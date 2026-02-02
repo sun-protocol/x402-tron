@@ -1,0 +1,20 @@
+{
+  "name": "tvm-x402",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "typescript/packages/*"
+  ],
+  "bin": {
+    "x402-tools": "./typescript/packages/tools/dist/cli.js"
+  },
+  "scripts": {
+    "prepare": "npm run -ws --if-present build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

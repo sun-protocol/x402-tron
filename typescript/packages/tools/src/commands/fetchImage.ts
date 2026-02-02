@@ -1,12 +1,22 @@
 import fs from 'fs';
 import path from 'path';
 
-import { TronWeb } from 'tronweb';
+import TronWebPkg from 'tronweb';
 
 import { X402Client } from '@tvm-x402/core';
 import { X402FetchClient } from '@tvm-x402/http-fetch';
 import { UptoTronClientMechanism } from '@tvm-x402/mechanism-tron';
 import { TronClientSigner } from '@tvm-x402/signer-tron';
+
+const TronWebCtor = (
+  (TronWebPkg as unknown as { TronWeb?: unknown }).TronWeb ??
+  (TronWebPkg as unknown as { default?: unknown }).default ??
+  (TronWebPkg as unknown)
+) as unknown;
+
+if (typeof TronWebCtor !== 'function') {
+  throw new Error('Unable to load TronWeb constructor from tronweb package');
+}
 
 function loadPrivateKey(): string {
   const envKey = process.env.TRON_PRIVATE_KEY || process.env.X402_PRIVATE_KEY;
@@ -22,10 +32,7 @@ function loadPrivateKey(): string {
     try {
       if (!p || !fs.existsSync(p)) continue;
       const data = JSON.parse(fs.readFileSync(p, 'utf8')) as Record<string, unknown>;
-      const key =
-        data.tron_private_key ||
-        data.TRON_PRIVATE_KEY ||
-        data.private_key;
+      const key = data.tron_private_key || data.TRON_PRIVATE_KEY || data.private_key;
       if (typeof key === 'string' && key.length > 0) return key;
     } catch {
       continue;
@@ -59,13 +66,13 @@ function tronFullHost(network: 'mainnet' | 'nile' | 'shasta'): string {
   }
 }
 
-async function main(): Promise<void> {
-  const url = process.argv[2] || process.env.IMAGE_FINDER_URL || 'http://localhost:8000/protected';
+export async function fetchImage(): Promise<void> {
+  const resolvedUrl = 'http://localhost:8000/protected';
 
   const privateKey = loadPrivateKey();
   const tronNetwork = parseTronNetwork();
 
-  const tronWeb = new TronWeb({
+  const tronWeb = new (TronWebCtor as new (...args: any[]) => any)({
     fullHost: tronFullHost(tronNetwork),
   });
 
@@ -73,7 +80,7 @@ async function main(): Promise<void> {
   const x402Client = new X402Client().register('tron:*', new UptoTronClientMechanism(signer));
   const client = new X402FetchClient(x402Client);
 
-  const response = await client.get(url);
+  const response = await client.get(resolvedUrl);
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`);
   }
@@ -93,7 +100,7 @@ async function main(): Promise<void> {
   fs.writeFileSync(outPath, bytes);
 
   const result = {
-    url,
+    url: resolvedUrl,
     content_type: contentType,
     file_path: outPath,
     bytes: bytes.length,
@@ -102,9 +109,3 @@ async function main(): Promise<void> {
 
   process.stdout.write(JSON.stringify(result));
 }
-
-main().catch(err => {
-  process.stderr.write(String(err instanceof Error ? err.message : err));
-  process.stderr.write('\n');
-  process.exitCode = 1;
-});
