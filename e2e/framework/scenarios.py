@@ -1,18 +1,13 @@
 """
-Test scenario generation for e2e tests
+Test Scenario Generation
+
+Generates test scenarios from discovered components.
 """
 
-import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional
 
 from .discovery import ComponentInfo
-
-# Import centralized network config
-_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(_root / "python" / "x402" / "src"))
-from x402.config import NetworkConfig
 
 
 @dataclass
@@ -23,7 +18,7 @@ class TestScenario:
     client: ComponentInfo
     server: ComponentInfo
     facilitator: ComponentInfo
-    network: str = NetworkConfig.TRON_NILE
+    network: str = "tron:nile"
     description: str = ""
     tags: list[str] = field(default_factory=list)
 
@@ -46,7 +41,7 @@ def generate_test_scenarios(
         clients: Available clients
         servers: Available servers
         facilitators: Available facilitators
-        network_filter: Filter by network (e.g., "tron:3448148188")
+        network_filter: Filter by network (e.g., "tron:nile")
 
     Returns:
         List of test scenarios

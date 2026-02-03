@@ -1,16 +1,12 @@
 """
-Component discovery for e2e tests
+Component Discovery
+
+Discovers available clients, servers, and facilitators from examples directory.
 """
 
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-
-# Import centralized network config
-_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(_root / "python" / "x402" / "src"))
-from x402.config import NetworkConfig
 
 
 @dataclass
@@ -21,7 +17,7 @@ class ComponentInfo:
     path: Path
     language: str  # "python" or "typescript"
     component_type: str  # "client", "server", "facilitator"
-    network: str = NetworkConfig.TRON_NILE
+    network: str = "tron:nile"
     port: int = 0
     env_file: Optional[Path] = None
     start_script: Optional[Path] = None

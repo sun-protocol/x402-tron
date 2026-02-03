@@ -50,9 +50,8 @@ async def test_tron_signer_check_allowance():
     signer = TronClientSigner.from_private_key(private_key)
 
     # 没有 tronpy 客户端时，应该返回 0
-    from x402.config import NetworkConfig
     allowance = await signer.check_allowance(
-        "TTestToken", 1000000, NetworkConfig.TRON_SHASTA
+        "TTestToken", 1000000, "tron:shasta"
     )
     assert allowance == 0
 

@@ -53,8 +53,8 @@ class TokenRegistry:
                 symbol="USDC",
             ),
         },
-        # TRON Networks (CAIP-2 format)
-        "tron:728126428": {  # mainnet
+        # TRON Networks
+        "tron:mainnet": {
             "USDT": TokenInfo(
                 address="TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
                 decimals=6,
@@ -68,7 +68,7 @@ class TokenRegistry:
                 symbol="TRX",
             ),
         },
-        "tron:2494104990": {  # shasta
+        "tron:shasta": {
             "USDT": TokenInfo(
                 address="TG3XXyExBkPp9nzdajDZsozEu4BkaSJozs",
                 decimals=6,
@@ -82,7 +82,7 @@ class TokenRegistry:
                 symbol="TRX",
             ),
         },
-        "tron:3448148188": {  # nile
+        "tron:nile": {
             "USDT": TokenInfo(
                 address="TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
                 decimals=6,

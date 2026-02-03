@@ -21,11 +21,10 @@ def mock_evm_private_key():
 def mock_tron_payment_requirements():
     """用于测试的模拟 TRON 支付要求"""
     from x402.types import PaymentRequirements
-    from x402.config import NetworkConfig
 
     return PaymentRequirements(
         scheme="exact",
-        network=NetworkConfig.TRON_SHASTA,
+        network="tron:shasta",
         amount="1000000",
         asset="TTestUSDTAddress",
         payTo="TTestMerchantAddress",

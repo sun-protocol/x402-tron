@@ -45,10 +45,9 @@ def test_payment_permit_creation():
 
 def test_payment_requirements_creation():
     """测试 PaymentRequirements 模型创建"""
-    from x402.config import NetworkConfig
     requirements = PaymentRequirements(
         scheme="exact",
-        network=NetworkConfig.TRON_SHASTA,
+        network="tron:shasta",
         amount="1000000",
         asset="TTestUSDTAddress",
         payTo="TTestMerchantAddress",
@@ -56,8 +55,7 @@ def test_payment_requirements_creation():
     )
 
     assert requirements.scheme == "exact"
-    from x402.config import NetworkConfig
-    assert requirements.network == NetworkConfig.TRON_SHASTA
+    assert requirements.network == "tron:shasta"
     assert requirements.amount == "1000000"
 
 

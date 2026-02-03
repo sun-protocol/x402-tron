@@ -271,15 +271,7 @@ def get_verifier_for_network(network: str, rpc_url: str | None = None) -> BaseTr
     """
     if network.startswith("tron:"):
         from x402.utils.tron_verification import TronTransactionVerifier
-        from x402.config import NetworkConfig
-        
-        # Map CAIP-2 chain ID to tronpy network name
-        network_map = {
-            NetworkConfig.TRON_MAINNET: "mainnet",
-            NetworkConfig.TRON_SHASTA: "shasta",
-            NetworkConfig.TRON_NILE: "nile",
-        }
-        tron_network = network_map.get(network, "nile")
+        tron_network = network.split(":")[1] if ":" in network else "nile"
         return TronTransactionVerifier(network=tron_network)
     
     raise ValueError(f"No transaction verifier available for network: {network}")

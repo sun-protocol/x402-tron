@@ -63,13 +63,7 @@ ENV_VALID, ENV_ISSUES = validate_env_config(ENV_CONFIG)
 # Network Configuration
 # =============================================================================
 
-# Import centralized network config
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "python" / "x402" / "src"))
-from x402.config import NetworkConfig
-
-TRON_NETWORK = NetworkConfig.TRON_NILE
+TRON_NETWORK = "tron:nile"
 TRON_PRIVATE_KEY = os.getenv("TRON_PRIVATE_KEY", "")
 USDT_TOKEN_ADDRESS = os.getenv(
     "USDT_TOKEN_ADDRESS", "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"

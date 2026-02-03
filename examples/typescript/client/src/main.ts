@@ -22,7 +22,7 @@ const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, '../../../../.env') });
 
 const TRON_PRIVATE_KEY = process.env.TRON_PRIVATE_KEY || '';
-const TRON_NETWORK = 'tron:3448148188';  // nile (CAIP-2 format)
+const TRON_NETWORK = 'tron:nile';
 const TRON_FULL_HOST = 'https://nile.trongrid.io';
 const RESOURCE_SERVER_URL = 'http://localhost:8000';
 const ENDPOINT_PATH = '/protected';

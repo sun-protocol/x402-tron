@@ -84,7 +84,7 @@ Register a payment mechanism for a network pattern.
 
 ```typescript
 x402Client.register('tron:*', new UptoTronClientMechanism(signer));
-x402Client.register('tron:3448148188', new UptoTronClientMechanism(nileSigner));  // nile
+x402Client.register('tron:nile', new UptoTronClientMechanism(nileSigner));
 ```
 
 ##### `selectPaymentRequirements(accepts: PaymentRequirements[], filters?: PaymentRequirementsFilter): PaymentRequirements`
@@ -93,7 +93,7 @@ Select payment requirements from available options.
 
 ```typescript
 const selected = x402Client.selectPaymentRequirements(accepts, {
-  network: 'tron:3448148188',  // nile (CAIP-2 format)
+  network: 'tron:nile',
   maxAmount: '1000000',
 });
 ```
@@ -180,7 +180,7 @@ const address = signer.getAddress(); // "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"
 Check current token allowance for the payment permit contract.
 
 ```typescript
-const allowance = await signer.checkAllowance(tokenAddress, BigInt(1000000), 'tron:3448148188');  // nile
+const allowance = await signer.checkAllowance(tokenAddress, BigInt(1000000), 'tron:nile');
 ```
 
 ##### `ensureAllowance(token: string, amount: bigint, network: string, mode?: 'auto' | 'interactive' | 'skip'): Promise<boolean>`
@@ -188,7 +188,7 @@ const allowance = await signer.checkAllowance(tokenAddress, BigInt(1000000), 'tr
 Ensure sufficient token allowance, approving if necessary.
 
 ```typescript
-await signer.ensureAllowance(tokenAddress, BigInt(1000000), 'tron:3448148188', 'auto');  // nile
+await signer.ensureAllowance(tokenAddress, BigInt(1000000), 'tron:nile', 'auto');
 ```
 
 ### UptoTronClientMechanism
@@ -296,18 +296,18 @@ const response = await client.get('https://api.example.com/premium-content');
 ### Multiple Networks
 
 ```typescript
-// Support multiple TRON networks (CAIP-2 format)
+// Support multiple TRON networks
 const nileClient = new X402Client()
-  .register('tron:3448148188', new UptoTronClientMechanism(nileSigner))  // nile
-  .register('tron:2494104990', new UptoTronClientMechanism(shastaSigner))  // shasta
-  .register('tron:728126428', new UptoTronClientMechanism(mainnetSigner));  // mainnet
+  .register('tron:nile', new UptoTronClientMechanism(nileSigner))
+  .register('tron:shasta', new UptoTronClientMechanism(shastaSigner))
+  .register('tron:mainnet', new UptoTronClientMechanism(mainnetSigner));
 ```
 
 ## Supported Networks
 
-- **TRON Mainnet** - `tron:728126428` (CAIP-2 format)
-- **TRON Shasta Testnet** - `tron:2494104990` (CAIP-2 format)
-- **TRON Nile Testnet** - `tron:3448148188` (CAIP-2 format)
+- **TRON Mainnet** - `tron:mainnet`
+- **TRON Shasta Testnet** - `tron:shasta`
+- **TRON Nile Testnet** - `tron:nile`
 
 ## Payment Schemes
 
@@ -343,7 +343,7 @@ npm i tronweb@latest
 Ensure you've registered a mechanism for the network:
 
 ```typescript
-x402Client.register('tron:3448148188', new UptoTronClientMechanism(signer));  // nile
+x402Client.register('tron:nile', new UptoTronClientMechanism(signer));
 ```
 
 ### "Insufficient allowance"

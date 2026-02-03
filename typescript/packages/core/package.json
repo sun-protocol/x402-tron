@@ -1,0 +1,52 @@
+{
+  "name": "@x402-tron/core",
+  "version": "0.1.0-beta.1",
+  "description": "x402 Core Client SDK",
+  "homepage": "https://github.com/open-aibank/x402-tron#readme",
+  "bugs": {
+    "url": "https://github.com/open-aibank/x402-tron/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-aibank/x402-tron.git",
+    "directory": "typescript/packages/core"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {},
+  "keywords": [
+    "x402",
+    "payment",
+    "blockchain"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
