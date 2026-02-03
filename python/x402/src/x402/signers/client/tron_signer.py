@@ -194,13 +194,15 @@ class TronClientSigner(ClientSigner):
         try:
             from tronpy.keys import PrivateKey
             spender = self._get_spender_address(network)
-            logger.info(f"Approving spender={spender} for amount={amount}")
+            # Use maxUint160 (2^160 - 1) to avoid repeated approvals
+            max_uint160 = (2 ** 160) - 1
+            logger.info(f"Approving spender={spender} for amount={max_uint160} (maxUint160)")
             contract = client.get_contract(token)
             contract.abi = ERC20_ABI
             txn = (
                 contract.functions.approve(
                     spender,
-                    amount,
+                    max_uint160,
                 )
                 .with_owner(self._address)
                 .fee_limit(100_000_000)

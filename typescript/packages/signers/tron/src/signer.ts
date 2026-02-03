@@ -157,6 +157,9 @@ export class TronClientSigner implements ClientSigner {
     const spender = getPaymentPermitAddress(`tron:${this.network}`);
     const spenderHex = toEvmHex(spender);
     
+    // Use maxUint160 (2^160 - 1) to avoid repeated approvals
+    const maxUint160 = (BigInt(2) ** BigInt(160)) - BigInt(1);
+    
     try {
       // Build approve transaction
       const tx = await this.tronWeb.transactionBuilder.triggerSmartContract(
@@ -168,7 +171,7 @@ export class TronClientSigner implements ClientSigner {
         },
         [
           { type: 'address', value: spenderHex },
-          { type: 'uint256', value: amount.toString() },
+          { type: 'uint256', value: maxUint160.toString() },
         ],
         this.address
       );
