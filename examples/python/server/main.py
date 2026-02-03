@@ -12,6 +12,7 @@ from x402.server import X402Server
 from x402.fastapi import x402_protected
 from x402.facilitator import FacilitatorClient
 from x402.config import NetworkConfig
+from x402.tokens import TokenRegistry
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -68,6 +69,17 @@ print(f"Server Configuration:")
 print(f"  Network: {NetworkConfig.TRON_NILE}")
 print(f"  Pay To: {PAY_TO_ADDRESS}")
 print(f"  Facilitator URL: {FACILITATOR_URL}")
+
+registered_networks = sorted(server._mechanisms.keys())
+print("\nRegistered networks and tokens:")
+for net in registered_networks:
+    tokens = TokenRegistry.get_network_tokens(net)
+    print(f"  {net}:")
+    if not tokens:
+        print("    (no tokens)")
+        continue
+    for symbol, info in tokens.items():
+        print(f"    {symbol}: {info.address} (decimals={info.decimals})")
 
 @app.get("/")
 async def root():

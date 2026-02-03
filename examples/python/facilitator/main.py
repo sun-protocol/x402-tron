@@ -20,6 +20,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "python" / "
 from x402.logging_config import setup_logging
 from x402.mechanisms.facilitator import UptoTronFacilitatorMechanism
 from x402.signers.facilitator import TronFacilitatorSigner
+from x402.config import NetworkConfig
+from x402.tokens import TokenRegistry
 from x402.types import (
     PaymentPayload,
     PaymentRequirements,
@@ -97,6 +99,16 @@ print(f"Facilitator initialized:")
 print(f"  Address: {facilitator_address}")
 print(f"  Network: {TRON_NETWORK}")
 print(f"  Base Fee: {BASE_FEE}")
+
+registered_network = f"tron:{TRON_NETWORK}"
+print("\nRegistered network and tokens:")
+tokens = TokenRegistry.get_network_tokens(registered_network)
+print(f"  {registered_network}:")
+if not tokens:
+    print("    (no tokens)")
+else:
+    for symbol, info in tokens.items():
+        print(f"    {symbol}: {info.address} (decimals={info.decimals})")
 
 
 @app.get("/")

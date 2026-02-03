@@ -42,7 +42,9 @@ async def main():
     signer = TronClientSigner.from_private_key(TRON_PRIVATE_KEY, network=network)
     print(f"  Client Address: {signer.get_address()}")
     
-    x402_client = X402Client().register("tron:*", UptoTronClientMechanism(signer))
+    registered_network = TRON_NETWORK
+    x402_client = X402Client().register(registered_network, UptoTronClientMechanism(signer))
+    print(f"  Registered mechanism: {registered_network}")
     
     async with httpx.AsyncClient(timeout=60.0) as http_client:
         client = X402HttpClient(http_client, x402_client)
