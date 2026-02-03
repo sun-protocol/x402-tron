@@ -5,9 +5,6 @@
   "workspaces": [
     "typescript/packages/*"
   ],
-  "bin": {
-    "x402-tools": "./typescript/packages/tools/dist/cli.js"
-  },
   "scripts": {
     "prepare": "npm run -ws --if-present build"
   },
