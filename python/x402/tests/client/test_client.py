@@ -3,8 +3,8 @@ X402Client 测试
 """
 
 import pytest
-from tvm_x402.clients import X402Client
-from tvm_x402.types import PaymentRequirements
+from x402.clients import X402Client
+from x402.types import PaymentRequirements
 
 
 class MockClientMechanism:

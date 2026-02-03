@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.21.0"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -58,7 +58,7 @@ Documentation = "https://x402.gitbook.io/x402"
 Repository = "https://github.com/x402/x402"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tvm_x402"]
+packages = ["src/x402"]
 
 [tool.ruff]
 line-length = 100

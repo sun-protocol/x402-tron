@@ -3,7 +3,7 @@ x402 类型测试
 """
 
 import pytest
-from tvm_x402.types import (
+from x402.types import (
     PaymentPermit,
     PermitMeta,
     Payment,

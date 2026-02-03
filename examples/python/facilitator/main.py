@@ -17,10 +17,10 @@ import uvicorn
 # Add x402 to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "python" / "x402" / "src"))
 
-from tvm_x402.logging_config import setup_logging
-from tvm_x402.mechanisms.facilitator import UptoTronFacilitatorMechanism
-from tvm_x402.signers.facilitator import TronFacilitatorSigner
-from tvm_x402.types import (
+from x402.logging_config import setup_logging
+from x402.mechanisms.facilitator import UptoTronFacilitatorMechanism
+from x402.signers.facilitator import TronFacilitatorSigner
+from x402.types import (
     PaymentPayload,
     PaymentRequirements,
     VerifyResponse,
@@ -114,7 +114,7 @@ async def root():
 @app.get("/supported")
 async def supported():
     """Get supported capabilities"""
-    from tvm_x402.types import SupportedResponse, SupportedKind, SupportedFee
+    from x402.types import SupportedResponse, SupportedKind, SupportedFee
     
     return SupportedResponse(
         kinds=[

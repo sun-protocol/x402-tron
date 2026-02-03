@@ -1,7 +1,7 @@
 """Tests for payment ID generation utilities"""
 
 import pytest
-from tvm_x402.utils import generate_payment_id
+from x402.utils import generate_payment_id
 
 
 def test_generate_payment_id_format():

@@ -7,8 +7,8 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from tvm_x402.mechanisms.client.tron_upto import UptoTronClientMechanism
-from tvm_x402.types import PaymentRequirements, PaymentRequirementsExtra, FeeInfo
+from x402.mechanisms.client.tron_upto import UptoTronClientMechanism
+from x402.types import PaymentRequirements, PaymentRequirementsExtra, FeeInfo
 
 
 @pytest.fixture

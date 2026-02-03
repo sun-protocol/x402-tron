@@ -34,7 +34,7 @@ fi
 source "../../../.venv/bin/activate"
 
 # Install dependencies if needed
-if ! python -c "import tvm_x402" 2>/dev/null; then
+if ! python -c "import x402" 2>/dev/null; then
     echo "Installing dependencies..."
     uv pip install -e ../../../python/x402
     uv pip install -r requirements.txt

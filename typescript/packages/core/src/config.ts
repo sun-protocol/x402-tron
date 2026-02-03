@@ -18,11 +18,8 @@ export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
   'tron:nile': 'TCR6EaRtLRYjWPr7YWHqt4uL81rfevtE8p',
 };
 
-/** Zero addresses for different network types */
-export const ZERO_ADDRESSES = {
-  evm: '0x0000000000000000000000000000000000000000',
-  tron: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
-} as const;
+/** Zero address for TRON */
+export const TRON_ZERO_ADDRESS = 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb';
 
 /**
  * Get chain ID for network
@@ -39,7 +36,7 @@ export function getChainId(network: string): number {
  * Get PaymentPermit contract address for network
  */
 export function getPaymentPermitAddress(network: string): string {
-  return PAYMENT_PERMIT_ADDRESSES[network] ?? ZERO_ADDRESSES.evm;
+  return PAYMENT_PERMIT_ADDRESSES[network] ?? TRON_ZERO_ADDRESS;
 }
 
 /**
@@ -50,8 +47,11 @@ export function isTronNetwork(network: string): boolean {
 }
 
 /**
- * Get zero address for network type
+ * Get zero address for TRON network
  */
 export function getZeroAddress(network: string): string {
-  return isTronNetwork(network) ? ZERO_ADDRESSES.tron : ZERO_ADDRESSES.evm;
+  if (!isTronNetwork(network)) {
+    throw new Error(`Unsupported network: ${network}`);
+  }
+  return TRON_ZERO_ADDRESS;
 }

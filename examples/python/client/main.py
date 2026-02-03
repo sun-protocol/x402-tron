@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 import httpx
 import logging
 
-from tvm_x402.clients import X402Client, X402HttpClient
-from tvm_x402.mechanisms.client import UptoTronClientMechanism
-from tvm_x402.signers.client import TronClientSigner
+from x402.clients import X402Client, X402HttpClient
+from x402.mechanisms.client import UptoTronClientMechanism
+from x402.signers.client import TronClientSigner
 
 # Enable detailed logging
 logging.basicConfig(
@@ -58,8 +58,8 @@ async def main():
             # Parse payment response if present
             payment_response = response.headers.get('payment-response')
             if payment_response:
-                from tvm_x402.encoding import decode_payment_payload
-                from tvm_x402.types import SettleResponse
+                from x402.encoding import decode_payment_payload
+                from x402.types import SettleResponse
                 settle_response = decode_payment_payload(payment_response, SettleResponse)
                 print(f"\n📋 Payment Response:")
                 print(f"  Success: {settle_response.success}")

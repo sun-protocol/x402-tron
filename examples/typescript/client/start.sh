@@ -29,15 +29,21 @@ if ! grep -q "TRON_PRIVATE_KEY" "$REPO_ROOT/.env"; then
   exit 1
 fi
 
-# Install workspace dependencies and build TypeScript packages
-echo "📦 Installing workspace dependencies and building packages..."
-echo ""
-cd "$TYPESCRIPT_DIR"
-pnpm install
-pnpm build
-echo ""
-echo "✅ TypeScript packages built and dependencies linked"
-echo ""
+# Build TypeScript packages if needed (workspace mode)
+# SKIP_BUILD=1 to skip, FORCE_BUILD=1 to force rebuild
+if [ "${SKIP_BUILD:-0}" != "1" ]; then
+  cd "$TYPESCRIPT_DIR"
+  
+  if [ "${FORCE_BUILD:-0}" = "1" ] || [ ! -d "$TYPESCRIPT_DIR/packages/core/dist" ]; then
+    echo "📦 Building TypeScript packages..."
+    pnpm install --prefer-offline
+    pnpm -r build
+    echo "✅ Packages built"
+  else
+    echo "✅ Using existing build (FORCE_BUILD=1 to rebuild, SKIP_BUILD=1 to skip)"
+  fi
+  echo ""
+fi
 
 echo "▶️  Running client..."
 echo ""

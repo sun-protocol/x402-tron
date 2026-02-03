@@ -11,12 +11,12 @@ if command -v x402-tools >/dev/null 2>&1; then
   exit 0
 fi
 
-REPO_ROOT="${TVM_X402_REPO_ROOT:-/Users/wdk/tron/tvm-x402}"
+REPO_ROOT="${X402_REPO_ROOT:-/Users/wdk/tron/tvm-x402}"
 CLI_PATH="${REPO_ROOT}/typescript/packages/tools/dist/cli.js"
 
 if [ ! -f "${CLI_PATH}" ]; then
   echo "x402-tools not found in PATH and CLI not found at ${CLI_PATH}" >&2
-  echo "Set TVM_X402_REPO_ROOT to your tvm-x402 checkout and run pnpm -r build" >&2
+  echo "Set X402_REPO_ROOT to your tvm-x402 checkout and run pnpm -r build" >&2
   exit 1
 fi
 

@@ -127,8 +127,6 @@ export interface PaymentPayload {
   payload: {
     /** Buyer's EIP-712 signature */
     signature: string;
-    /** Merchant signature (for PAYMENT_AND_DELIVERY) */
-    merchantSignature?: string;
     /** Payment permit */
     paymentPermit: PaymentPermit;
   };

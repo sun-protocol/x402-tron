@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from tvm_x402.server import X402Server
-from tvm_x402.fastapi import x402_protected
-from tvm_x402.facilitator import FacilitatorClient
-from tvm_x402.config import NetworkConfig
+from x402.server import X402Server
+from x402.fastapi import x402_protected
+from x402.facilitator import FacilitatorClient
+from x402.config import NetworkConfig
 
 load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
@@ -84,20 +84,6 @@ async def root():
 )
 async def protected_endpoint(request: Request):
     """Serve the protected image directly"""
-    if not PROTECTED_IMAGE_PATH.exists():
-        return {"error": "Protected image not found"}
-    return FileResponse(PROTECTED_IMAGE_PATH, media_type="image/png")
-
-@app.get("/protected-delivery")
-@x402_protected(
-    server=server,
-    price="1 USDT",
-    network=NetworkConfig.TRON_NILE,
-    pay_to=MERCHANT_CONTRACT_ADDRESS,
-    delivery_mode=True,  # Enable delivery mode
-)
-async def protected_delivery_endpoint(request: Request):
-    """Serve protected content with delivery mode (PAYMENT_AND_DELIVERY)"""
     if not PROTECTED_IMAGE_PATH.exists():
         return {"error": "Protected image not found"}
     return FileResponse(PROTECTED_IMAGE_PATH, media_type="image/png")

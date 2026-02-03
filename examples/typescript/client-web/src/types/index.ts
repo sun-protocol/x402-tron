@@ -1,5 +1,5 @@
 /** Delivery kind type */
-export type DeliveryKind = 'PAYMENT_ONLY' | 'PAYMENT_AND_DELIVERY';
+export type DeliveryKind = 'PAYMENT_ONLY';
 
 /** Payment requirements from server */
 export interface PaymentRequirements {
@@ -23,7 +23,7 @@ export interface PaymentRequirements {
 /** Payment permit context */
 export interface PaymentPermitContext {
   meta: {
-    kind: 'PAYMENT_ONLY' | 'PAYMENT_AND_DELIVERY';
+    kind: 'PAYMENT_ONLY';
     paymentId: string;
     nonce: string;
     validAfter: number;
@@ -55,7 +55,7 @@ export interface PaymentRequired {
 /** Payment permit structure */
 export interface PaymentPermit {
   meta: {
-    kind: 'PAYMENT_ONLY' | 'PAYMENT_AND_DELIVERY';
+    kind: 'PAYMENT_ONLY';
     paymentId: string;
     nonce: string;
     validAfter: number;

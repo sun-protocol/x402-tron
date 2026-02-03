@@ -1,7 +1,7 @@
 import type { PaymentRequirements, PaymentPayload, PaymentPermit, PaymentPermitContext } from '../types';
 
 /** Delivery kind type */
-type DeliveryKind = 'PAYMENT_ONLY' | 'PAYMENT_AND_DELIVERY';
+type DeliveryKind = 'PAYMENT_ONLY';
 
 /** TronWeb instance type (injected by TronLink) */
 interface TronWebInstance {
@@ -26,7 +26,6 @@ interface TronWebInstance {
 /** Kind mapping for EIP-712 (string to numeric) */
 const KIND_MAP: Record<DeliveryKind, number> = {
   PAYMENT_ONLY: 0,
-  PAYMENT_AND_DELIVERY: 1,
 };
 
 /** Base58 alphabet for TRON addresses */

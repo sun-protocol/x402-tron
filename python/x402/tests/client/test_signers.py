@@ -3,7 +3,7 @@
 """
 
 import pytest
-from tvm_x402.signers.client import TronClientSigner, EvmClientSigner
+from x402.signers.client import TronClientSigner, EvmClientSigner
 
 
 def test_tron_signer_from_private_key():

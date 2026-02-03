@@ -58,7 +58,6 @@ export const PAYMENT_PERMIT_TYPES = {
 /** Kind mapping for EIP-712 (string to numeric) */
 export const KIND_MAP: Record<DeliveryKind, number> = {
   PAYMENT_ONLY: 0,
-  PAYMENT_AND_DELIVERY: 1,
 };
 
 /** ERC20 ABI for allowance/approve calls */

@@ -18,7 +18,7 @@ import {
   getChainId,
   getPaymentPermitAddress,
   TronAddressConverter,
-  ZERO_ADDRESSES,
+  TRON_ZERO_ADDRESS,
   paymentIdToBytes,
 } from '@tvm-x402/core';
 
@@ -48,7 +48,7 @@ export class UptoTronClientMechanism implements ClientMechanism {
     }
 
     const buyerAddress = this.signer.getAddress();
-    const zeroAddress = ZERO_ADDRESSES.tron; // Use TRON zero address for consistency with Python
+    const zeroAddress = TRON_ZERO_ADDRESS; // Use TRON zero address for consistency with Python
 
     const permit: PaymentPermit = {
       meta: {
