@@ -47,7 +47,9 @@ app.add_middleware(
 )
 
 # Configuration
-PAY_TO_ADDRESS = os.getenv("PAY_TO_ADDRESS") or "TDhj8uX7SVJwvhCUrMaiQHqPgrB6wRb3eG"
+PAY_TO_ADDRESS = os.getenv("PAY_TO_ADDRESS")
+if not PAY_TO_ADDRESS:
+    raise ValueError("PAY_TO_ADDRESS environment variable is required")
 # Hardcoded server configuration
 FACILITATOR_URL = "http://localhost:8001"
 SERVER_HOST = "0.0.0.0"
