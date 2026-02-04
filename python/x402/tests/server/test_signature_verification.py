@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from x402.server.x402_server import X402Server
-from x402.types import (
+from x402_tron.server.x402_server import X402Server
+from x402_tron.types import (
     Delivery,
     Fee,
     Payment,

@@ -1,4 +1,4 @@
-from x402.types import (
+from x402_tron.types import (
     Delivery,
     Fee,
     Payment,

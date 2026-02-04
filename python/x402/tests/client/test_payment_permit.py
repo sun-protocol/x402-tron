@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from x402.mechanisms.client.tron_upto import UptoTronClientMechanism
-from x402.types import FeeInfo, PaymentRequirements, PaymentRequirementsExtra
+from x402_tron.mechanisms.client.tron_upto import UptoTronClientMechanism
+from x402_tron.types import FeeInfo, PaymentRequirements, PaymentRequirementsExtra
 
 
 @pytest.fixture
