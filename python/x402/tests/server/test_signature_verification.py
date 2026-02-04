@@ -2,19 +2,20 @@
 Tests for server-side signature verification
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from x402_tron.server.x402_server import X402Server
 from x402_tron.types import (
+    Delivery,
+    Fee,
+    Payment,
     PaymentPayload,
     PaymentPayloadData,
     PaymentPermit,
-    PermitMeta,
-    Payment,
-    Fee,
-    Delivery,
     PaymentRequirements,
+    PermitMeta,
     VerifyResponse,
 )
 
@@ -70,15 +71,17 @@ def sample_requirements():
 
 
 @pytest.mark.anyio
-async def test_verify_payment_with_invalid_signature(mock_server, sample_permit, sample_requirements):
+async def test_verify_payment_with_invalid_signature(
+    mock_server, sample_permit, sample_requirements
+):
     """Test that server rejects invalid signatures"""
     # Create mock mechanism that returns False for signature verification
     mock_mechanism = MagicMock()
     mock_mechanism.verify_signature = AsyncMock(return_value=False)
-    
+
     # Register mock mechanism
     mock_server.register("tron:shasta", mock_mechanism)
-    
+
     # Create payload with invalid signature
     payload = PaymentPayload(
         x402Version=2,
@@ -88,14 +91,14 @@ async def test_verify_payment_with_invalid_signature(mock_server, sample_permit,
         ),
         accepted=sample_requirements,
     )
-    
+
     # Verify payment
     result = await mock_server.verify_payment(payload, sample_requirements)
-    
+
     # Should fail with invalid_signature_server
     assert result.is_valid is False
     assert result.invalid_reason == "invalid_signature_server"
-    
+
     # Verify that signature verification was called
     mock_mechanism.verify_signature.assert_called_once()
 
@@ -106,16 +109,16 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
     # Create mock mechanism that returns True for signature verification
     mock_mechanism = MagicMock()
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
-    
+
     # Register mock mechanism
     mock_server.register("tron:shasta", mock_mechanism)
-    
+
     # Create mock facilitator
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
     mock_server.add_facilitator(mock_facilitator)
-    
+
     # Create payload with valid signature
     payload = PaymentPayload(
         x402Version=2,
@@ -125,13 +128,13 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
         ),
         accepted=sample_requirements,
     )
-    
+
     # Verify payment
     result = await mock_server.verify_payment(payload, sample_requirements)
-    
+
     # Should succeed
     assert result.is_valid is True
-    
+
     # Verify that both server and facilitator verification were called
     mock_mechanism.verify_signature.assert_called_once()
     mock_facilitator.verify.assert_called_once()
@@ -141,13 +144,13 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
 async def test_verify_payment_without_mechanism(mock_server, sample_permit, sample_requirements):
     """Test that verification continues even without registered mechanism"""
     # Don't register any mechanism
-    
+
     # Create mock facilitator
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
     mock_server.add_facilitator(mock_facilitator)
-    
+
     # Create payload
     payload = PaymentPayload(
         x402Version=2,
@@ -157,10 +160,10 @@ async def test_verify_payment_without_mechanism(mock_server, sample_permit, samp
         ),
         accepted=sample_requirements,
     )
-    
+
     # Verify payment - should skip server verification and delegate to facilitator
     result = await mock_server.verify_payment(payload, sample_requirements)
-    
+
     # Should succeed (facilitator returns True)
     assert result.is_valid is True
     mock_facilitator.verify.assert_called_once()
@@ -173,11 +176,11 @@ async def test_verify_payment_payload_mismatch(mock_server, sample_permit, sampl
     mock_mechanism = MagicMock()
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
     mock_server.register("tron:shasta", mock_mechanism)
-    
+
     # Modify permit to not match requirements
     mismatched_permit = sample_permit.model_copy(deep=True)
     mismatched_permit.payment.pay_to = "TDifferentAddress111111111111111111"
-    
+
     payload = PaymentPayload(
         x402Version=2,
         payload=PaymentPayloadData(
@@ -186,13 +189,13 @@ async def test_verify_payment_payload_mismatch(mock_server, sample_permit, sampl
         ),
         accepted=sample_requirements,
     )
-    
+
     # Verify payment
     result = await mock_server.verify_payment(payload, sample_requirements)
-    
+
     # Should fail with payload_mismatch before signature verification
     assert result.is_valid is False
     assert result.invalid_reason == "payload_mismatch"
-    
+
     # Signature verification should not be called
     mock_mechanism.verify_signature.assert_not_called()

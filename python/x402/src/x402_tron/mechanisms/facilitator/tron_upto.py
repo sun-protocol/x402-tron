@@ -8,7 +8,7 @@ from x402_tron.abi import PAYMENT_PERMIT_ABI, get_abi_json, get_payment_permit_e
 from x402_tron.address import AddressConverter, TronAddressConverter
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.facilitator.base_upto import BaseUptoFacilitatorMechanism
-from x402_tron.types import PaymentPermit, PaymentRequirements, KIND_MAP
+from x402_tron.types import KIND_MAP, PaymentPermit, PaymentRequirements
 
 
 class UptoTronFacilitatorMechanism(BaseUptoFacilitatorMechanism):
@@ -31,27 +31,31 @@ class UptoTronFacilitatorMechanism(BaseUptoFacilitatorMechanism):
         # Convert permit to EIP-712 message format WITHOUT converting paymentId to bytes
         # TronWeb signs with hex strings for bytes16 fields
         message = permit.model_dump(by_alias=True)
-        
+
         # Convert kind string to numeric value
         message["meta"]["kind"] = KIND_MAP.get(message["meta"]["kind"], 0)
-        
+
         # Convert string values to integers for EIP-712 compatibility
         message["meta"]["nonce"] = int(message["meta"]["nonce"])
         message["payment"]["maxPayAmount"] = int(message["payment"]["maxPayAmount"])
         message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
         message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
         message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
-        
+
         # Keep paymentId as hex string (TronWeb format) - do NOT convert to bytes
         # message["meta"]["paymentId"] remains as "0x..." string
-        
+
         # Convert addresses to EVM format
         message = converter.convert_message_addresses(message)
 
         # Debug logging
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.info(f"[VERIFY TRON] Domain: name=PaymentPermit, chainId={chain_id}, verifyingContract={converter.to_evm_format(permit_address)}")
+        logger.info(
+            f"[VERIFY TRON] Domain: name=PaymentPermit, chainId={chain_id}, "
+            f"verifyingContract={converter.to_evm_format(permit_address)}"
+        )
         logger.info(f"[VERIFY TRON] Message: {message}")
         logger.info(f"[VERIFY TRON] Signature: {signature}")
         logger.info(f"[VERIFY TRON] Buyer address: {permit.buyer}")
@@ -84,7 +88,9 @@ class UptoTronFacilitatorMechanism(BaseUptoFacilitatorMechanism):
         buyer = self._address_converter.normalize(permit.buyer)
 
         args = [permit_tuple, transfer_details, buyer, sig_bytes]
-        self._logger.info(f"Calling permitTransferFrom with {len(args)} arguments (PAYMENT_ONLY mode)")
+        self._logger.info(
+            f"Calling permitTransferFrom with {len(args)} arguments (PAYMENT_ONLY mode)"
+        )
 
         return await self._signer.write_contract(
             contract_address=contract_address,
@@ -92,4 +98,3 @@ class UptoTronFacilitatorMechanism(BaseUptoFacilitatorMechanism):
             method="permitTransferFrom",
             args=args,
         )
-

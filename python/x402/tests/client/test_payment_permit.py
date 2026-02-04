@@ -4,11 +4,12 @@ PaymentPermit 合约客户端测试 - Tron Nile 测试网
 """
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from x402_tron.mechanisms.client.tron_upto import UptoTronClientMechanism
-from x402_tron.types import PaymentRequirements, PaymentRequirementsExtra, FeeInfo
+from x402_tron.types import FeeInfo, PaymentRequirements, PaymentRequirementsExtra
 
 
 @pytest.fixture
@@ -37,6 +38,7 @@ def nile_requirements():
 @pytest.fixture
 def permit_context():
     import time
+
     return {
         "paymentPermitContext": {
             "meta": {

@@ -7,21 +7,20 @@ Extracts common logic from EVM and TRON implementations.
 import logging
 import time
 from abc import abstractmethod
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from x402_tron.abi import PAYMENT_PERMIT_ABI, get_abi_json, get_payment_permit_eip712_types
+from x402_tron.abi import get_payment_permit_eip712_types
 from x402_tron.address import AddressConverter
 from x402_tron.config import NetworkConfig
-from x402_tron.exceptions import PermitValidationError
 from x402_tron.mechanisms.facilitator.base import FacilitatorMechanism
 from x402_tron.types import (
+    KIND_MAP,
+    FeeInfo,
+    FeeQuoteResponse,
     PaymentPayload,
     PaymentRequirements,
-    VerifyResponse,
     SettleResponse,
-    FeeQuoteResponse,
-    FeeInfo,
-    KIND_MAP,
+    VerifyResponse,
 )
 from x402_tron.utils import convert_permit_to_eip712_message, payment_id_to_bytes
 
@@ -36,7 +35,7 @@ FEE_QUOTE_EXPIRY_SECONDS = 300
 
 class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
     """Base class for upto payment scheme facilitator mechanisms.
-    
+
     Subclasses only need to implement _get_address_converter() method.
     """
 
@@ -144,14 +143,14 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
 
         # Always use payment only settlement
         self._logger.info("Settling payment only via PaymentPermit contract...")
-        self._logger.info(f"Settlement details:")
+        self._logger.info("Settlement details:")
         self._logger.info(f"  - buyer: {permit.buyer}")
         self._logger.info(f"  - payTo: {permit.payment.pay_to}")
         self._logger.info(f"  - payToken: {permit.payment.pay_token}")
         self._logger.info(f"  - maxPayAmount: {permit.payment.max_pay_amount}")
         self._logger.info(f"  - feeTo: {permit.fee.fee_to}")
         self._logger.info(f"  - feeAmount: {permit.fee.fee_amount}")
-        
+
         tx_hash = await self._settle_payment_only(permit, signature, requirements)
 
         if tx_hash is None:
@@ -173,11 +172,9 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
         self._logger.info(f"Transaction confirmed: {receipt}")
 
         # Validate transaction status
-        tx_status = receipt.get('status', '').lower()
-        if tx_status == 'failed' or tx_status == '0' or tx_status == 0:
-            self._logger.error(
-                f"Transaction failed on-chain: txHash={tx_hash}, receipt={receipt}"
-            )
+        tx_status = receipt.get("status", "").lower()
+        if tx_status == "failed" or tx_status == "0" or tx_status == 0:
+            self._logger.error(f"Transaction failed on-chain: txHash={tx_hash}, receipt={receipt}")
             return SettleResponse(
                 success=False,
                 errorReason="transaction_failed_on_chain",
@@ -243,15 +240,19 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
 
         # Debug: log exact message being verified
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.info(f"[VERIFY] Domain: name=PaymentPermit, chainId={chain_id}, verifyingContract={converter.to_evm_format(permit_address)}")
+        logger.info(
+            f"[VERIFY] Domain: name=PaymentPermit, chainId={chain_id}, "
+            f"verifyingContract={converter.to_evm_format(permit_address)}"
+        )
         # Log paymentId as hex for comparison with TypeScript
         msg_copy = dict(message)
-        if 'meta' in msg_copy and 'paymentId' in msg_copy['meta']:
-            pid = msg_copy['meta']['paymentId']
+        if "meta" in msg_copy and "paymentId" in msg_copy["meta"]:
+            pid = msg_copy["meta"]["paymentId"]
             if isinstance(pid, bytes):
-                msg_copy['meta'] = dict(msg_copy['meta'])
-                msg_copy['meta']['paymentId'] = '0x' + pid.hex()
+                msg_copy["meta"] = dict(msg_copy["meta"])
+                msg_copy["meta"]["paymentId"] = "0x" + pid.hex()
         logger.info(f"[VERIFY] Message: {msg_copy}")
         logger.info(f"[VERIFY] Signature: {signature}")
         logger.info(f"[VERIFY] Buyer address: {permit.buyer}")
@@ -305,5 +306,9 @@ class BaseUptoFacilitatorMechanism(FacilitatorMechanism):
             caller,
             (pay_token, int(permit.payment.max_pay_amount), pay_to),
             (fee_to, int(permit.fee.fee_amount)),
-            (receive_token, int(permit.delivery.mini_receive_amount), int(permit.delivery.token_id)),
+            (
+                receive_token,
+                int(permit.delivery.mini_receive_amount),
+                int(permit.delivery.token_id),
+            ),
         )

@@ -6,23 +6,23 @@ Extracts common logic from EVM and TRON implementations.
 
 import logging
 from abc import abstractmethod
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from x402_tron.abi import get_payment_permit_eip712_types
 from x402_tron.address import AddressConverter
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.client.base import ClientMechanism
 from x402_tron.types import (
+    PAYMENT_ONLY,
+    Delivery,
+    Fee,
+    Payment,
     PaymentPayload,
     PaymentPayloadData,
     PaymentPermit,
     PaymentRequirements,
     PermitMeta,
-    Payment,
-    Fee,
-    Delivery,
     ResourceInfo,
-    PAYMENT_ONLY,
 )
 from x402_tron.utils import convert_permit_to_eip712_message
 
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 class BaseUptoClientMechanism(ClientMechanism):
     """Base class for upto payment scheme client mechanisms.
-    
+
     Subclasses only need to implement _get_address_converter() method.
     """
 
@@ -58,22 +58,24 @@ class BaseUptoClientMechanism(ClientMechanism):
         """Create payment payload with EIP-712 signature"""
         self._logger.info("=" * 60)
         self._logger.info(f"Creating payment payload for: {resource}")
-        
+
         # Log payment details
         self._logger.info(f"[PAYMENT] Token: {requirements.asset}")
         self._logger.info(f"[PAYMENT] From: {self._signer.get_address()}")
         self._logger.info(f"[PAYMENT] To: {requirements.pay_to}")
         self._logger.info(f"[PAYMENT] Amount: {requirements.amount}")
-        
+
         # Log fee details
         if requirements.extra and requirements.extra.fee:
             fee = requirements.extra.fee
             self._logger.info(f"[FEE] To: {fee.fee_to}")
             self._logger.info(f"[FEE] Amount: {fee.fee_amount}")
             total = int(requirements.amount) + int(fee.fee_amount)
-            self._logger.info(f"[TOTAL] {total} = {requirements.amount} (payment) + {fee.fee_amount} (fee)")
+            self._logger.info(
+                f"[TOTAL] {total} = {requirements.amount} (payment) + {fee.fee_amount} (fee)"
+            )
         else:
-            self._logger.info(f"[FEE] None")
+            self._logger.info("[FEE] None")
             self._logger.info(f"[TOTAL] {requirements.amount}")
 
         context = extensions.get("paymentPermitContext") if extensions else None
@@ -88,7 +90,7 @@ class BaseUptoClientMechanism(ClientMechanism):
         self._logger.info("Signing payment permit with EIP-712...")
         signature = await self._sign_permit(permit, requirements.network)
 
-        self._logger.info(f"Payment payload created successfully")
+        self._logger.info("Payment payload created successfully")
         self._logger.info("=" * 60)
         return PaymentPayload(
             x402Version=2,

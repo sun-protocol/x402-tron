@@ -8,16 +8,20 @@ import logging
 from abc import abstractmethod
 from typing import Any
 
-from x402_tron.abi import get_payment_permit_eip712_types, EIP712_DOMAIN_TYPE, PAYMENT_PERMIT_PRIMARY_TYPE
+from x402_tron.abi import (
+    EIP712_DOMAIN_TYPE,
+    PAYMENT_PERMIT_PRIMARY_TYPE,
+    get_payment_permit_eip712_types,
+)
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.server.base import ServerMechanism
 from x402_tron.tokens import TokenRegistry
-from x402_tron.types import PaymentRequirements, PaymentRequirementsExtra, KIND_MAP
+from x402_tron.types import KIND_MAP, PaymentRequirements, PaymentRequirementsExtra
 
 
 class BaseUptoServerMechanism(ServerMechanism):
     """Base class for upto payment scheme server mechanisms.
-    
+
     Subclasses only need to implement network prefix and address format validation.
     """
 
@@ -39,11 +43,11 @@ class BaseUptoServerMechanism(ServerMechanism):
 
     async def parse_price(self, price: str, network: str) -> dict[str, Any]:
         """Parse price string to asset amount.
-        
+
         Args:
             price: Price string (e.g., "100 USDC")
             network: Network identifier
-            
+
         Returns:
             Dict containing amount, asset, decimals, etc.
         """
@@ -101,99 +105,100 @@ class BaseUptoServerMechanism(ServerMechanism):
     ) -> bool:
         """
         Verify payment permit signature using EIP-712.
-        
+
         Args:
             permit: Payment permit to verify
             signature: Signature string
             network: Network identifier
-            
+
         Returns:
             True if signature is valid
         """
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data
-            
+
             permit_address = NetworkConfig.get_payment_permit_address(network)
             chain_id = NetworkConfig.get_chain_id(network)
-            
-            self._logger.info(f"[SERVER VERIFY] Starting signature verification")
+
+            self._logger.info("[SERVER VERIFY] Starting signature verification")
             self._logger.info(f"[SERVER VERIFY] Network: {network}, ChainId: {chain_id}")
             self._logger.info(f"[SERVER VERIFY] Permit address: {permit_address}")
             self._logger.info(f"[SERVER VERIFY] Buyer (original): {permit.buyer}")
-            
+
             # Convert permit to EIP-712 message format
             message = self._convert_permit_to_message(permit)
-            
+
             self._logger.info(f"[SERVER VERIFY] Buyer (converted): {message.get('buyer', 'N/A')}")
-            self._logger.info(f"[SERVER VERIFY] PaymentId: {message.get('meta', {}).get('paymentId', 'N/A')}")
-            
+            self._logger.info(
+                f"[SERVER VERIFY] PaymentId: {message.get('meta', {}).get('paymentId', 'N/A')}"
+            )
+
             # Build EIP-712 typed data
             full_types = {
                 "EIP712Domain": EIP712_DOMAIN_TYPE,
                 **get_payment_permit_eip712_types(),
             }
-            
+
             verifying_contract = self._get_verifying_contract(permit_address)
             domain = {
                 "name": "PaymentPermit",
                 "chainId": chain_id,
                 "verifyingContract": verifying_contract,
             }
-            
+
             self._logger.info(f"[SERVER VERIFY] Verifying contract: {verifying_contract}")
-            
+
             typed_data = {
                 "types": full_types,
                 "primaryType": PAYMENT_PERMIT_PRIMARY_TYPE,
                 "domain": domain,
                 "message": message,
             }
-            
+
             # Encode and verify signature
             signable = encode_typed_data(full_message=typed_data)
             sig_bytes = bytes.fromhex(signature[2:] if signature.startswith("0x") else signature)
             recovered = Account.recover_message(signable, signature=sig_bytes)
-            
+
             # Get expected signer address
             expected_address = self._get_expected_signer(permit.buyer)
-            
+
             self._logger.info(
                 f"[SERVER VERIFY] Expected signer: {expected_address}, "
                 f"Recovered: {recovered}, Match: {recovered.lower() == expected_address.lower()}"
             )
-            
+
             return recovered.lower() == expected_address.lower()
         except Exception as e:
             self._logger.error(f"[SERVER VERIFY] Signature verification failed: {e}", exc_info=True)
             return False
-    
+
     def _convert_permit_to_message(self, permit: Any) -> dict[str, Any]:
         """
         Convert permit to EIP-712 message format.
         Subclasses can override for chain-specific handling.
         """
-        from x402_tron.utils import payment_id_to_bytes
-        
+
         message = permit.model_dump(by_alias=True)
-        
+
         # Convert kind string to numeric value
         message["meta"]["kind"] = KIND_MAP.get(message["meta"]["kind"], 0)
-        
+
         # Convert string values to integers
         message["meta"]["nonce"] = int(message["meta"]["nonce"])
         message["payment"]["maxPayAmount"] = int(message["payment"]["maxPayAmount"])
         message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
         message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
         message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
-        
+
         # Convert paymentId to bytes for eth_account
         payment_id = message["meta"]["paymentId"]
-        if isinstance(payment_id, str) and payment_id.startswith('0x'):
+        if isinstance(payment_id, str) and payment_id.startswith("0x"):
             message["meta"]["paymentId"] = bytes.fromhex(payment_id[2:])
-        
+
         return message
-    
+
     @abstractmethod
     def _get_verifying_contract(self, permit_address: str) -> str:
         """
@@ -201,7 +206,7 @@ class BaseUptoServerMechanism(ServerMechanism):
         Subclasses must implement for chain-specific address format.
         """
         pass
-    
+
     @abstractmethod
     def _get_expected_signer(self, buyer_address: str) -> str:
         """

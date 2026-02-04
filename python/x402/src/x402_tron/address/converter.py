@@ -33,7 +33,9 @@ class AddressConverter(ABC):
         message["payment"]["payToken"] = self.to_evm_format(message["payment"]["payToken"])
         message["payment"]["payTo"] = self.to_evm_format(message["payment"]["payTo"])
         message["fee"]["feeTo"] = self.to_evm_format(message["fee"]["feeTo"])
-        message["delivery"]["receiveToken"] = self.to_evm_format(message["delivery"]["receiveToken"])
+        message["delivery"]["receiveToken"] = self.to_evm_format(
+            message["delivery"]["receiveToken"]
+        )
         return message
 
 

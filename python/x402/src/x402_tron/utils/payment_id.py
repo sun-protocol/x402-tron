@@ -11,7 +11,7 @@ import secrets
 def generate_payment_id() -> str:
     """
     Generate a random payment ID in hex format.
-    
+
     Returns:
         A 16-byte payment ID as a hex string with '0x' prefix.
         Example: "0x1234567890abcdef1234567890abcdef"

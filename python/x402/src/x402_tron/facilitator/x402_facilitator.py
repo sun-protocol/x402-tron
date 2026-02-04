@@ -5,13 +5,13 @@ X402Facilitator - Core payment processor for x402 protocol
 from typing import Any, Protocol
 
 from x402_tron.types import (
+    FeeQuoteResponse,
     PaymentPayload,
     PaymentRequirements,
-    VerifyResponse,
     SettleResponse,
-    SupportedResponse,
     SupportedKind,
-    FeeQuoteResponse,
+    SupportedResponse,
+    VerifyResponse,
 )
 
 
@@ -115,9 +115,7 @@ class X402Facilitator:
         """
         mechanism = self._find_mechanism(accept.network, accept.scheme)
         if mechanism is None:
-            raise ValueError(
-                f"No mechanism for network={accept.network}, scheme={accept.scheme}"
-            )
+            raise ValueError(f"No mechanism for network={accept.network}, scheme={accept.scheme}")
         return await mechanism.fee_quote(accept, context)
 
     async def verify(
@@ -139,7 +137,9 @@ class X402Facilitator:
         if mechanism is None:
             return VerifyResponse(
                 isValid=False,
-                invalidReason=f"unsupported_network_scheme: {requirements.network}/{requirements.scheme}",
+                invalidReason=(
+                    f"unsupported_network_scheme: {requirements.network}/{requirements.scheme}"
+                ),
             )
         return await mechanism.verify(payload, requirements)
 
@@ -162,13 +162,13 @@ class X402Facilitator:
         if mechanism is None:
             return SettleResponse(
                 success=False,
-                errorReason=f"unsupported_network_scheme: {requirements.network}/{requirements.scheme}",
+                errorReason=(
+                    f"unsupported_network_scheme: {requirements.network}/{requirements.scheme}"
+                ),
             )
         return await mechanism.settle(payload, requirements)
 
-    def _find_mechanism(
-        self, network: str, scheme: str
-    ) -> FacilitatorMechanism | None:
+    def _find_mechanism(self, network: str, scheme: str) -> FacilitatorMechanism | None:
         """Find mechanism for network and scheme"""
         network_mechanisms = self._mechanisms.get(network)
         if network_mechanisms is None:

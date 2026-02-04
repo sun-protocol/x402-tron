@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from x402_tron.clients.x402_client import X402Client, PaymentRequirementsSelector
+from x402_tron.clients.x402_client import PaymentRequirementsSelector, X402Client
 from x402_tron.encoding import decode_payment_payload, encode_payment_payload
 from x402_tron.types import PaymentPayload, PaymentRequired
 
@@ -72,12 +72,12 @@ class X402HttpClient:
         logger.info(f"Received response: status={response.status_code}")
 
         if response.status_code != 402:
-            logger.debug(f"Non-402 response, returning directly")
+            logger.debug("Non-402 response, returning directly")
             return response
 
         logger.info("Received 402 Payment Required, processing payment...")
         logger.debug(f"Response headers: {dict(response.headers)}")
-        
+
         try:
             response_text = response.text
             logger.debug(f"Response body: {response_text[:500]}")  # Log first 500 chars
@@ -129,7 +129,7 @@ class X402HttpClient:
     def _parse_payment_required(self, response: httpx.Response) -> PaymentRequired | None:
         """Parse PaymentRequired from 402 response"""
         logger.debug("Attempting to parse PaymentRequired from response")
-        
+
         header_value = response.headers.get(PAYMENT_REQUIRED_HEADER)
         if header_value:
             logger.debug(f"Found {PAYMENT_REQUIRED_HEADER} header, attempting to decode")
@@ -143,7 +143,10 @@ class X402HttpClient:
         logger.debug("Attempting to parse PaymentRequired from response body")
         try:
             body = response.json()
-            logger.debug(f"Response body JSON keys: {body.keys() if isinstance(body, dict) else 'not a dict'}")
+            logger.debug(
+                f"Response body JSON keys: "
+                f"{body.keys() if isinstance(body, dict) else 'not a dict'}"
+            )
             if "accepts" in body and isinstance(body["accepts"], list):
                 payment_required = PaymentRequired(**body)
                 logger.info("Successfully parsed PaymentRequired from body")
@@ -173,11 +176,11 @@ class X402HttpClient:
 
         response = await self._http_client.request(method, url, **kwargs)
         logger.info(f"Payment retry response: status={response.status_code}")
-        
+
         if response.status_code >= 400:
             try:
                 logger.error(f"Payment retry failed with body: {response.text[:500]}")
             except Exception:
                 pass
-        
+
         return response

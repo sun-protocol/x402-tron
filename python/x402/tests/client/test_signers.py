@@ -3,6 +3,7 @@
 """
 
 import pytest
+
 from x402_tron.signers.client import TronClientSigner
 
 
@@ -45,6 +46,7 @@ def test_evm_signer_without_0x_prefix():
     assert signer.get_address().startswith("0x")
 '''
 
+
 @pytest.mark.asyncio
 async def test_tron_signer_check_allowance():
     """测试 TRON 签名器授权检查（无 tronpy）"""
@@ -52,10 +54,9 @@ async def test_tron_signer_check_allowance():
     signer = TronClientSigner.from_private_key(private_key)
 
     # 没有 tronpy 客户端时，应该返回 0
-    allowance = await signer.check_allowance(
-        "TTestToken", 1000000, "tron:shasta"
-    )
+    allowance = await signer.check_allowance("TTestToken", 1000000, "tron:shasta")
     assert allowance == 0
+
 
 '''
 @pytest.mark.asyncio

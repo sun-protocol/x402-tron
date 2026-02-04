@@ -7,7 +7,6 @@ from typing import Any, Callable, Protocol
 
 from x402_tron.types import (
     PaymentPayload,
-    PaymentPermitContext,
     PaymentRequirements,
 )
 
@@ -79,7 +78,9 @@ class X402Client:
             self for method chaining
         """
         priority = self._calculate_priority(network_pattern)
-        logger.info(f"Registering mechanism for pattern '{network_pattern}' with priority {priority}")
+        logger.info(
+            f"Registering mechanism for pattern '{network_pattern}' with priority {priority}"
+        )
         self._mechanisms.append(MechanismEntry(network_pattern, mechanism, priority))
         self._mechanisms.sort(key=lambda e: e.priority, reverse=True)
         return self
@@ -104,11 +105,10 @@ class X402Client:
         """
         logger.info(f"Selecting payment requirements from {len(accepts)} options")
         logger.debug(f"Available payment requirements: {[r.model_dump() for r in accepts]}")
-        
+
         candidates = list(accepts)
 
         if filters:
-            ### logger.debug(f"Applying filters: scheme={filters.scheme}, network={filters.network}, max_amount={filters.max_amount}")
             if hasattr(filters, "scheme") and filters.scheme:
                 candidates = [r for r in candidates if r.scheme == filters.scheme]
                 logger.debug(f"After scheme filter: {len(candidates)} candidates")
@@ -128,7 +128,10 @@ class X402Client:
             raise ValueError("No supported payment requirements found")
 
         selected = candidates[0]
-        logger.info(f"Selected payment requirement: network={selected.network}, scheme={selected.scheme}, amount={selected.amount}")
+        logger.info(
+            f"Selected payment requirement: network={selected.network}, scheme={selected.scheme}, "
+            f"amount={selected.amount}"
+        )
         return selected
 
     async def create_payment_payload(
@@ -148,7 +151,9 @@ class X402Client:
         Returns:
             Payment payload
         """
-        logger.info(f"Creating payment payload for network={requirements.network}, resource={resource}")
+        logger.info(
+            f"Creating payment payload for network={requirements.network}, resource={resource}"
+        )
         mechanism = self._find_mechanism(requirements.network)
         if mechanism is None:
             logger.error(f"No mechanism registered for network: {requirements.network}")

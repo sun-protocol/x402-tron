@@ -16,9 +16,9 @@ class NetworkConfig:
 
     # TRON Chain IDs
     CHAIN_IDS: Dict[str, int] = {
-        "tron:mainnet": 728126428,   # 0x2b6653dc
-        "tron:shasta": 2494104990,   # 0x94a9059e
-        "tron:nile": 3448148188,     # 0xcd8690dc
+        "tron:mainnet": 728126428,  # 0x2b6653dc
+        "tron:shasta": 2494104990,  # 0x94a9059e
+        "tron:nile": 3448148188,  # 0xcd8690dc
     }
 
     # PaymentPermit contract addresses
@@ -31,13 +31,13 @@ class NetworkConfig:
     @classmethod
     def get_chain_id(cls, network: str) -> int:
         """Get chain ID for network
-        
+
         Args:
             network: Network identifier (e.g., "tron:nile", "tron:mainnet")
-            
+
         Returns:
             Chain ID as integer
-            
+
         Raises:
             ValueError: If network is not supported
         """
@@ -49,13 +49,11 @@ class NetworkConfig:
     @classmethod
     def get_payment_permit_address(cls, network: str) -> str:
         """Get PaymentPermit contract address for network
-        
+
         Args:
             network: Network identifier (e.g., "tron:nile", "tron:mainnet")
-            
+
         Returns:
             Contract address in Base58 format
         """
-        return cls.PAYMENT_PERMIT_ADDRESSES.get(
-            network, "T0000000000000000000000000000000"
-        )
+        return cls.PAYMENT_PERMIT_ADDRESSES.get(network, "T0000000000000000000000000000000")

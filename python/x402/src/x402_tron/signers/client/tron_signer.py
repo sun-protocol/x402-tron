@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any
 
-from x402_tron.abi import ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE, EIP712_DOMAIN_TYPE
+from x402_tron.abi import EIP712_DOMAIN_TYPE, ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE
 from x402_tron.config import NetworkConfig
 from x402_tron.signers.client.base import ClientSigner
 
@@ -46,6 +46,7 @@ class TronClientSigner(ClientSigner):
         if self._tron_client is None and self._network:
             try:
                 from tronpy import Tron
+
                 self._tron_client = Tron(network=self._network)
             except ImportError:
                 pass
@@ -56,6 +57,7 @@ class TronClientSigner(ClientSigner):
         """Derive TRON address from private key"""
         try:
             from tronpy.keys import PrivateKey
+
             pk = PrivateKey(bytes.fromhex(private_key))
             return pk.public_key.to_base58check_address()
         except ImportError:
@@ -68,6 +70,7 @@ class TronClientSigner(ClientSigner):
         """Sign raw message using ECDSA"""
         try:
             from tronpy.keys import PrivateKey
+
             pk = PrivateKey(bytes.fromhex(self._private_key))
             signature = pk.sign_msg(message)
             return signature.hex()
@@ -81,20 +84,27 @@ class TronClientSigner(ClientSigner):
         message: dict[str, Any],
     ) -> str:
         """Sign EIP-712 typed data.
-        
+
         Note: The primaryType is determined from the types dict.
         For PaymentPermit contract, it should be "PaymentPermitDetails".
         """
         # Determine primary type from types dict (should be the last/main type)
         # For PaymentPermit, the main type is "PaymentPermitDetails"
-        primary_type = PAYMENT_PERMIT_PRIMARY_TYPE if PAYMENT_PERMIT_PRIMARY_TYPE in types else list(types.keys())[-1]
-        logger.info(f"Signing EIP-712 typed data: domain={domain.get('name')}, primaryType={primary_type}")
+        primary_type = (
+            PAYMENT_PERMIT_PRIMARY_TYPE
+            if PAYMENT_PERMIT_PRIMARY_TYPE in types
+            else list(types.keys())[-1]
+        )
+        logger.info(
+            f"Signing EIP-712 typed data: domain={domain.get('name')}, primaryType={primary_type}"
+        )
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data
 
             # Note: PaymentPermit contract uses EIP712Domain WITHOUT version field
-            # Contract: keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)")
+            # Contract: keccak256("EIP712Domain(string name,uint256 chainId,"
+            #                     "address verifyingContract)")
             full_types = {
                 "EIP712Domain": EIP712_DOMAIN_TYPE,
                 **types,
@@ -109,14 +119,15 @@ class TronClientSigner(ClientSigner):
 
             # Log domain and message in same format as TypeScript client
             import json as json_module
+
             # Convert bytes to hex for logging
             message_for_log = dict(message)
-            if 'meta' in message_for_log and 'paymentId' in message_for_log['meta']:
-                pid = message_for_log['meta']['paymentId']
+            if "meta" in message_for_log and "paymentId" in message_for_log["meta"]:
+                pid = message_for_log["meta"]["paymentId"]
                 if isinstance(pid, bytes):
-                    message_for_log['meta'] = dict(message_for_log['meta'])
-                    message_for_log['meta']['paymentId'] = '0x' + pid.hex()
-            
+                    message_for_log["meta"] = dict(message_for_log["meta"])
+                    message_for_log["meta"]["paymentId"] = "0x" + pid.hex()
+
             logger.info(f"[SIGN] Domain: {json_module.dumps(domain)}")
             logger.info(f"[SIGN] Message: {json_module.dumps(message_for_log)}")
 
@@ -124,7 +135,7 @@ class TronClientSigner(ClientSigner):
             # Convert hex private key to bytes for eth_account
             private_key_bytes = bytes.fromhex(self._private_key)
             signed_message = Account.sign_message(signable, private_key_bytes)
-            
+
             signature = signed_message.signature.hex()
             logger.info(f"[SIGN] Signature: 0x{signature}")
             return signature
@@ -141,11 +152,16 @@ class TronClientSigner(ClientSigner):
     ) -> int:
         """Check token allowance on TRON"""
         spender = self._get_spender_address(network)
-        logger.info(f"Checking allowance: token={token}, owner={self._address}, spender={spender}, network={network}")
+        logger.info(
+            f"Checking allowance: token={token}, owner={self._address}, spender={spender}, "
+            f"network={network}"
+        )
         if not spender or spender == "T0000000000000000000000000000000":
-            logger.warning(f"Invalid spender address for network {network}, skipping allowance check")
+            logger.warning(
+                f"Invalid spender address for network {network}, skipping allowance check"
+            )
             return 0
-        
+
         client = self._ensure_tron_client()
         if client is None:
             logger.warning("Tron client not available, returning 0 allowance")
@@ -173,7 +189,9 @@ class TronClientSigner(ClientSigner):
         mode: str = "auto",
     ) -> bool:
         """Ensure sufficient allowance"""
-        logger.info(f"Ensuring allowance: token={token}, amount={amount}, network={network}, mode={mode}")
+        logger.info(
+            f"Ensuring allowance: token={token}, amount={amount}, network={network}, mode={mode}"
+        )
         if mode == "skip":
             logger.info("Skipping allowance check (mode=skip)")
             return True
@@ -193,9 +211,10 @@ class TronClientSigner(ClientSigner):
 
         try:
             from tronpy.keys import PrivateKey
+
             spender = self._get_spender_address(network)
             # Use maxUint160 (2^160 - 1) to avoid repeated approvals
-            max_uint160 = (2 ** 160) - 1
+            max_uint160 = (2**160) - 1
             logger.info(f"Approving spender={spender} for amount={max_uint160} (maxUint160)")
             contract = client.get_contract(token)
             contract.abi = ERC20_ABI

@@ -3,8 +3,8 @@ Type definitions for x402 protocol
 """
 
 from typing import Any, Literal, Optional
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 # Delivery Kind constants
 PAYMENT_ONLY = "PAYMENT_ONLY"
@@ -19,6 +19,7 @@ KIND_MAP = {
 
 class PermitMeta(BaseModel):
     """Payment permit metadata"""
+
     kind: DeliveryKind
     payment_id: str = Field(alias="paymentId")
     nonce: str
@@ -31,6 +32,7 @@ class PermitMeta(BaseModel):
 
 class Payment(BaseModel):
     """Payment information"""
+
     pay_token: str = Field(alias="payToken")
     max_pay_amount: str = Field(alias="maxPayAmount")
     pay_to: str = Field(alias="payTo")
@@ -41,6 +43,7 @@ class Payment(BaseModel):
 
 class Fee(BaseModel):
     """Fee information"""
+
     fee_to: str = Field(alias="feeTo")
     fee_amount: str = Field(alias="feeAmount")
 
@@ -50,6 +53,7 @@ class Fee(BaseModel):
 
 class Delivery(BaseModel):
     """Delivery information for on-chain delivery"""
+
     receive_token: str = Field(alias="receiveToken")
     mini_receive_amount: str = Field(alias="miniReceiveAmount")
     token_id: str = Field(alias="tokenId")
@@ -60,6 +64,7 @@ class Delivery(BaseModel):
 
 class PaymentPermit(BaseModel):
     """Payment permit structure"""
+
     meta: PermitMeta
     buyer: str
     caller: str
@@ -70,6 +75,7 @@ class PaymentPermit(BaseModel):
 
 class FeeInfo(BaseModel):
     """Fee information in payment requirements"""
+
     facilitator_id: Optional[str] = Field(None, alias="facilitatorId")
     fee_to: str = Field(alias="feeTo")
     fee_amount: str = Field(alias="feeAmount")
@@ -80,6 +86,7 @@ class FeeInfo(BaseModel):
 
 class PaymentRequirementsExtra(BaseModel):
     """Extra information in payment requirements"""
+
     name: Optional[str] = None
     version: Optional[str] = None
     fee: Optional[FeeInfo] = None
@@ -87,6 +94,7 @@ class PaymentRequirementsExtra(BaseModel):
 
 class PaymentRequirements(BaseModel):
     """Payment requirements from server"""
+
     scheme: str
     network: str
     amount: str
@@ -101,6 +109,7 @@ class PaymentRequirements(BaseModel):
 
 class PaymentPermitContextMeta(BaseModel):
     """Meta information in payment permit context"""
+
     kind: DeliveryKind
     payment_id: str = Field(alias="paymentId")
     nonce: str
@@ -113,6 +122,7 @@ class PaymentPermitContextMeta(BaseModel):
 
 class PaymentPermitContextDelivery(BaseModel):
     """Delivery information in payment permit context"""
+
     receive_token: str = Field(alias="receiveToken")
     mini_receive_amount: str = Field(alias="miniReceiveAmount")
     token_id: str = Field(alias="tokenId")
@@ -123,6 +133,7 @@ class PaymentPermitContextDelivery(BaseModel):
 
 class PaymentPermitContext(BaseModel):
     """Payment permit context from extensions"""
+
     meta: PaymentPermitContextMeta
     caller: Optional[str] = None  # Optional caller address, zero address allows any caller
     delivery: PaymentPermitContextDelivery
@@ -130,6 +141,7 @@ class PaymentPermitContext(BaseModel):
 
 class ResourceInfo(BaseModel):
     """Resource information"""
+
     url: Optional[str] = None
     description: Optional[str] = None
     mime_type: Optional[str] = Field(None, alias="mimeType")
@@ -140,6 +152,7 @@ class ResourceInfo(BaseModel):
 
 class PaymentRequiredExtensions(BaseModel):
     """Extensions in PaymentRequired"""
+
     payment_permit_context: Optional[PaymentPermitContext] = Field(
         None, alias="paymentPermitContext"
     )
@@ -151,6 +164,7 @@ class PaymentRequiredExtensions(BaseModel):
 
 class PaymentRequired(BaseModel):
     """Payment required response (402)"""
+
     x402_version: int = Field(alias="x402Version")
     error: Optional[str] = None
     resource: Optional[ResourceInfo] = None
@@ -163,6 +177,7 @@ class PaymentRequired(BaseModel):
 
 class PaymentPayloadData(BaseModel):
     """Payment payload data"""
+
     signature: str
     merchant_signature: Optional[str] = Field(None, alias="merchantSignature")
     payment_permit: PaymentPermit = Field(alias="paymentPermit")
@@ -173,6 +188,7 @@ class PaymentPayloadData(BaseModel):
 
 class PaymentPayload(BaseModel):
     """Payment payload sent by client"""
+
     x402_version: int = Field(alias="x402Version")
     resource: Optional[ResourceInfo] = None
     accepted: PaymentRequirements
@@ -185,6 +201,7 @@ class PaymentPayload(BaseModel):
 
 class VerifyResponse(BaseModel):
     """Verification response from facilitator"""
+
     is_valid: bool = Field(alias="isValid")
     invalid_reason: Optional[str] = Field(None, alias="invalidReason")
 
@@ -194,6 +211,7 @@ class VerifyResponse(BaseModel):
 
 class TransactionInfo(BaseModel):
     """Transaction information"""
+
     hash: str
     block_number: Optional[str] = Field(None, alias="blockNumber")
     status: Optional[str] = None
@@ -201,6 +219,7 @@ class TransactionInfo(BaseModel):
 
 class SettleResponse(BaseModel):
     """Settlement response from facilitator"""
+
     success: bool
     transaction: Optional[str] = None
     network: Optional[str] = None
@@ -212,6 +231,7 @@ class SettleResponse(BaseModel):
 
 class SupportedKind(BaseModel):
     """Supported payment kind"""
+
     x402_version: int = Field(alias="x402Version")
     scheme: str
     network: str
@@ -222,6 +242,7 @@ class SupportedKind(BaseModel):
 
 class SupportedFee(BaseModel):
     """Supported fee configuration"""
+
     fee_to: str = Field(alias="feeTo")
     pricing: Literal["per_accept", "flat"]
 
@@ -231,12 +252,14 @@ class SupportedFee(BaseModel):
 
 class SupportedResponse(BaseModel):
     """Supported response from facilitator"""
+
     kinds: list[SupportedKind]
     fee: Optional[SupportedFee] = None
 
 
 class FeeQuoteResponse(BaseModel):
     """Fee quote response from facilitator"""
+
     fee: FeeInfo
     pricing: str
     network: str

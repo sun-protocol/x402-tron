@@ -2,18 +2,19 @@
 FastAPI 中间件用于 x402 支付处理
 """
 
-import base64
-import json
 from functools import wraps
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
-from x402_tron.server import X402Server, ResourceConfig
 from x402_tron.encoding import decode_payment_payload, encode_payment_payload
-from x402_tron.types import PaymentPayload, PaymentRequired
+from x402_tron.server import ResourceConfig, X402Server
+from x402_tron.types import PaymentPayload
 
+if TYPE_CHECKING:
+    from x402_tron.types import PaymentRequirements
+    from x402_tron.utils.tx_verification import TransactionVerificationResult
 
 PAYMENT_SIGNATURE_HEADER = "PAYMENT-SIGNATURE"
 PAYMENT_REQUIRED_HEADER = "PAYMENT-REQUIRED"
@@ -82,12 +83,14 @@ class X402Middleware:
                     payload = decode_payment_payload(payment_header, PaymentPayload)
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.error(f"Failed to decode payment payload: {e}", exc_info=True)
-                    logger.error(f"Payment header content (first 200 chars): {payment_header[:200]}")
+                    logger.error(
+                        f"Payment header content (first 200 chars): {payment_header[:200]}"
+                    )
                     return JSONResponse(
-                        content={"error": f"Invalid payment payload: {str(e)}"},
-                        status_code=400
+                        content={"error": f"Invalid payment payload: {str(e)}"}, status_code=400
                     )
 
                 requirements = await self._server.build_payment_requirements(config)
@@ -95,24 +98,26 @@ class X402Middleware:
                 verify_result = await self._server.verify_payment(payload, requirements)
                 if not verify_result.is_valid:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.error(f"Payment verification failed: {verify_result.invalid_reason}")
                     logger.error(f"Payload details: {payload.model_dump(by_alias=True)}")
                     logger.error(f"Requirements: {requirements.model_dump(by_alias=True)}")
                     return JSONResponse(
                         content={"error": f"Verification failed: {verify_result.invalid_reason}"},
-                        status_code=400
+                        status_code=400,
                     )
 
                 settle_result = await self._server.settle_payment(payload, requirements)
                 if not settle_result.success:
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.error(f"Payment settlement failed: {settle_result.error_reason}")
                     logger.error(f"Settlement result: {settle_result.model_dump(by_alias=True)}")
                     return JSONResponse(
                         content={"error": f"Settlement failed: {settle_result.error_reason}"},
-                        status_code=500
+                        status_code=500,
                     )
 
                 # Verify transaction on-chain (required)
@@ -126,10 +131,11 @@ class X402Middleware:
                     if not tx_verify_result.success:
                         return JSONResponse(
                             content={
-                                "error": f"Transaction verification failed: {tx_verify_result.error_reason}",
+                                "error": f"Transaction verification failed: "
+                                f"{tx_verify_result.error_reason}",
                                 "txHash": settle_result.transaction,
                             },
-                            status_code=500
+                            status_code=500,
                         )
 
                 response = await func(request, *args, **kwargs)
@@ -147,6 +153,7 @@ class X402Middleware:
                 return json_response
 
             return wrapper
+
         return decorator
 
     async def _verify_transaction_on_chain(
@@ -158,27 +165,28 @@ class X402Middleware:
     ) -> "TransactionVerificationResult":
         """
         Verify transaction on-chain to ensure transfers match expectations.
-        
+
         Args:
             tx_hash: Transaction hash to verify
             payload: Payment payload
             requirements: Payment requirements
             network: Network identifier
-            
+
         Returns:
             TransactionVerificationResult
         """
         from x402_tron.utils.tx_verification import (
-            get_verifier_for_network,
             TransactionVerificationResult,
+            get_verifier_for_network,
         )
-        
+
         try:
             verifier = get_verifier_for_network(network)
             return await verifier.verify_transaction(tx_hash, payload, requirements)
         except ValueError as e:
             # No verifier available for this network, skip verification
             import logging
+
             logger = logging.getLogger(__name__)
             logger.warning(f"Transaction verification skipped: {e}")
             return TransactionVerificationResult(
@@ -186,7 +194,6 @@ class X402Middleware:
                 tx_hash=tx_hash,
                 status_verified=True,
             )
-
 
     async def _return_payment_required(
         self,

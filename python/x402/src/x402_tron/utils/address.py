@@ -3,6 +3,7 @@ Address utility functions for TRON and EVM address conversion
 """
 
 import logging
+
 import base58
 
 logger = logging.getLogger(__name__)
@@ -10,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 def normalize_tron_address(tron_addr: str) -> str:
     """Normalize TRON address, converting invalid placeholders to valid zero address
-    
+
     Args:
         tron_addr: TRON address in Base58 format
-        
+
     Returns:
         Normalized TRON address
     """
@@ -26,30 +27,31 @@ def normalize_tron_address(tron_addr: str) -> str:
 
 def tron_address_to_evm(tron_addr: str) -> str:
     """Convert TRON Base58Check address to EVM hex format (0x...)
-    
+
     Args:
         tron_addr: TRON address in Base58 format or hex format
-        
+
     Returns:
         EVM address in hex format (0x...)
     """
     # Normalize address first
     tron_addr = normalize_tron_address(tron_addr)
-    
+
     # If already in EVM format, return as-is
     if tron_addr.startswith("0x"):
         return tron_addr
-    
+
     # If it's a hex string (with or without 0x prefix), normalize to 0x format
-    # Check if it looks like a hex address (40 or 42 chars of hex digits, possibly with 0x or 41 prefix)
+    # Check if it looks like a hex address
+    # (40 or 42 chars of hex digits, possibly with 0x or 41 prefix)
     hex_str = tron_addr
     if tron_addr.startswith("41"):
         # Remove TRON version prefix
         hex_str = tron_addr[2:]
-    
+
     if len(hex_str) == 40 and all(c in "0123456789abcdefABCDEF" for c in hex_str):
         return "0x" + hex_str
-    
+
     try:
         # Decode Base58Check (for TRON addresses like TLBaRhANhwgZyUk6Z1ynCn1Ld7BRH1jBjZ)
         decoded = base58.b58decode(tron_addr)

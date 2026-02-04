@@ -6,19 +6,20 @@ PaymentPermit 合约 Facilitator 测试 - Tron Nile 测试网
 
 import asyncio
 import time
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from x402_tron.mechanisms.facilitator.tron_upto import UptoTronFacilitatorMechanism
 from x402_tron.types import (
-    PaymentRequirements,
+    Delivery,
+    Fee,
+    Payment,
     PaymentPayload,
     PaymentPayloadData,
     PaymentPermit,
+    PaymentRequirements,
     PermitMeta,
-    Payment,
-    Fee,
-    Delivery,
     ResourceInfo,
 )
 

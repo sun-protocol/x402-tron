@@ -3,6 +3,7 @@ X402Client 测试
 """
 
 import pytest
+
 from x402_tron.clients import X402Client
 from x402_tron.types import PaymentRequirements
 
@@ -84,9 +85,7 @@ def test_client_select_with_tron_filter():
     ]
 
     # 过滤 TRON 网络
-    selected = client.select_payment_requirements(
-        accepts, filters={"network": "tron:shasta"}
-    )
+    selected = client.select_payment_requirements(accepts, filters={"network": "tron:shasta"})
     assert selected.network == "tron:shasta"
 
 
@@ -114,9 +113,7 @@ def test_client_select_with_evm_filter():
     ]
 
     # 过滤 EVM 网络
-    selected = client.select_payment_requirements(
-        accepts, filters={"network": "eip155:8453"}
-    )
+    selected = client.select_payment_requirements(accepts, filters={"network": "eip155:8453"})
     assert selected.network == "eip155:8453"
 
 
@@ -135,7 +132,5 @@ async def test_client_create_payment_payload():
         payTo="TTestMerchant",
     )
 
-    payload = await client.create_payment_payload(
-        requirements, "https://example.com/resource"
-    )
+    payload = await client.create_payment_payload(requirements, "https://example.com/resource")
     assert payload == {"mock": "payload"}
