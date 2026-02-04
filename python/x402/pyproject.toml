@@ -59,7 +59,7 @@ Documentation = "https://github.com/open-aibank/x402-tron#readme"
 Repository = "https://github.com/open-aibank/x402-tron"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/x402"]
+packages = ["src/x402_tron"]
 
 [tool.ruff]
 line-length = 100

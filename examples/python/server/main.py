@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from x402.server import X402Server
-from x402.fastapi import x402_protected
-from x402.facilitator import FacilitatorClient
-from x402.config import NetworkConfig
-from x402.tokens import TokenRegistry
+from x402_tron.server import X402Server
+from x402_tron.fastapi import x402_protected
+from x402_tron.facilitator import FacilitatorClient
+from x402_tron.config import NetworkConfig
+from x402_tron.tokens import TokenRegistry
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -26,10 +26,10 @@ logging.basicConfig(
 )
 
 # Set specific loggers to DEBUG for detailed output
-logging.getLogger("x402").setLevel(logging.DEBUG)
-logging.getLogger("x402.server").setLevel(logging.DEBUG)
-logging.getLogger("x402.fastapi").setLevel(logging.DEBUG)
-logging.getLogger("x402.utils").setLevel(logging.DEBUG)
+logging.getLogger("x402_tron").setLevel(logging.DEBUG)
+logging.getLogger("x402_tron.server").setLevel(logging.DEBUG)
+logging.getLogger("x402_tron.fastapi").setLevel(logging.DEBUG)
+logging.getLogger("x402_tron.utils").setLevel(logging.DEBUG)
 logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)

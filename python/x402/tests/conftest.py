@@ -20,7 +20,7 @@ def mock_evm_private_key():
 @pytest.fixture
 def mock_tron_payment_requirements():
     """用于测试的模拟 TRON 支付要求"""
-    from x402.types import PaymentRequirements
+    from x402_tron.types import PaymentRequirements
 
     return PaymentRequirements(
         scheme="exact",
@@ -35,7 +35,7 @@ def mock_tron_payment_requirements():
 @pytest.fixture
 def mock_evm_payment_requirements():
     """用于测试的模拟 EVM 支付要求"""
-    from x402.types import PaymentRequirements
+    from x402_tron.types import PaymentRequirements
 
     return PaymentRequirements(
         scheme="exact",

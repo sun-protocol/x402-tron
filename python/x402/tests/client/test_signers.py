@@ -1,6 +1,6 @@
 import pytest
 
-from x402.signers.client import TronClientSigner
+from x402_tron.signers.client import TronClientSigner
 
 
 def test_tron_signer_from_private_key():
