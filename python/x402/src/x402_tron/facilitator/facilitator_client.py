@@ -28,7 +28,6 @@ class FacilitatorClient:
         base_url: str,
         headers: dict[str, str] | None = None,
         facilitator_id: str | None = None,
-        facilitator_address: str | None = None,
     ) -> None:
         """
         Initialize facilitator client.
@@ -37,12 +36,11 @@ class FacilitatorClient:
             base_url: Facilitator service base URL
             headers: Custom HTTP headers (e.g., Authorization)
             facilitator_id: Unique identifier for this facilitator
-            facilitator_address: Facilitator's on-chain address (for permit caller field)
         """
         self._base_url = base_url.rstrip("/")
         self._headers = headers or {}
         self.facilitator_id = facilitator_id or base_url
-        self.facilitator_address = facilitator_address
+        self._facilitator_address: str | None = None
         self._http_client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -60,6 +58,24 @@ class FacilitatorClient:
         if self._http_client:
             await self._http_client.aclose()
             self._http_client = None
+
+    @property
+    def facilitator_address(self) -> str | None:
+        """Get cached facilitator address (call fetch_facilitator_address first)"""
+        return self._facilitator_address
+
+    async def fetch_facilitator_address(self) -> str | None:
+        """
+        Fetch and cache facilitator address from /supported endpoint.
+
+        Returns:
+            Facilitator address or None if not available
+        """
+        if self._facilitator_address is None:
+            supported = await self.supported()
+            if supported.fee:
+                self._facilitator_address = supported.fee.fee_to
+        return self._facilitator_address
 
     async def supported(self) -> SupportedResponse:
         """

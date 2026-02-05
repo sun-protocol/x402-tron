@@ -148,6 +148,8 @@ class X402Server:
 
         if self._facilitators:
             facilitator = self._facilitators[0]
+            # Fetch and cache facilitator address for use in create_payment_required_response
+            await facilitator.fetch_facilitator_address()
             fee_quote = await facilitator.fee_quote(requirements)
             if fee_quote:
                 if requirements.extra is None:

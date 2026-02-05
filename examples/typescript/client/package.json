@@ -1,0 +1,21 @@
+{
+  "name": "@x402-tron/client-example",
+  "version": "0.1.0",
+  "description": "x402 TypeScript Client Example",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts"
+  },
+  "dependencies": {
+    "@open-aibank/x402-tron": "workspace:*",
+    "dotenv": "^16.3.1",
+    "tronweb": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
