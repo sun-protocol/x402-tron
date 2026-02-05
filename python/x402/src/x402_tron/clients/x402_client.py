@@ -40,11 +40,9 @@ class PaymentRequirementsFilter:
         self,
         scheme: str | None = None,
         network: str | None = None,
-        max_amount: str | None = None,
     ):
         self.scheme = scheme
         self.network = network
-        self.max_amount = max_amount
 
 
 class MechanismEntry:
@@ -115,10 +113,6 @@ class X402Client:
             if hasattr(filters, "network") and filters.network:
                 candidates = [r for r in candidates if r.network == filters.network]
                 logger.debug(f"After network filter: {len(candidates)} candidates")
-            if hasattr(filters, "max_amount") and filters.max_amount:
-                max_val = int(filters.max_amount)
-                candidates = [r for r in candidates if int(r.amount) <= max_val]
-                logger.debug(f"After amount filter: {len(candidates)} candidates")
 
         candidates = [r for r in candidates if self._find_mechanism(r.network) is not None]
         logger.debug(f"After mechanism filter: {len(candidates)} candidates")
