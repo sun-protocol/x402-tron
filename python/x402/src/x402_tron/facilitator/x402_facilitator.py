@@ -9,6 +9,7 @@ from x402_tron.types import (
     PaymentPayload,
     PaymentRequirements,
     SettleResponse,
+    SupportedFee,
     SupportedKind,
     SupportedResponse,
     VerifyResponse,
@@ -54,8 +55,10 @@ class X402Facilitator:
     Manages payment mechanisms and coordinates verification/settlement.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, fee_to: str | None = None, pricing: str = "flat") -> None:
         self._mechanisms: dict[str, dict[str, FacilitatorMechanism]] = {}
+        self._fee_to = fee_to
+        self._pricing = pricing
 
     def register(
         self,
@@ -84,7 +87,7 @@ class X402Facilitator:
         Return supported network/scheme combinations.
 
         Returns:
-            SupportedResponse with all supported capabilities
+            SupportedResponse with all supported capabilities including fee info
         """
         kinds: list[SupportedKind] = []
         for network, schemes in self._mechanisms.items():
@@ -96,7 +99,16 @@ class X402Facilitator:
                         network=network,
                     )
                 )
-        return SupportedResponse(kinds=kinds)
+        
+        # Create fee configuration if fee_to is set
+        fee = None
+        if self._fee_to:
+            fee = SupportedFee(
+                fee_to=self._fee_to,
+                pricing=self._pricing
+            )
+        
+        return SupportedResponse(kinds=kinds, fee=fee)
 
     async def fee_quote(
         self,
