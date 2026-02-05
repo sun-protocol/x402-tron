@@ -254,8 +254,7 @@ class SupportedResponse(BaseModel):
     """Supported response from facilitator"""
 
     kinds: list[SupportedKind]
-    fee: Optional[SupportedFee] = None
-    facilitator_address: Optional[str] = Field(None, alias="facilitatorAddress")
+    fee: SupportedFee  # Required - facilitator must configure fee with non-empty feeTo
 
     class Config:
         populate_by_name = True

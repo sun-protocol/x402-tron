@@ -64,20 +64,24 @@ class FacilitatorClient:
         """Get cached facilitator address (call fetch_facilitator_address first)"""
         return self._facilitator_address
 
-    async def fetch_facilitator_address(self) -> str | None:
+    async def fetch_facilitator_address(self) -> str:
         """
         Fetch and cache facilitator address from /supported endpoint.
 
         Returns:
-            Facilitator address or None if not available
+            Facilitator address
+
+        Raises:
+            ValueError: If facilitator fee is not configured or feeTo is empty
         """
         if self._facilitator_address is None:
             supported = await self.supported()
-            # Try to get address from fee.fee_to first, then from facilitator_address field
-            if supported.fee:
-                self._facilitator_address = supported.fee.fee_to
-            elif supported.facilitator_address:
-                self._facilitator_address = supported.facilitator_address
+            # Facilitator must have fee configured with non-empty feeTo
+            if not supported.fee:
+                raise ValueError("Facilitator must have fee configured")
+            if not supported.fee.fee_to:
+                raise ValueError("Facilitator fee.feeTo cannot be empty")
+            self._facilitator_address = supported.fee.fee_to
         return self._facilitator_address
 
     async def supported(self) -> SupportedResponse:

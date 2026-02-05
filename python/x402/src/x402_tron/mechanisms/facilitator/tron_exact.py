@@ -1,7 +1,3 @@
-"""
-ExactTronFacilitatorMechanism - "exact" 支付方案的 TRON facilitator 机制
-"""
-
 from typing import Any
 
 from x402_tron.abi import PAYMENT_PERMIT_ABI, get_abi_json, get_payment_permit_eip712_types

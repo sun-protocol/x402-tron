@@ -43,7 +43,7 @@ def test_evm_signer_without_0x_prefix():
 '''
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_tron_signer_check_allowance():
     """测试 TRON 签名器授权检查（无 tronpy）"""
     private_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

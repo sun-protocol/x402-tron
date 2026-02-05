@@ -113,7 +113,7 @@ def test_client_select_with_evm_filter():
     assert selected.network == "eip155:8453"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_client_create_payment_payload():
     """测试创建支付载荷"""
     client = X402Client()

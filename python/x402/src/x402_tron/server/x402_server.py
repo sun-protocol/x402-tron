@@ -151,18 +151,16 @@ class X402Server:
             # Fetch and cache facilitator address for use in create_payment_required_response
             await facilitator.fetch_facilitator_address()
 
-            # Only get fee quote if facilitator charges fees
-            supported = await facilitator.supported()
-            if supported.fee:
-                fee_quote = await facilitator.fee_quote(requirements)
-                if fee_quote:
-                    if requirements.extra is None:
-                        from x402_tron.types import PaymentRequirementsExtra
+            # Get fee quote from facilitator (fee is required)
+            fee_quote = await facilitator.fee_quote(requirements)
+            if fee_quote:
+                if requirements.extra is None:
+                    from x402_tron.types import PaymentRequirementsExtra
 
-                        requirements.extra = PaymentRequirementsExtra()
-                    # Set facilitatorId in the fee info
-                    fee_quote.fee.facilitator_id = facilitator.facilitator_id
-                    requirements.extra.fee = fee_quote.fee
+                    requirements.extra = PaymentRequirementsExtra()
+                # Set facilitatorId in the fee info
+                fee_quote.fee.facilitator_id = facilitator.facilitator_id
+                requirements.extra.fee = fee_quote.fee
 
         return requirements
 
