@@ -21,7 +21,7 @@ class TronClientSigner(ClientSigner):
         self._private_key = clean_key
         self._address = self._derive_address(clean_key)
         self._network = network
-        self._tron_client: Any = None
+        self._async_tron_client: Any = None
         logger.info(f"TronClientSigner initialized: address={self._address}, network={network}")
 
     @classmethod
@@ -37,20 +37,20 @@ class TronClientSigner(ClientSigner):
         """
         return cls(private_key, network)
 
-    def _ensure_tron_client(self) -> Any:
-        """Lazy initialize tron_client.
+    def _ensure_async_tron_client(self) -> Any:
+        """Lazy initialize async tron_client.
 
         Returns:
-            tronpy.Tron instance or None
+            tronpy.AsyncTron instance or None
         """
-        if self._tron_client is None and self._network:
+        if self._async_tron_client is None and self._network:
             try:
-                from tronpy import Tron
+                from tronpy import AsyncTron
 
-                self._tron_client = Tron(network=self._network)
+                self._async_tron_client = AsyncTron(network=self._network)
             except ImportError:
                 pass
-        return self._tron_client
+        return self._async_tron_client
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
@@ -165,15 +165,15 @@ class TronClientSigner(ClientSigner):
             )
             return 0
 
-        client = self._ensure_tron_client()
+        client = self._ensure_async_tron_client()
         if client is None:
-            logger.warning("Tron client not available, returning 0 allowance")
+            logger.warning("AsyncTron client not available, returning 0 allowance")
             return 0
 
         try:
-            contract = client.get_contract(token)
+            contract = await client.get_contract(token)
             contract.abi = ERC20_ABI
-            allowance = contract.functions.allowance(
+            allowance = await contract.functions.allowance(
                 self._address,
                 spender,
             )
@@ -208,9 +208,9 @@ class TronClientSigner(ClientSigner):
             raise NotImplementedError("Interactive approval not implemented")
 
         logger.info(f"Insufficient allowance ({current} < {amount}), requesting approval...")
-        client = self._ensure_tron_client()
+        client = self._ensure_async_tron_client()
         if client is None:
-            raise RuntimeError("tronpy client required for approval")
+            raise RuntimeError("AsyncTron client required for approval")
 
         try:
             from tronpy.keys import PrivateKey
@@ -219,20 +219,16 @@ class TronClientSigner(ClientSigner):
             # Use maxUint160 (2^160 - 1) to avoid repeated approvals
             max_uint160 = (2**160) - 1
             logger.info(f"Approving spender={spender} for amount={max_uint160} (maxUint160)")
-            contract = client.get_contract(token)
+            contract = await client.get_contract(token)
             contract.abi = ERC20_ABI
-            txn = (
-                contract.functions.approve(
-                    spender,
-                    max_uint160,
-                )
-                .with_owner(self._address)
-                .fee_limit(100_000_000)
-                .build()
-                .sign(PrivateKey(bytes.fromhex(self._private_key)))
-            )
+            # AsyncTron: contract.functions.approve() returns a coroutine, need to await it first
+            txn_builder = await contract.functions.approve(spender, max_uint160)
+            txn_builder = txn_builder.with_owner(self._address).fee_limit(100_000_000)
+            txn = await txn_builder.build()
+            txn = txn.sign(PrivateKey(bytes.fromhex(self._private_key)))
             logger.info("Broadcasting approval transaction...")
-            result = txn.broadcast().wait()
+            result = await txn.broadcast()
+            result = await result.wait()
             # Check receipt.result for success (TRON returns "SUCCESS" in receipt)
             receipt = result.get("receipt", {})
             receipt_result = receipt.get("result", "")

@@ -2,6 +2,7 @@
 TronFacilitatorSigner - TRON facilitator signer implementation
 """
 
+import asyncio
 import time
 from typing import Any
 
@@ -17,7 +18,7 @@ class TronFacilitatorSigner(FacilitatorSigner):
         self._private_key = clean_key
         self._address = self._derive_address(clean_key)
         self._network = network
-        self._tron_client: Any = None
+        self._async_tron_client: Any = None
 
     @classmethod
     def from_private_key(
@@ -26,16 +27,16 @@ class TronFacilitatorSigner(FacilitatorSigner):
         """Create signer from private key"""
         return cls(private_key, network)
 
-    def _ensure_tron_client(self) -> Any:
-        """Lazy initialize tron_client"""
-        if self._tron_client is None and self._network:
+    def _ensure_async_tron_client(self) -> Any:
+        """Lazy initialize async tron_client"""
+        if self._async_tron_client is None and self._network:
             try:
-                from tronpy import Tron
+                from tronpy import AsyncTron
 
-                self._tron_client = Tron(network=self._network)
+                self._async_tron_client = AsyncTron(network=self._network)
             except ImportError:
                 pass
-        return self._tron_client
+        return self._async_tron_client
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
@@ -155,9 +156,9 @@ class TronFacilitatorSigner(FacilitatorSigner):
         method: str,
         args: list[Any],
     ) -> str | None:
-        """Execute contract transaction on TRON.
+        """Execute contract transaction on TRON (async).
 
-        Uses tronpy native functionality for ABI and Method ID calculation.
+        Uses AsyncTron for non-blocking operations.
         """
         import json as json_module
         import logging
@@ -166,9 +167,9 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
         logger = logging.getLogger(__name__)
 
-        client = self._ensure_tron_client()
+        client = self._ensure_async_tron_client()
         if client is None:
-            raise RuntimeError("tronpy client required for contract calls")
+            raise RuntimeError("AsyncTron client required for contract calls")
 
         try:
             # Normalize contract address to ensure valid Base58Check format
@@ -177,8 +178,8 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
             # Log account resources before transaction
             try:
-                account_info = client.get_account(self._address)
-                account_resource = client.get_account_resource(self._address)
+                account_info = await client.get_account(self._address)
+                account_resource = await client.get_account_resource(self._address)
                 logger.info(f"Account address: {self._address}")
                 logger.info(
                     f"Account balance: {account_info.get('balance', 0) / 1_000_000:.6f} TRX"
@@ -200,9 +201,9 @@ class TronFacilitatorSigner(FacilitatorSigner):
             # Log contract call parameters in detail
             self._log_contract_parameters(method, args, logger)
 
-            # Use tronpy standard approach - let tronpy calculate Method ID
+            # Use AsyncTron standard approach - let tronpy calculate Method ID
             abi_list = json_module.loads(abi) if isinstance(abi, str) else abi
-            contract = client.get_contract(normalized_address)
+            contract = await client.get_contract(normalized_address)
             contract.abi = abi_list
 
             # Get function object
@@ -215,13 +216,11 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
             # Build and sign transaction
             logger.info("Building transaction with fee_limit=1,000,000,000 SUN (1000 TRX)")
-            txn = (
-                func(*args)
-                .with_owner(self._address)
-                .fee_limit(1_000_000_000)
-                .build()
-                .sign(PrivateKey(bytes.fromhex(self._private_key)))
-            )
+            # AsyncTron: func(*args) returns a coroutine, need to await it first
+            txn_builder = await func(*args)
+            txn_builder = txn_builder.with_owner(self._address).fee_limit(1_000_000_000)
+            txn = await txn_builder.build()
+            txn = txn.sign(PrivateKey(bytes.fromhex(self._private_key)))
 
             # Log transaction details before broadcast
             try:
@@ -236,7 +235,7 @@ class TronFacilitatorSigner(FacilitatorSigner):
                 logger.warning(f"Failed to log transaction details: {log_err}")
 
             logger.info("Broadcasting transaction...")
-            result = txn.broadcast()
+            result = await txn.broadcast()
             logger.info(f"Transaction broadcast successful: {result}")
             return result.get("txid")
         except Exception as e:
@@ -307,17 +306,18 @@ class TronFacilitatorSigner(FacilitatorSigner):
     async def wait_for_transaction_receipt(
         self,
         tx_hash: str,
-        timeout: int = 120,
+        timeout: int = 60,
     ) -> dict[str, Any]:
-        """Wait for TRON transaction confirmation"""
-        client = self._ensure_tron_client()
+        """Wait for TRON transaction confirmation (async with 60s default timeout)"""
+        client = self._ensure_async_tron_client()
         if client is None:
-            raise RuntimeError("tronpy client required")
+            raise RuntimeError("AsyncTron client required")
 
         start = time.time()
         while time.time() - start < timeout:
             try:
-                info = client.get_transaction_info(tx_hash)
+                # Use AsyncTron's get_transaction_info
+                info = await client.get_transaction_info(tx_hash)
                 if info and info.get("blockNumber"):
                     return {
                         "hash": tx_hash,
@@ -328,6 +328,6 @@ class TronFacilitatorSigner(FacilitatorSigner):
                     }
             except Exception:
                 pass
-            time.sleep(3)
+            await asyncio.sleep(3)
 
         raise TimeoutError(f"Transaction {tx_hash} not confirmed within {timeout}s")
