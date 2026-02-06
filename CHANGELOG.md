@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.6] - 2026-02-06
 
 ### Fixed
-- TronGrid provider now respects `network` (correct endpoint per mainnet/nile/shasta)
+- tronpy client now supports TronGrid API key via `TRON_GRID_API_KEY`
 
 ## [0.1.5] - 2026-02-05
 
@@ -32,7 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed all linting and formatting issues
 - Fixed test imports to use new mechanism names
 
-[0.1.6]: https://github.com/open-aibank/x402-tron/releases/tag/v0.1.6
 [0.1.5]: https://github.com/open-aibank/x402-tron/releases/tag/v0.1.5
 
 ## [0.1.4] - 2026-02-05

@@ -1,7 +1,6 @@
-# Release Notes - v0.1.6
+# v0.1.6 - tronpy client TronGrid API key support
 
 **Release Date:** February 6, 2026
+## Bug Fixes
 
-## Changes
-
-- Fix TronGrid API key flow to respect `network` (mainnet/nile/shasta)
+- tronpy client now supports TronGrid API key via `TRON_GRID_API_KEY`

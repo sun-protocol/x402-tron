@@ -27,23 +27,26 @@ def create_async_tron_client(network: str) -> Any:
         tronpy.AsyncTron instance
     """
     api_key = os.getenv("TRON_GRID_API_KEY")
-    conf = conf_for_name(network)
-
-    if api_key and conf:
-        endpoint_uri = conf["fullnode"]
-        provider = AsyncHTTPProvider(endpoint_uri=endpoint_uri, api_key=api_key)
-        logger.info(
-            "Creating AsyncTron client with TronGrid API key for network=%s (%s)",
-            network,
-            endpoint_uri,
-        )
-        return AsyncTron(provider=provider, network=network)
-
     if not api_key:
         logger.warning(
             "TRON_GRID_API_KEY is not set. Mainnet requests may be rate-limited or fail; "
             "set TRON_GRID_API_KEY in your environment/.env to use TronGrid reliably."
         )
 
-    logger.info(f"Creating AsyncTron client for network={network}")
-    return AsyncTron(network=network)
+        logger.info("Creating AsyncTron client for network=%s", network)
+        return AsyncTron(network=network)
+
+    conf = conf_for_name(network)
+    if not conf:
+        raise ValueError(
+            f"Unknown TRON network '{network}'. Expected one of: mainnet, nile, shasta."
+        )
+
+    endpoint_uri = conf["fullnode"]
+    provider = AsyncHTTPProvider(endpoint_uri=endpoint_uri, api_key=api_key)
+    logger.info(
+        "Creating AsyncTron client with TronGrid API key for network=%s (%s)",
+        network,
+        endpoint_uri,
+    )
+    return AsyncTron(provider=provider, network=network)
