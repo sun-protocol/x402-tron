@@ -20,6 +20,17 @@ pip install -e .[all]
 npm i @open-aibank/x402-tron
 ```
 
+## Configuration
+
+### Environment Variables
+
+The library uses the following environment variables if available:
+
+| Variable | Description | Usage |
+|----------|-------------|-------|
+| `TRON_GRID_API_KEY` | TronGrid API Key | **Recommended**. Used by Python SDK to avoid rate limits on TRON RPC nodes. |
+| `TRON_PRIVATE_KEY` | Wallet Private Key | **Required for signing**. Not automatically loaded, but recommended to be stored in env vars and passed to `TronClientSigner`/`TronFacilitatorSigner`. |
+
 ## Features
 
 - **TRON Native**: Built specifically for TRON blockchain (Mainnet, Shasta, Nile)
