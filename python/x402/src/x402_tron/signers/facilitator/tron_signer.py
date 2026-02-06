@@ -3,11 +3,14 @@ TronFacilitatorSigner - TRON facilitator signer implementation
 """
 
 import asyncio
+import logging
 import time
 from typing import Any
 
 from x402_tron.abi import EIP712_DOMAIN_TYPE, PAYMENT_PERMIT_PRIMARY_TYPE
 from x402_tron.signers.facilitator.base import FacilitatorSigner
+
+logger = logging.getLogger(__name__)
 
 
 class TronFacilitatorSigner(FacilitatorSigner):
@@ -47,7 +50,10 @@ class TronFacilitatorSigner(FacilitatorSigner):
             pk = PrivateKey(bytes.fromhex(private_key))
             return pk.public_key.to_base58check_address()
         except ImportError:
-            return f"T{private_key[:33]}"
+            raise ImportError(
+                "tronpy is required to derive TRON address from private key. "
+                "Install it with: pip install 'x402-tron[tron]'"
+            )
 
     def get_address(self) -> str:
         return self._address
@@ -62,10 +68,6 @@ class TronFacilitatorSigner(FacilitatorSigner):
     ) -> bool:
         """Verify EIP-712 signature"""
         try:
-            import logging
-
-            logger = logging.getLogger(__name__)
-
             from eth_account import Account
             from eth_account.messages import encode_typed_data
 
@@ -114,9 +116,6 @@ class TronFacilitatorSigner(FacilitatorSigner):
 
             return recovered.lower() == expected_evm.lower()
         except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.error(f"Signature verification error: {e}", exc_info=True)
             return False
 
@@ -161,11 +160,8 @@ class TronFacilitatorSigner(FacilitatorSigner):
         Uses AsyncTron for non-blocking operations.
         """
         import json as json_module
-        import logging
 
         from tronpy.keys import PrivateKey
-
-        logger = logging.getLogger(__name__)
 
         client = self._ensure_async_tron_client()
         if client is None:
@@ -176,27 +172,30 @@ class TronFacilitatorSigner(FacilitatorSigner):
             normalized_address = self._normalize_tron_address(contract_address)
             logger.info(f"Normalized contract address: {contract_address} -> {normalized_address}")
 
-            # Log account resources before transaction
-            try:
-                account_info = await client.get_account(self._address)
-                account_resource = await client.get_account_resource(self._address)
-                logger.info(f"Account address: {self._address}")
-                logger.info(
-                    f"Account balance: {account_info.get('balance', 0) / 1_000_000:.6f} TRX"
-                )
-                logger.info("Account resources:")
-                logger.info(f"  - freeNetLimit: {account_resource.get('freeNetLimit', 0)}")
-                logger.info(f"  - freeNetUsed: {account_resource.get('freeNetUsed', 0)}")
-                logger.info(f"  - NetLimit: {account_resource.get('NetLimit', 0)}")
-                logger.info(f"  - NetUsed: {account_resource.get('NetUsed', 0)}")
-                logger.info(f"  - EnergyLimit: {account_resource.get('EnergyLimit', 0)}")
-                logger.info(f"  - EnergyUsed: {account_resource.get('EnergyUsed', 0)}")
-                logger.info(f"  - TotalEnergyLimit: {account_resource.get('TotalEnergyLimit', 0)}")
-                logger.info(
-                    f"  - TotalEnergyWeight: {account_resource.get('TotalEnergyWeight', 0)}"
-                )
-            except Exception as resource_err:
-                logger.warning(f"Failed to fetch account resources: {resource_err}")
+            # Log account resources before transaction (only at DEBUG level to avoid extra RPC)
+            if logger.isEnabledFor(logging.DEBUG):
+                try:
+                    account_info = await client.get_account(self._address)
+                    account_resource = await client.get_account_resource(self._address)
+                    logger.debug(f"Account address: {self._address}")
+                    logger.debug(
+                        f"Account balance: {account_info.get('balance', 0) / 1_000_000:.6f} TRX"
+                    )
+                    logger.debug("Account resources:")
+                    logger.debug(f"  - freeNetLimit: {account_resource.get('freeNetLimit', 0)}")
+                    logger.debug(f"  - freeNetUsed: {account_resource.get('freeNetUsed', 0)}")
+                    logger.debug(f"  - NetLimit: {account_resource.get('NetLimit', 0)}")
+                    logger.debug(f"  - NetUsed: {account_resource.get('NetUsed', 0)}")
+                    logger.debug(f"  - EnergyLimit: {account_resource.get('EnergyLimit', 0)}")
+                    logger.debug(f"  - EnergyUsed: {account_resource.get('EnergyUsed', 0)}")
+                    logger.debug(
+                        f"  - TotalEnergyLimit: {account_resource.get('TotalEnergyLimit', 0)}"
+                    )
+                    logger.debug(
+                        f"  - TotalEnergyWeight: {account_resource.get('TotalEnergyWeight', 0)}"
+                    )
+                except Exception as resource_err:
+                    logger.warning(f"Failed to fetch account resources: {resource_err}")
 
             # Log contract call parameters in detail
             self._log_contract_parameters(method, args, logger)

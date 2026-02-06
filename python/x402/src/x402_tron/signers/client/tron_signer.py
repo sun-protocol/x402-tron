@@ -61,7 +61,10 @@ class TronClientSigner(ClientSigner):
             pk = PrivateKey(bytes.fromhex(private_key))
             return pk.public_key.to_base58check_address()
         except ImportError:
-            return f"T{private_key[:33]}"
+            raise ImportError(
+                "tronpy is required to derive TRON address from private key. "
+                "Install it with: pip install 'x402-tron[tron]'"
+            )
 
     def get_address(self) -> str:
         return self._address
@@ -140,9 +143,10 @@ class TronClientSigner(ClientSigner):
             logger.info(f"[SIGN] Signature: 0x{signature}")
             return signature
         except ImportError:
-            logger.warning("eth_account not available, using fallback signing")
-            data_str = json.dumps({"domain": domain, "types": types, "message": message})
-            return await self.sign_message(data_str.encode())
+            raise ImportError(
+                "eth-account is required for EIP-712 signing. "
+                "Install it with: pip install eth-account"
+            )
 
     async def check_allowance(
         self,

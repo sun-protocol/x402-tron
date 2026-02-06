@@ -2,6 +2,7 @@
 FastAPI middleware for x402 payment processing
 """
 
+import logging
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -11,6 +12,8 @@ from fastapi.responses import JSONResponse
 from x402_tron.encoding import decode_payment_payload, encode_payment_payload
 from x402_tron.server import ResourceConfig, X402Server
 from x402_tron.types import PaymentPayload, PaymentRequirements
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from x402_tron.utils.tx_verification import TransactionVerificationResult
@@ -81,9 +84,6 @@ class X402Middleware:
                 try:
                     payload = decode_payment_payload(payment_header, PaymentPayload)
                 except Exception as e:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Failed to decode payment payload: {e}", exc_info=True)
                     logger.error(
                         f"Payment header content (first 200 chars): {payment_header[:200]}"
@@ -96,9 +96,6 @@ class X402Middleware:
 
                 verify_result = await self._server.verify_payment(payload, requirements)
                 if not verify_result.is_valid:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Payment verification failed: {verify_result.invalid_reason}")
                     logger.error(f"Payload details: {payload.model_dump(by_alias=True)}")
                     logger.error(f"Requirements: {requirements.model_dump(by_alias=True)}")
@@ -109,9 +106,6 @@ class X402Middleware:
 
                 settle_result = await self._server.settle_payment(payload, requirements)
                 if not settle_result.success:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Payment settlement failed: {settle_result.error_reason}")
                     logger.error(f"Settlement result: {settle_result.model_dump(by_alias=True)}")
                     return JSONResponse(
@@ -186,9 +180,6 @@ class X402Middleware:
             return await verifier.verify_transaction(tx_hash, payload, requirements)
         except ValueError as e:
             # No verifier available for this network, skip verification
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.warning(f"Transaction verification skipped: {e}")
             return TransactionVerificationResult(
                 success=True,

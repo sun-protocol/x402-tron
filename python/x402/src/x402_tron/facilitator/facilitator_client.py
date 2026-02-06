@@ -59,6 +59,12 @@ class FacilitatorClient:
             await self._http_client.aclose()
             self._http_client = None
 
+    async def __aenter__(self) -> "FacilitatorClient":
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self.close()
+
     @property
     def facilitator_address(self) -> str | None:
         """Get cached facilitator address (call fetch_facilitator_address first)"""

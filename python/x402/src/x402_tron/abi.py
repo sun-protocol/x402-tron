@@ -2,6 +2,7 @@
 Shared ABI definitions for smart contracts
 """
 
+import hashlib
 import json
 from typing import Any, List
 
@@ -196,8 +197,6 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
         >>> method_id = calculate_method_id(PAYMENT_PERMIT_ABI, "permitTransferFrom")
         >>> print(method_id)  # "c13f2d68"
     """
-    from Crypto.Hash import keccak
-
     # Find function definition in ABI
     func_abi = None
     for item in abi:
@@ -228,9 +227,7 @@ def calculate_method_id(abi: List[dict[str, Any]], method_name: str) -> str:
     function_signature = f"{method_name}({','.join(input_types)})"
 
     # Calculate Method ID (first 4 bytes of Keccak256)
-    k = keccak.new(digest_bits=256)
-    k.update(function_signature.encode())
-    method_id = k.hexdigest()[:8]
+    method_id = hashlib.sha3_256(function_signature.encode()).hexdigest()[:8]
 
     return method_id
 
