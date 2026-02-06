@@ -121,7 +121,7 @@ export TRON_PRIVATE_KEY="your_private_key_here"
 export TRON_GRID_API_KEY="your_trongrid_api_key_here"  # Recommended
 ```
 
-**Using with AI Tools:**
+**Using with Agentic Tools:**
 You can add the [**tron_x402_payment**](https://github.com/open-aibank/openclaw-extension/tree/main/skills/tron_x402_payment) skill to your favorite agentic tools:
 
 - **OpenClaw**: `npx clawhub install tron-x402-payment`
