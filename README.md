@@ -35,7 +35,7 @@ npm i @open-aibank/x402-tron
 ### Server (Python)
 
 ```python
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from x402_tron.server import X402Server
 from x402_tron.fastapi import x402_protected
 from x402_tron.facilitator import FacilitatorClient
@@ -51,7 +51,7 @@ server.add_facilitator(FacilitatorClient("http://localhost:8001"))
     network="tron:nile",
     pay_to="YOUR_TRON_ADDRESS"
 )
-async def protected_resource():
+async def protected_resource(request: Request):
     return {"data": "secret content"}
 ```
 
@@ -59,7 +59,7 @@ async def protected_resource():
 
 ```typescript
 import { X402Client, ExactTronClientMechanism, TronClientSigner } from '@open-aibank/x402-tron';
-import TronWeb from 'tronweb';
+import { TronWeb } from 'tronweb';
 
 // Initialize client
 const tronWeb = new TronWeb({
@@ -76,11 +76,16 @@ client.register('tron:*', mechanism);
 const response = await fetch('https://api.example.com/protected');
 if (response.status === 402) {
     const paymentRequired = await response.json();
+
+    // Extract context from extensions
+    const context = paymentRequired.extensions?.paymentPermitContext;
+
     const payload = await client.createPaymentPayload(
         paymentRequired.accepts[0],
-        '/protected'
+        '/protected',
+        { paymentPermitContext: context }
     );
-    
+
     // Retry with payment
     const paidResponse = await fetch('https://api.example.com/protected', {
         headers: {
@@ -97,6 +102,7 @@ from fastapi import FastAPI
 from x402_tron.facilitator import X402Facilitator
 from x402_tron.mechanisms.facilitator import ExactTronFacilitatorMechanism
 from x402_tron.signers.facilitator import TronFacilitatorSigner
+from x402_tron.types import PaymentPayload, PaymentRequirements
 
 app = FastAPI()
 
@@ -105,10 +111,33 @@ facilitator = X402Facilitator()
 signer = TronFacilitatorSigner(private_key="YOUR_PRIVATE_KEY")
 mechanism = ExactTronFacilitatorMechanism(signer=signer)
 
-facilitator.register_mechanism("tron:nile", mechanism)
+facilitator.register(["tron:nile"], mechanism)
 
-# Mount facilitator endpoints
-app.include_router(facilitator.create_router(), prefix="")
+# Implement facilitator endpoints
+@app.get("/supported")
+async def supported():
+    return facilitator.supported(fee_to=signer.get_address())
+
+@app.post("/fee/quote")
+async def fee_quote(body: dict):
+    return await facilitator.fee_quote(
+        PaymentRequirements(**body["accept"]),
+        body.get("paymentPermitContext")
+    )
+
+@app.post("/verify")
+async def verify(body: dict):
+    return await facilitator.verify(
+        PaymentPayload(**body["paymentPayload"]),
+        PaymentRequirements(**body["paymentRequirements"])
+    )
+
+@app.post("/settle")
+async def settle(body: dict):
+    return await facilitator.settle(
+        PaymentPayload(**body["paymentPayload"]),
+        PaymentRequirements(**body["paymentRequirements"])
+    )
 ```
 
 ## Architecture
