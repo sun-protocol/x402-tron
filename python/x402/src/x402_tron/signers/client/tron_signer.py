@@ -45,9 +45,9 @@ class TronClientSigner(ClientSigner):
         """
         if self._async_tron_client is None and self._network:
             try:
-                from tronpy import AsyncTron
+                from x402_tron.utils.tron_client import create_async_tron_client
 
-                self._async_tron_client = AsyncTron(network=self._network)
+                self._async_tron_client = create_async_tron_client(self._network)
             except ImportError:
                 pass
         return self._async_tron_client

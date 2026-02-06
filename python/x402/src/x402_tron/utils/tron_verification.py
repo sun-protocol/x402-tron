@@ -20,12 +20,9 @@ class TronTransactionVerifier(BaseTransactionVerifier):
     def _ensure_async_client(self) -> Any:
         """Lazy initialize async tronpy client"""
         if self._async_client is None:
-            try:
-                from tronpy import AsyncTron
+            from x402_tron.utils.tron_client import create_async_tron_client
 
-                self._async_client = AsyncTron(network=self._network)
-            except ImportError:
-                raise RuntimeError("tronpy is required for TRON transaction verification")
+            self._async_client = create_async_tron_client(self._network)
         return self._async_client
 
     def normalize_address(self, address: str) -> str:
