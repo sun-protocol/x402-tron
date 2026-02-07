@@ -75,18 +75,14 @@ class TestTokenWhitelist:
     @pytest.mark.anyio
     async def test_allowed_token_passes(self, mock_signer, valid_payload, nile_requirements):
         """Whitelisted token should pass validation"""
-        mechanism = ExactTronFacilitatorMechanism(
-            mock_signer, allowed_tokens={"TTestUSDTAddress"}
-        )
+        mechanism = ExactTronFacilitatorMechanism(mock_signer, allowed_tokens={"TTestUSDTAddress"})
         result = await mechanism.verify(valid_payload, nile_requirements)
         assert result.is_valid is True
 
     @pytest.mark.anyio
     async def test_disallowed_token_rejected(self, mock_signer, valid_payload, nile_requirements):
         """Non-whitelisted token should be rejected"""
-        mechanism = ExactTronFacilitatorMechanism(
-            mock_signer, allowed_tokens={"TSomeOtherToken"}
-        )
+        mechanism = ExactTronFacilitatorMechanism(mock_signer, allowed_tokens={"TSomeOtherToken"})
         result = await mechanism.verify(valid_payload, nile_requirements)
         assert result.is_valid is False
         assert result.invalid_reason == "token_not_allowed"
@@ -109,9 +105,7 @@ class TestTokenWhitelist:
     @pytest.mark.anyio
     async def test_case_insensitive_match(self, mock_signer, valid_payload, nile_requirements):
         """Token whitelist matching should be case-insensitive"""
-        mechanism = ExactTronFacilitatorMechanism(
-            mock_signer, allowed_tokens={"ttestusdtaddress"}
-        )
+        mechanism = ExactTronFacilitatorMechanism(mock_signer, allowed_tokens={"ttestusdtaddress"})
         result = await mechanism.verify(valid_payload, nile_requirements)
         assert result.is_valid is True
 
@@ -120,9 +114,7 @@ class TestTokenWhitelist:
         self, mock_signer, valid_payload, nile_requirements
     ):
         """Settle should also reject non-whitelisted tokens"""
-        mechanism = ExactTronFacilitatorMechanism(
-            mock_signer, allowed_tokens={"TSomeOtherToken"}
-        )
+        mechanism = ExactTronFacilitatorMechanism(mock_signer, allowed_tokens={"TSomeOtherToken"})
         result = await mechanism.settle(valid_payload, nile_requirements)
         assert result.success is False
         assert result.error_reason == "token_not_allowed"
