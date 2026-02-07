@@ -25,7 +25,7 @@ class NetworkConfig:
     PAYMENT_PERMIT_ADDRESSES: Dict[str, str] = {
         "tron:mainnet": "THnW1E6yQWgx9P3QtSqWw2t3qGwH35jARg",
         "tron:shasta": "TVjYLoXatyMkemxzeB9M8ZE3uGttR9QZJ8",
-        "tron:nile": "TQr1nSWDLWgmJ3tkbFZANnaFcB5ci7Hvxa",
+        "tron:nile": "TLEwy4d8oh5gTGUiwWcNUBSzppRNfaWymc",
     }
 
     @classmethod

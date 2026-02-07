@@ -189,8 +189,6 @@ class BaseExactServerMechanism(ServerMechanism):
         message["meta"]["nonce"] = int(message["meta"]["nonce"])
         message["payment"]["payAmount"] = int(message["payment"]["payAmount"])
         message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
-        message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
-        message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
 
         # Convert paymentId to bytes for eth_account
         payment_id = message["meta"]["paymentId"]

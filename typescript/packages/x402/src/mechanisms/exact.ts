@@ -69,11 +69,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
         feeTo: requirements.extra?.fee?.feeTo || zeroAddress,
         feeAmount: requirements.extra?.fee?.feeAmount || '0',
       },
-      delivery: {
-        receiveToken: context.delivery.receiveToken || zeroAddress,
-        miniReceiveAmount: context.delivery.miniReceiveAmount,
-        tokenId: context.delivery.tokenId,
-      },
     };
 
     // Ensure allowance
@@ -116,11 +111,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
       fee: {
         feeTo: this.addressConverter.toEvmFormat(permit.fee.feeTo),
         feeAmount: BigInt(permit.fee.feeAmount),
-      },
-      delivery: {
-        receiveToken: this.addressConverter.toEvmFormat(permit.delivery.receiveToken),
-        miniReceiveAmount: BigInt(permit.delivery.miniReceiveAmount),
-        tokenId: BigInt(permit.delivery.tokenId),
       },
     };
 

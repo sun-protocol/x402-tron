@@ -10,7 +10,6 @@ from x402_tron.types import (
     PAYMENT_ONLY,
     PaymentPayload,
     PaymentPermitContext,
-    PaymentPermitContextDelivery,
     PaymentPermitContextMeta,
     PaymentRequired,
     PaymentRequiredExtensions,
@@ -18,7 +17,6 @@ from x402_tron.types import (
     SettleResponse,
     VerifyResponse,
 )
-from x402_tron.utils.eip712 import TRON_ZERO_ADDRESS
 
 if TYPE_CHECKING:
     from x402_tron.facilitator.facilitator_client import FacilitatorClient
@@ -215,11 +213,6 @@ class X402Server:
                     validBefore=valid_before or (now + 3600),
                 ),
                 caller=effective_caller,
-                delivery=PaymentPermitContextDelivery(
-                    receiveToken=TRON_ZERO_ADDRESS,
-                    miniReceiveAmount="0",
-                    tokenId="0",
-                ),
             )
         )
 
