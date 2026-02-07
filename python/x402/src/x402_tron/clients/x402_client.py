@@ -5,6 +5,7 @@ X402Client - Core payment client for x402 protocol
 import logging
 from typing import Any, Callable, Protocol
 
+from x402_tron.mechanisms.client.gasfree import GasFreeTronClientMechanism
 from x402_tron.types import (
     PaymentPayload,
     PaymentRequirements,
@@ -82,6 +83,10 @@ class X402Client:
         self._mechanisms.append(MechanismEntry(network_pattern, mechanism, priority))
         self._mechanisms.sort(key=lambda e: e.priority, reverse=True)
         return self
+
+    def with_gasfree(self, signer: Any) -> "X402Client":
+        """Register built-in GasFree mechanism for TRON"""
+        return self.register("tron:*", GasFreeTronClientMechanism(signer))
 
     def select_payment_requirements(
         self,

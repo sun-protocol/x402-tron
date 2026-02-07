@@ -18,6 +18,20 @@ export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
   'tron:nile': 'TQr1nSWDLWgmJ3tkbFZANnaFcB5ci7Hvxa',
 };
 
+/** GasFreeController contract addresses */
+export const GASFREE_CONTROLLER_ADDRESSES: Record<string, string> = {
+  'tron:mainnet': 'TFFAMQLZybALaLb4uxHA9RBE7pxhUAjF3U',
+  'tron:shasta': 'TQghdCeVDA6CnuNVTUhfaAyPfTetqZWNpm',
+  'tron:nile': 'THQGuFzL87ZqhxkgqYEryRAd7gqFqL5rdc',
+};
+
+/** GasFree beacon addresses */
+export const GASFREE_BEACON_ADDRESSES: Record<string, string> = {
+  'tron:mainnet': 'TSP9UW6FQhT76XD2jWA6ipGMx3yGbjDffP',
+  'tron:shasta': 'TQ1jvA3nLDMDNbJoMPLzTPoqAg8NvZ5CCW',
+  'tron:nile': 'TLtCGmaxH3PbuaF6kbybwteZcHptEdgQGC',
+};
+
 /** Zero address for TRON */
 export const TRON_ZERO_ADDRESS = 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb';
 
@@ -37,6 +51,20 @@ export function getChainId(network: string): number {
  */
 export function getPaymentPermitAddress(network: string): string {
   return PAYMENT_PERMIT_ADDRESSES[network] ?? TRON_ZERO_ADDRESS;
+}
+
+/**
+ * Get GasFreeController contract address for network
+ */
+export function getGasFreeControllerAddress(network: string): string {
+  return GASFREE_CONTROLLER_ADDRESSES[network] ?? TRON_ZERO_ADDRESS;
+}
+
+/**
+ * Get GasFree beacon address for network
+ */
+export function getGasFreeBeaconAddress(network: string): string {
+  return GASFREE_BEACON_ADDRESSES[network] ?? TRON_ZERO_ADDRESS;
 }
 
 /**

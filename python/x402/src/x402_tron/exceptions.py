@@ -9,6 +9,19 @@ class X402Error(Exception):
     pass
 
 
+class InsufficientGasFreeBalance(X402Error):
+    """Raised when GasFree wallet has insufficient balance for payment + fee"""
+
+    def __init__(self, address: str, required: int, current: int):
+        self.address = address
+        self.required = required
+        self.current = current
+        super().__init__(
+            f"Insufficient balance in GasFree wallet {address}. "
+            f"Required: {required}, Current: {current}. Please top up USDT/USDD."
+        )
+
+
 class SignatureError(X402Error):
     """Signature-related error"""
 

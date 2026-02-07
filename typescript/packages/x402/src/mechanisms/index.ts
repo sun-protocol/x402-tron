@@ -3,3 +3,4 @@
  */
 
 export { ExactTronClientMechanism } from './exact.js';
+export { GasFreeTronClientMechanism } from './gasfree.js';

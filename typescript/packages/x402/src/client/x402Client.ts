@@ -4,6 +4,7 @@
  * Manages payment mechanism registry and coordinates payment flows.
  */
 
+import { GasFreeTronClientMechanism } from '../mechanisms/gasfree.js';
 import type {
   PaymentRequirements,
   PaymentPayload,
@@ -93,6 +94,16 @@ export class X402Client {
     });
     this.mechanisms.sort((a, b) => b.priority - a.priority);
     return this;
+  }
+
+  /**
+   * Register built-in GasFree mechanism for TRON
+   * 
+   * @param signer - Client signer instance
+   * @returns this for method chaining
+   */
+  registerGasFree(signer: ClientSigner): X402Client {
+    return this.register('tron:*', new GasFreeTronClientMechanism(signer));
   }
 
   /**
