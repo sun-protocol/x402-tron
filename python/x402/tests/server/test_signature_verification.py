@@ -8,7 +8,6 @@ import pytest
 
 from x402_tron.server.x402_server import X402Server
 from x402_tron.types import (
-    Delivery,
     Fee,
     Payment,
     PaymentPayload,
@@ -48,11 +47,6 @@ def sample_permit():
         fee=Fee(
             feeTo="TTestFeeToAddress1111111111111111",
             feeAmount="10000",
-        ),
-        delivery=Delivery(
-            receiveToken="T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
-            miniReceiveAmount="0",
-            tokenId="0",
         ),
     )
 

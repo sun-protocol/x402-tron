@@ -49,6 +49,7 @@ class FacilitatorSigner(ABC):
         abi: str,
         method: str,
         args: list[Any],
+        network: str | None = None,
     ) -> str | None:
         """
         Execute a contract write transaction.
@@ -58,6 +59,7 @@ class FacilitatorSigner(ABC):
             abi: Contract ABI (JSON string)
             method: Method name
             args: Method arguments
+            network: Network identifier (e.g. "tron:nile")
 
         Returns:
             Transaction hash, or None on failure
@@ -69,6 +71,7 @@ class FacilitatorSigner(ABC):
         self,
         tx_hash: str,
         timeout: int = 120,
+        network: str | None = None,
     ) -> dict[str, Any]:
         """
         Wait for transaction confirmation.
@@ -76,6 +79,7 @@ class FacilitatorSigner(ABC):
         Args:
             tx_hash: Transaction hash
             timeout: Timeout in seconds
+            network: Network identifier (e.g. "tron:nile")
 
         Returns:
             Transaction receipt

@@ -61,8 +61,6 @@ def convert_permit_to_eip712_message(permit: PaymentPermit) -> dict[str, Any]:
     message["meta"]["nonce"] = int(message["meta"]["nonce"])
     message["payment"]["payAmount"] = int(message["payment"]["payAmount"])
     message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
-    message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
-    message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
 
     # Convert paymentId from hex string to bytes16
     message["meta"]["paymentId"] = payment_id_to_bytes(message["meta"]["paymentId"])
@@ -86,6 +84,5 @@ def convert_tron_addresses_to_evm(message: dict[str, Any], tron_to_evm_fn) -> di
     message["payment"]["payToken"] = tron_to_evm_fn(message["payment"]["payToken"])
     message["payment"]["payTo"] = tron_to_evm_fn(message["payment"]["payTo"])
     message["fee"]["feeTo"] = tron_to_evm_fn(message["fee"]["feeTo"])
-    message["delivery"]["receiveToken"] = tron_to_evm_fn(message["delivery"]["receiveToken"])
 
     return message

@@ -51,17 +51,6 @@ class Fee(BaseModel):
         populate_by_name = True
 
 
-class Delivery(BaseModel):
-    """Delivery information for on-chain delivery"""
-
-    receive_token: str = Field(alias="receiveToken")
-    mini_receive_amount: str = Field(alias="miniReceiveAmount")
-    token_id: str = Field(alias="tokenId")
-
-    class Config:
-        populate_by_name = True
-
-
 class PaymentPermit(BaseModel):
     """Payment permit structure"""
 
@@ -70,7 +59,6 @@ class PaymentPermit(BaseModel):
     caller: str
     payment: Payment
     fee: Fee
-    delivery: Delivery
 
 
 class FeeInfo(BaseModel):
@@ -120,23 +108,11 @@ class PaymentPermitContextMeta(BaseModel):
         populate_by_name = True
 
 
-class PaymentPermitContextDelivery(BaseModel):
-    """Delivery information in payment permit context"""
-
-    receive_token: str = Field(alias="receiveToken")
-    mini_receive_amount: str = Field(alias="miniReceiveAmount")
-    token_id: str = Field(alias="tokenId")
-
-    class Config:
-        populate_by_name = True
-
-
 class PaymentPermitContext(BaseModel):
     """Payment permit context from extensions"""
 
     meta: PaymentPermitContextMeta
     caller: Optional[str] = None  # Optional caller address, zero address allows any caller
-    delivery: PaymentPermitContextDelivery
 
 
 class ResourceInfo(BaseModel):

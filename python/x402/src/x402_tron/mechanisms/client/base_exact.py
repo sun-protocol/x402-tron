@@ -14,7 +14,6 @@ from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.client.base import ClientMechanism
 from x402_tron.types import (
     PAYMENT_ONLY,
-    Delivery,
     Fee,
     Payment,
     PaymentPayload,
@@ -111,7 +110,6 @@ class BaseExactClientMechanism(ClientMechanism):
         """Build PaymentPermit from requirements and context"""
         buyer_address = self._signer.get_address()
         meta = context.get("meta", {})
-        delivery = context.get("delivery", {})
         converter = self._address_converter
 
         fee_to = converter.get_zero_address()
@@ -141,13 +139,6 @@ class BaseExactClientMechanism(ClientMechanism):
             fee=Fee(
                 feeTo=fee_to,
                 feeAmount=fee_amount,
-            ),
-            delivery=Delivery(
-                receiveToken=converter.normalize(
-                    delivery.get("receiveToken", converter.get_zero_address())
-                ),
-                miniReceiveAmount=str(delivery.get("miniReceiveAmount", "0")),
-                tokenId=str(delivery.get("tokenId", "0")),
             ),
         )
 

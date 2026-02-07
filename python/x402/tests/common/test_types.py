@@ -1,5 +1,4 @@
 from x402_tron.types import (
-    Delivery,
     Fee,
     Payment,
     PaymentPermit,
@@ -26,11 +25,6 @@ def test_payment_permit_creation():
             payTo="TTestPayToAddress",
         ),
         fee=Fee(feeTo="TTestFeeAddress", feeAmount="10000"),
-        delivery=Delivery(
-            receiveToken="T0000000000000000000000000000000",
-            miniReceiveAmount="0",
-            tokenId="0",
-        ),
     )
 
     assert permit.buyer == "TTestBuyerAddress"
@@ -72,11 +66,6 @@ def test_payment_permit_serialization():
             payTo="TTestPayToAddress",
         ),
         fee=Fee(feeTo="TTestFeeAddress", feeAmount="10000"),
-        delivery=Delivery(
-            receiveToken="T0000000000000000000000000000000",
-            miniReceiveAmount="0",
-            tokenId="0",
-        ),
     )
 
     data = permit.model_dump(by_alias=True)

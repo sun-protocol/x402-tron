@@ -9,19 +9,55 @@ import base58
 logger = logging.getLogger(__name__)
 
 
+def _hex_to_base58check(hex_addr: str) -> str:
+    """Convert a 42-char TRON hex address (41...) to Base58Check.
+
+    Uses tronpy if available, otherwise falls back to manual encoding.
+    """
+    try:
+        from tronpy.keys import to_base58check_address
+
+        return to_base58check_address(hex_addr)
+    except ImportError:
+        import hashlib
+
+        addr_bytes = bytes.fromhex(hex_addr)
+        checksum = hashlib.sha256(hashlib.sha256(addr_bytes).digest()).digest()[:4]
+        return base58.b58encode(addr_bytes + checksum).decode()
+
+
 def normalize_tron_address(tron_addr: str) -> str:
-    """Normalize TRON address, converting invalid placeholders to valid zero address
+    """Normalize TRON address to Base58Check format.
+
+    Handles:
+        - Base58Check (T...): returned as-is
+        - EVM hex (0x...): converted to Base58Check
+        - TRON hex (41...): converted to Base58Check
+        - Zero address placeholder (T0000...): converted to valid zero address
 
     Args:
-        tron_addr: TRON address in Base58 format
+        tron_addr: TRON address in any format
 
     Returns:
-        Normalized TRON address
+        Normalized TRON address in Base58Check format
     """
     # Handle zero address placeholder (T0000... or similar)
     if tron_addr.startswith("T") and all(c in "0T" for c in tron_addr):
-        # Return valid TRON zero address with correct checksum
         return "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
+
+    # EVM hex format (0x + 40 hex chars) → prepend 41 and convert
+    if tron_addr.startswith("0x") and len(tron_addr) == 42:
+        hex_body = tron_addr[2:]
+        if all(c in "0123456789abcdefABCDEF" for c in hex_body):
+            return _hex_to_base58check("41" + hex_body.lower())
+
+    # TRON hex format (41 + 40 hex chars)
+    if tron_addr.startswith("41") and len(tron_addr) == 42:
+        hex_body = tron_addr[2:]
+        if all(c in "0123456789abcdefABCDEF" for c in hex_body):
+            return _hex_to_base58check(tron_addr.lower())
+
+    # Already Base58Check or unknown format — return as-is
     return tron_addr
 
 
