@@ -111,7 +111,7 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
-    mock_server.add_facilitator(mock_facilitator)
+    mock_server.set_facilitator(mock_facilitator)
 
     # Create payload with valid signature
     payload = PaymentPayload(
@@ -143,7 +143,7 @@ async def test_verify_payment_without_mechanism(mock_server, sample_permit, samp
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
-    mock_server.add_facilitator(mock_facilitator)
+    mock_server.set_facilitator(mock_facilitator)
 
     # Create payload
     payload = PaymentPayload(

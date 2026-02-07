@@ -10,6 +10,7 @@ export * from './types/index.js';
 export * from './utils/index.js';
 export * from './abi.js';
 export * from './config.js';
+export * from './tokens.js';
 export * from './address.js';
 
 // HTTP Client

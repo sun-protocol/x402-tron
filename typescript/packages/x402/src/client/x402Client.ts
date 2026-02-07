@@ -9,6 +9,8 @@ import type {
   PaymentPayload,
   PaymentPermitContext,
 } from '../types/index.js';
+import { DefaultTokenSelectionStrategy } from './tokenSelection.js';
+import type { TokenSelectionStrategy } from './tokenSelection.js';
 
 /** Client mechanism interface */
 export interface ClientMechanism {
@@ -76,6 +78,11 @@ interface MechanismEntry {
  */
 export class X402Client {
   private mechanisms: MechanismEntry[] = [];
+  private tokenStrategy?: TokenSelectionStrategy;
+
+  constructor(options?: { tokenStrategy?: TokenSelectionStrategy }) {
+    this.tokenStrategy = options?.tokenStrategy;
+  }
 
   /**
    * Register payment mechanism for network pattern
@@ -127,7 +134,11 @@ export class X402Client {
       throw new Error('No supported payment requirements found');
     }
 
-    return candidates[0];
+    if (this.tokenStrategy) {
+      return this.tokenStrategy.select(candidates);
+    }
+
+    return new DefaultTokenSelectionStrategy().select(candidates);
   }
 
   /**
