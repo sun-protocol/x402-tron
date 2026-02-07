@@ -73,7 +73,7 @@ class X402Server:
             auto_register_tron: If True, automatically register TRON mechanisms for all networks
         """
         self._mechanisms: dict[str, ServerMechanism] = {}
-        self._facilitators: list["FacilitatorClient"] = []
+        self._facilitator: "FacilitatorClient | None" = None
 
         if auto_register_tron:
             self._register_default_tron_mechanisms()
@@ -101,8 +101,8 @@ class X402Server:
         self.register(NetworkConfig.TRON_SHASTA, tron_mechanism)
         self.register(NetworkConfig.TRON_NILE, tron_mechanism)
 
-    def add_facilitator(self, client: "FacilitatorClient") -> "X402Server":
-        """Add a facilitator client.
+    def set_facilitator(self, client: "FacilitatorClient") -> "X402Server":
+        """Set the facilitator client.
 
         Args:
             client: FacilitatorClient instance
@@ -110,7 +110,7 @@ class X402Server:
         Returns:
             self for method chaining
         """
-        self._facilitators.append(client)
+        self._facilitator = client
         return self
 
     async def build_payment_requirements(
@@ -144,8 +144,8 @@ class X402Server:
             requirements, config.delivery_mode
         )
 
-        if self._facilitators:
-            facilitator = self._facilitators[0]
+        if self._facilitator:
+            facilitator = self._facilitator
             # Fetch and cache facilitator address for use in create_payment_required_response
             await facilitator.fetch_facilitator_address()
 
@@ -195,8 +195,8 @@ class X402Server:
 
         # Get caller (facilitator address) from first facilitator if not provided
         effective_caller = caller
-        if effective_caller is None and self._facilitators:
-            effective_caller = self._facilitators[0].facilitator_address
+        if effective_caller is None and self._facilitator:
+            effective_caller = self._facilitator.facilitator_address
             # Log for debugging
             import logging
 
@@ -252,11 +252,10 @@ class X402Server:
             if not is_valid:
                 return VerifyResponse(isValid=False, invalidReason="invalid_signature_server")
 
-        facilitator = self._find_facilitator_for_payload(payload)
-        if facilitator is None:
+        if self._facilitator is None:
             return VerifyResponse(isValid=False, invalidReason="no_facilitator")
 
-        return await facilitator.verify(payload, requirements)
+        return await self._facilitator.verify(payload, requirements)
 
     async def settle_payment(
         self,
@@ -273,11 +272,10 @@ class X402Server:
         Returns:
             SettleResponse with tx_hash
         """
-        facilitator = self._find_facilitator_for_payload(payload)
-        if facilitator is None:
+        if self._facilitator is None:
             return SettleResponse(success=False, errorReason="no_facilitator")
 
-        return await facilitator.settle(payload, requirements)
+        return await self._facilitator.settle(payload, requirements)
 
     def _validate_payload_matches_requirements(
         self,
@@ -296,18 +294,3 @@ class X402Server:
 
         return True
 
-    def _find_facilitator_for_payload(self, payload: PaymentPayload) -> "FacilitatorClient | None":
-        """Find facilitator for the payload"""
-        if not self._facilitators:
-            return None
-
-        facilitator_id = None
-        if payload.accepted.extra and payload.accepted.extra.fee:
-            facilitator_id = payload.accepted.extra.fee.facilitator_id
-
-        if facilitator_id:
-            for f in self._facilitators:
-                if f.facilitator_id == facilitator_id:
-                    return f
-
-        return self._facilitators[0]

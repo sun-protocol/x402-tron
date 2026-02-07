@@ -26,7 +26,7 @@ class X402Middleware:
 
     Usage:
         app = FastAPI()
-        server = X402Server().add_facilitator(...)
+        server = X402Server().set_facilitator(...)
         middleware = X402Middleware(server)
 
         @app.get("/protected")

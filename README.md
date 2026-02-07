@@ -72,7 +72,7 @@ from x402_tron.facilitator import FacilitatorClient
 app = FastAPI()
 server = X402Server()
 # Use a local or hosted facilitator
-server.add_facilitator(FacilitatorClient("http://localhost:8001"))
+server.set_facilitator(FacilitatorClient("http://localhost:8001"))
 
 @app.get("/protected")
 @x402_protected(
