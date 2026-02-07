@@ -293,4 +293,3 @@ class X402Server:
             return False
 
         return True
-

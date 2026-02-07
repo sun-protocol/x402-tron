@@ -3,12 +3,15 @@ X402Client - Core payment client for x402 protocol
 """
 
 import logging
-from typing import Any, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 from x402_tron.types import (
     PaymentPayload,
     PaymentRequirements,
 )
+
+if TYPE_CHECKING:
+    from x402_tron.clients.token_selection import TokenSelectionStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +64,19 @@ class X402Client:
     Manages payment mechanism registry and coordinates payment flow.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        token_strategy: "TokenSelectionStrategy | None" = None,
+    ) -> None:
+        """
+        Initialize X402Client.
+
+        Args:
+            token_strategy: Strategy for selecting which token to pay with.
+                            If None, uses first available option.
+        """
         self._mechanisms: list[MechanismEntry] = []
+        self._token_strategy = token_strategy
 
     def register(self, network_pattern: str, mechanism: ClientMechanism) -> "X402Client":
         """
@@ -83,13 +97,17 @@ class X402Client:
         self._mechanisms.sort(key=lambda e: e.priority, reverse=True)
         return self
 
-    def select_payment_requirements(
+    async def select_payment_requirements(
         self,
         accepts: list[PaymentRequirements],
         filters: PaymentRequirementsFilter | None = None,
     ) -> PaymentRequirements:
         """
         Select payment requirements from available options.
+
+        Applies filters, then delegates to the token selection strategy
+        if one is configured (and a signer is available). Otherwise
+        falls back to picking the first candidate.
 
         Args:
             accepts: Available payment requirements
@@ -121,7 +139,11 @@ class X402Client:
             logger.error("No supported payment requirements found")
             raise ValueError("No supported payment requirements found")
 
-        selected = candidates[0]
+        if self._token_strategy:
+            selected = await self._token_strategy.select(candidates)
+        else:
+            selected = candidates[0]
+
         logger.info(
             "Selected payment requirement: network=%s, scheme=%s, amount=%s",
             selected.network,
@@ -182,7 +204,7 @@ class X402Client:
         if selector:
             requirements = selector(accepts)
         else:
-            requirements = self.select_payment_requirements(accepts)
+            requirements = await self.select_payment_requirements(accepts)
 
         return await self.create_payment_payload(requirements, resource, extensions)
 

@@ -1,6 +1,7 @@
 import pytest
 
 from x402_tron.clients import X402Client
+from x402_tron.clients.x402_client import PaymentRequirementsFilter
 from x402_tron.types import PaymentRequirements
 
 
@@ -29,7 +30,8 @@ def test_client_register_mechanism():
     assert result is client  # 应该返回 self 以支持链式调用
 
 
-def test_client_select_payment_requirements():
+@pytest.mark.anyio
+async def test_client_select_payment_requirements():
     """测试从多个网络中选择支付要求"""
     client = X402Client()
     mechanism = MockClientMechanism()
@@ -53,11 +55,12 @@ def test_client_select_payment_requirements():
     ]
 
     # 默认应该选择第一个
-    selected = client.select_payment_requirements(accepts)
+    selected = await client.select_payment_requirements(accepts)
     assert selected.network in ["tron:shasta", "eip155:8453"]
 
 
-def test_client_select_with_tron_filter():
+@pytest.mark.anyio
+async def test_client_select_with_tron_filter():
     """测试使用过滤器选择 TRON 支付要求"""
     client = X402Client()
     mechanism = MockClientMechanism()
@@ -81,11 +84,14 @@ def test_client_select_with_tron_filter():
     ]
 
     # 过滤 TRON 网络
-    selected = client.select_payment_requirements(accepts, filters={"network": "tron:shasta"})
+    selected = await client.select_payment_requirements(
+        accepts, filters=PaymentRequirementsFilter(network="tron:shasta")
+    )
     assert selected.network == "tron:shasta"
 
 
-def test_client_select_with_evm_filter():
+@pytest.mark.anyio
+async def test_client_select_with_evm_filter():
     """测试使用过滤器选择 EVM 支付要求"""
     client = X402Client()
 
@@ -109,7 +115,9 @@ def test_client_select_with_evm_filter():
     ]
 
     # 过滤 EVM 网络
-    selected = client.select_payment_requirements(accepts, filters={"network": "eip155:8453"})
+    selected = await client.select_payment_requirements(
+        accepts, filters=PaymentRequirementsFilter(network="eip155:8453")
+    )
     assert selected.network == "eip155:8453"
 
 
