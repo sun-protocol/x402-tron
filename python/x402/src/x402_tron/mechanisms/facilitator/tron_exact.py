@@ -91,4 +91,5 @@ class ExactTronFacilitatorMechanism(BaseExactFacilitatorMechanism):
             abi=get_abi_json(PAYMENT_PERMIT_ABI),
             method="permitTransferFrom",
             args=args,
+            network=requirements.network,
         )

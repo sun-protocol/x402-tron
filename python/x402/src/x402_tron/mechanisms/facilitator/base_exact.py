@@ -175,7 +175,9 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
 
         self._logger.info(f"Transaction broadcast successful: txHash={tx_hash}")
         self._logger.info("Waiting for transaction receipt...")
-        receipt = await self._signer.wait_for_transaction_receipt(tx_hash)
+        receipt = await self._signer.wait_for_transaction_receipt(
+            tx_hash, network=requirements.network
+        )
         self._logger.info(f"Transaction confirmed: {receipt}")
 
         # Validate transaction status
