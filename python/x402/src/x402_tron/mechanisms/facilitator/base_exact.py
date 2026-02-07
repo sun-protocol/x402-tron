@@ -203,8 +203,7 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         if self._allowed_tokens is not None:
             if permit.payment.pay_token.lower() not in self._allowed_tokens:
                 self._logger.warning(
-                    f"Token not allowed: {permit.payment.pay_token} "
-                    f"not in {self._allowed_tokens}"
+                    f"Token not allowed: {permit.payment.pay_token} not in {self._allowed_tokens}"
                 )
                 return "token_not_allowed"
 
