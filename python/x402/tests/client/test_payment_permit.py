@@ -42,11 +42,6 @@ def permit_context():
                 "validAfter": 0,
                 "validBefore": int(time.time()) + 3600,
             },
-            "delivery": {
-                "receiveToken": "T0000000000000000000000000000000",
-                "miniReceiveAmount": "0",
-                "tokenId": "0",
-            },
         }
     }
 

@@ -5,7 +5,6 @@ import pytest
 
 from x402_tron.mechanisms.facilitator.tron_exact import ExactTronFacilitatorMechanism
 from x402_tron.types import (
-    Delivery,
     Fee,
     Payment,
     PaymentPayload,
@@ -64,12 +63,7 @@ def valid_payload(nile_requirements):
                     payAmount="1000000",
                     payTo="TTestMerchantAddress",
                 ),
-                fee=Fee(feeTo="TTestFacilitator", feeAmount="1000000"),
-                delivery=Delivery(
-                    receiveToken="T0000000000000000000000000000000",
-                    miniReceiveAmount="0",
-                    tokenId="0",
-                ),
+                fee=Fee(feeTo="TTestFacilitator", feeAmount="10000"),
             ),
         ),
     )

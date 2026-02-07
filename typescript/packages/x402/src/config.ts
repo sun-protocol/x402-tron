@@ -15,7 +15,7 @@ export const CHAIN_IDS: Record<string, number> = {
 export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
   'tron:mainnet': 'THnW1E6yQWgx9P3QtSqWw2t3qGwH35jARg',
   'tron:shasta': 'TVjYLoXatyMkemxzeB9M8ZE3uGttR9QZJ8',
-  'tron:nile': 'TQr1nSWDLWgmJ3tkbFZANnaFcB5ci7Hvxa',
+  'tron:nile': 'TLEwy4d8oh5gTGUiwWcNUBSzppRNfaWymc',
 };
 
 /** Zero address for TRON */

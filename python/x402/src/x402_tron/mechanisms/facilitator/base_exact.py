@@ -301,7 +301,6 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         pay_token = converter.normalize(permit.payment.pay_token)
         pay_to = converter.normalize(permit.payment.pay_to)
         fee_to = converter.normalize(permit.fee.fee_to)
-        receive_token = converter.normalize(permit.delivery.receive_token)
 
         return (
             (  # meta tuple
@@ -315,9 +314,4 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
             caller,
             (pay_token, int(permit.payment.pay_amount), pay_to),
             (fee_to, int(permit.fee.fee_amount)),
-            (
-                receive_token,
-                int(permit.delivery.mini_receive_amount),
-                int(permit.delivery.token_id),
-            ),
         )
