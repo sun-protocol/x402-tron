@@ -28,7 +28,7 @@ def create_async_tron_client(network: str) -> Any:
     """
     # Strip "tron:" prefix if present (e.g. "tron:nile" -> "nile")
     if network.startswith("tron:"):
-        network = network[len("tron:"):]
+        network = network[len("tron:") :]
 
     api_key = os.getenv("TRON_GRID_API_KEY")
     if not api_key:
