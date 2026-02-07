@@ -21,11 +21,15 @@ def create_async_tron_client(network: str) -> Any:
     Automatically uses TronGrid API key from TRON_GRID_API_KEY env var if set.
 
     Args:
-        network: TRON network name (mainnet/shasta/nile)
+        network: TRON network name (e.g. "nile", "mainnet") or full identifier (e.g. "tron:nile")
 
     Returns:
         tronpy.AsyncTron instance
     """
+    # Strip "tron:" prefix if present (e.g. "tron:nile" -> "nile")
+    if network.startswith("tron:"):
+        network = network[len("tron:"):]
+
     api_key = os.getenv("TRON_GRID_API_KEY")
     if not api_key:
         logger.warning(

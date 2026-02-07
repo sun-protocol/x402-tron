@@ -138,7 +138,8 @@ def get_payment_permit_eip712_types() -> dict[str, Any]:
     - PAYMENT_TYPEHASH = "Payment(address payToken,uint256 payAmount,address payTo)"
     - FEE_TYPEHASH = "Fee(address feeTo,uint256 feeAmount)"
     - PAYMENT_PERMIT_DETAILS_TYPEHASH =
-      "PaymentPermitDetails(PermitMeta meta,address buyer,address caller,Payment payment,Fee fee)..."
+      "PaymentPermitDetails(PermitMeta meta,address buyer,"
+      "address caller,Payment payment,Fee fee)..."
 
     Note: The primary type name is "PaymentPermitDetails" to match the contract's typehash.
     """

@@ -21,7 +21,7 @@ class TronClientSigner(ClientSigner):
         self._private_key = clean_key
         self._address = self._derive_address(clean_key)
         self._network = network
-        self._async_tron_client: Any = None
+        self._async_tron_clients: dict[str, Any] = {}
         logger.info(f"TronClientSigner initialized: address={self._address}, network={network}")
 
     @classmethod
@@ -37,20 +37,26 @@ class TronClientSigner(ClientSigner):
         """
         return cls(private_key, network)
 
-    def _ensure_async_tron_client(self) -> Any:
-        """Lazy initialize async tron_client.
+    def _ensure_async_tron_client(self, network: str | None = None) -> Any:
+        """Lazy initialize async tron_client for the given network.
+
+        Args:
+            network: Network identifier. Falls back to self._network if None.
 
         Returns:
             tronpy.AsyncTron instance or None
         """
-        if self._async_tron_client is None and self._network:
+        net = network or self._network
+        if not net:
+            return None
+        if net not in self._async_tron_clients:
             try:
                 from x402_tron.utils.tron_client import create_async_tron_client
 
-                self._async_tron_client = create_async_tron_client(self._network)
+                self._async_tron_clients[net] = create_async_tron_client(net)
             except ImportError:
-                pass
-        return self._async_tron_client
+                return None
+        return self._async_tron_clients[net]
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
@@ -165,7 +171,7 @@ class TronClientSigner(ClientSigner):
             )
             return 0
 
-        client = self._ensure_async_tron_client()
+        client = self._ensure_async_tron_client(network)
         if client is None:
             logger.warning("AsyncTron client not available, returning 0 allowance")
             return 0
@@ -208,7 +214,7 @@ class TronClientSigner(ClientSigner):
             raise NotImplementedError("Interactive approval not implemented")
 
         logger.info(f"Insufficient allowance ({current} < {amount}), requesting approval...")
-        client = self._ensure_async_tron_client()
+        client = self._ensure_async_tron_client(network)
         if client is None:
             raise RuntimeError("AsyncTron client required for approval")
 
