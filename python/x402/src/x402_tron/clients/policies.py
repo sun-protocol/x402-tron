@@ -22,8 +22,8 @@ def _get_decimals(req: PaymentRequirements) -> int:
     return token.decimals if token else 6
 
 
-def sufficient_balance_policy(signer: "ClientSigner"):
-    """Create a policy that filters out requirements with insufficient balance.
+class SufficientBalancePolicy:
+    """Policy that filters out requirements with insufficient balance.
 
     When the server accepts multiple tokens (e.g. USDT and USDD),
     this policy checks the user's on-chain balance for each option
@@ -31,20 +31,18 @@ def sufficient_balance_policy(signer: "ClientSigner"):
 
     If all requirements are unaffordable, returns an empty list so the
     caller can raise an appropriate error.
-
-    Args:
-        signer: ClientSigner with check_balance capability
-
-    Returns:
-        Async policy function for use with X402Client.register_policy()
     """
 
-    async def policy(
+    def __init__(self, signer: "ClientSigner") -> None:
+        self._signer = signer
+
+    async def apply(
+        self,
         requirements: list[PaymentRequirements],
     ) -> list[PaymentRequirements]:
         affordable: list[PaymentRequirements] = []
         for req in requirements:
-            balance = await signer.check_balance(req.asset, req.network)
+            balance = await self._signer.check_balance(req.asset, req.network)
             needed = int(req.amount)
             if hasattr(req, "extra") and req.extra and hasattr(req.extra, "fee"):
                 fee = req.extra.fee
@@ -76,5 +74,3 @@ def sufficient_balance_policy(signer: "ClientSigner"):
         if not affordable:
             logger.error("All payment requirements filtered: insufficient balance")
         return affordable
-
-    return policy

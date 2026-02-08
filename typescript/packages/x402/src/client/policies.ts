@@ -14,7 +14,7 @@ function getDecimals(req: PaymentRequirements): number {
 }
 
 /**
- * Create a policy that filters out requirements with insufficient balance.
+ * Policy that filters out requirements with insufficient balance.
  *
  * When the server accepts multiple tokens (e.g. USDT and USDD),
  * this policy checks the user's on-chain balance for each option
@@ -22,15 +22,18 @@ function getDecimals(req: PaymentRequirements): number {
  *
  * If all requirements are unaffordable, returns an empty array so the
  * caller can raise an appropriate error.
- *
- * @param signer - ClientSigner with checkBalance capability
- * @returns Async policy function for use with X402Client.registerPolicy()
  */
-export function sufficientBalancePolicy(signer: ClientSigner): PaymentPolicy {
-  return async (requirements: PaymentRequirements[]): Promise<PaymentRequirements[]> => {
+export class SufficientBalancePolicy implements PaymentPolicy {
+  private signer: ClientSigner;
+
+  constructor(signer: ClientSigner) {
+    this.signer = signer;
+  }
+
+  async apply(requirements: PaymentRequirements[]): Promise<PaymentRequirements[]> {
     const affordable: PaymentRequirements[] = [];
     for (const req of requirements) {
-      const balance = await signer.checkBalance(req.asset, req.network);
+      const balance = await this.signer.checkBalance(req.asset, req.network);
       let needed = BigInt(req.amount);
       if (req.extra?.fee?.feeAmount) {
         needed += BigInt(req.extra.fee.feeAmount);
@@ -56,5 +59,5 @@ export function sufficientBalancePolicy(signer: ClientSigner): PaymentPolicy {
       console.error('[x402] All payment requirements filtered: insufficient balance');
     }
     return affordable;
-  };
+  }
 }

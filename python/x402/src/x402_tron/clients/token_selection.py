@@ -59,7 +59,7 @@ def _normalized_cost(req: PaymentRequirements) -> Decimal:
     return Decimal(str(req.amount)) / Decimal(10) ** decimals
 
 
-class DefaultTokenSelectionStrategy:
+class CheapestTokenSelectionStrategy:
     """Default strategy: normalize by token decimals, pick cheapest.
 
     Compares real value (amount / 10^decimals) so that tokens with

@@ -3,7 +3,7 @@ X402Client - Core payment client for x402 protocol
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 from x402_tron.exceptions import UnsupportedNetworkError
 from x402_tron.types import (
@@ -40,12 +40,20 @@ class ClientMechanism(Protocol):
 
 PaymentRequirementsSelector = Callable[[list[PaymentRequirements]], PaymentRequirements]
 
-PaymentPolicy = Callable[[list[PaymentRequirements]], Awaitable[list[PaymentRequirements]]]
-"""Async policy function that filters or reorders payment requirements.
 
-Policies are applied in order after mechanism filtering and before token selection.
-Return a subset (or reordered list) of the input requirements.
-"""
+class PaymentPolicy(Protocol):
+    """Policy that filters or reorders payment requirements.
+
+    Policies are applied in order after mechanism filtering and before
+    token selection. Return a subset (or reordered list) of the input.
+    """
+
+    async def apply(
+        self,
+        requirements: list[PaymentRequirements],
+    ) -> list[PaymentRequirements]:
+        """Apply this policy to the given requirements."""
+        ...
 
 
 class PaymentRequirementsFilter:
@@ -135,7 +143,7 @@ class X402Client:
         Select payment requirements from available options.
 
         Applies filters, then delegates to the configured token selection
-        strategy. Falls back to DefaultTokenSelectionStrategy if none is set.
+        strategy. Falls back to CheapestTokenSelectionStrategy if none is set.
 
         Args:
             accepts: Available payment requirements
@@ -164,7 +172,7 @@ class X402Client:
         logger.debug(f"After mechanism filter: {len(candidates)} candidates")
 
         for policy in self._policies:
-            candidates = await policy(candidates)
+            candidates = await policy.apply(candidates)
             logger.debug(f"After policy: {len(candidates)} candidates")
 
         if not candidates:
@@ -174,9 +182,9 @@ class X402Client:
         if self._token_strategy:
             selected = await self._token_strategy.select(candidates)
         else:
-            from x402_tron.clients.token_selection import DefaultTokenSelectionStrategy
+            from x402_tron.clients.token_selection import CheapestTokenSelectionStrategy
 
-            selected = await DefaultTokenSelectionStrategy().select(candidates)
+            selected = await CheapestTokenSelectionStrategy().select(candidates)
 
         logger.info(
             "Selected payment requirement: network=%s, scheme=%s, amount=%s",

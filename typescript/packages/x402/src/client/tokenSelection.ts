@@ -29,7 +29,7 @@ function normalizedCost(req: PaymentRequirements): number {
  * Compares real value (amount / 10^decimals) so that tokens with
  * different precisions (e.g. USDT 6, USDD 18) are ranked fairly.
  */
-export class DefaultTokenSelectionStrategy implements TokenSelectionStrategy {
+export class CheapestTokenSelectionStrategy implements TokenSelectionStrategy {
   select(accepts: PaymentRequirements[]): PaymentRequirements {
     if (accepts.length === 0) {
       throw new Error('No payment options available');

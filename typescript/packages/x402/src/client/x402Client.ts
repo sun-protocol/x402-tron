@@ -9,7 +9,7 @@ import type {
   PaymentPayload,
   PaymentPermitContext,
 } from '../types/index.js';
-import { DefaultTokenSelectionStrategy } from './tokenSelection.js';
+import { CheapestTokenSelectionStrategy } from './tokenSelection.js';
 import type { TokenSelectionStrategy } from './tokenSelection.js';
 import { UnsupportedNetworkError } from '../errors.js';
 
@@ -68,14 +68,14 @@ export type PaymentRequirementsSelector = (
 ) => PaymentRequirements;
 
 /**
- * Policy function that filters or reorders payment requirements.
+ * Policy that filters or reorders payment requirements.
  *
  * Policies are applied in order after mechanism filtering and before token selection.
  * Return a subset (or reordered list) of the input requirements.
  */
-export type PaymentPolicy = (
-  requirements: PaymentRequirements[]
-) => PaymentRequirements[] | Promise<PaymentRequirements[]>;
+export interface PaymentPolicy {
+  apply(requirements: PaymentRequirements[]): PaymentRequirements[] | Promise<PaymentRequirements[]>;
+}
 
 /** Filter options for selecting payment requirements */
 export interface PaymentRequirementsFilter {
@@ -166,7 +166,7 @@ export class X402Client {
     candidates = candidates.filter(r => this.findMechanism(r.network) !== null);
 
     for (const policy of this.policies) {
-      candidates = await policy(candidates);
+      candidates = await policy.apply(candidates);
     }
 
     if (candidates.length === 0) {
@@ -177,7 +177,7 @@ export class X402Client {
       return this.tokenStrategy.select(candidates);
     }
 
-    return new DefaultTokenSelectionStrategy().select(candidates);
+    return new CheapestTokenSelectionStrategy().select(candidates);
   }
 
   /**
