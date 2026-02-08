@@ -34,6 +34,10 @@ export class ExactTronClientMechanism implements ClientMechanism {
     this.signer = signer;
   }
 
+  getSigner(): ClientSigner {
+    return this.signer;
+  }
+
   scheme(): string {
     return 'exact';
   }

@@ -46,6 +46,9 @@ class BaseExactClientMechanism(ClientMechanism):
         """Get address converter, implemented by subclasses"""
         pass
 
+    def get_signer(self) -> "ClientSigner":
+        return self._signer
+
     def scheme(self) -> str:
         return "exact"
 

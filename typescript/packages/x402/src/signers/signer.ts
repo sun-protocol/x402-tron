@@ -111,6 +111,33 @@ export class TronClientSigner implements ClientSigner {
     );
   }
 
+  async checkBalance(token: string, network: string): Promise<bigint> {
+    const resolvedNetwork = network || (this.network ? `tron:${this.network}` : undefined);
+    if (!resolvedNetwork) {
+      throw new UnsupportedNetworkError('network is required for checkBalance');
+    }
+
+    try {
+      const ownerHex = toEvmHex(this.address);
+
+      const result = await this.tronWeb.transactionBuilder.triggerConstantContract(
+        token,
+        'balanceOf(address)',
+        {},
+        [{ type: 'address', value: ownerHex }],
+        this.address
+      );
+
+      if (result.result?.result && result.constant_result?.length) {
+        return BigInt('0x' + result.constant_result[0]);
+      }
+    } catch (error) {
+      console.error(`[TronClientSigner] Failed to check balance: ${error}`);
+    }
+
+    return BigInt(0);
+  }
+
   async checkAllowance(token: string, _amount: bigint, network: string): Promise<bigint> {
     const resolvedNetwork = network || (this.network ? `tron:${this.network}` : undefined);
     if (!resolvedNetwork) {

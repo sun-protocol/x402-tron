@@ -151,6 +151,28 @@ class TronClientSigner(ClientSigner):
             data_str = json.dumps({"domain": domain, "types": types, "message": message})
             return await self.sign_message(data_str.encode())
 
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+    ) -> int:
+        """Check TRC20 token balance"""
+        client = self._ensure_async_tron_client(network)
+        if client is None:
+            logger.warning("AsyncTron client not available, returning 0 balance")
+            return 0
+
+        try:
+            contract = await client.get_contract(token)
+            contract.abi = ERC20_ABI
+            balance = await contract.functions.balanceOf(self._address)
+            balance_int = int(balance)
+            logger.info(f"Token balance: {balance_int} (token={token}, network={network})")
+            return balance_int
+        except Exception as e:
+            logger.error(f"Failed to check balance: {e}")
+            return 0
+
     async def check_allowance(
         self,
         token: str,

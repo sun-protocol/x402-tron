@@ -2,8 +2,9 @@
 X402Client - Core payment client for x402 protocol
 """
 
+import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Protocol
 
 from x402_tron.exceptions import UnsupportedNetworkError
 from x402_tron.types import (
@@ -24,6 +25,10 @@ class ClientMechanism(Protocol):
         """Get the payment scheme name"""
         ...
 
+    def get_signer(self) -> Any:
+        """Return the signer used by this mechanism, or None."""
+        ...
+
     async def create_payment_payload(
         self,
         requirements: PaymentRequirements,
@@ -35,6 +40,15 @@ class ClientMechanism(Protocol):
 
 
 PaymentRequirementsSelector = Callable[[list[PaymentRequirements]], PaymentRequirements]
+
+PaymentPolicy = Callable[
+    [list[PaymentRequirements]], Awaitable[list[PaymentRequirements]] | list[PaymentRequirements]
+]
+"""Policy function that filters or reorders payment requirements.
+
+Policies are applied in order after mechanism filtering and before token selection.
+Return a subset (or reordered list) of the input requirements.
+"""
 
 
 class PaymentRequirementsFilter:
@@ -77,7 +91,25 @@ class X402Client:
                             If None, uses first available option.
         """
         self._mechanisms: list[MechanismEntry] = []
+        self._policies: list[PaymentPolicy] = []
         self._token_strategy = token_strategy
+        self._has_balance_policy = False
+
+    def register_policy(self, policy: PaymentPolicy) -> "X402Client":
+        """
+        Register a payment policy.
+
+        Policies are applied in order after mechanism filtering
+        and before token selection.
+
+        Args:
+            policy: Callable that filters/reorders payment requirements
+
+        Returns:
+            self for method chaining
+        """
+        self._policies.append(policy)
+        return self
 
     def register(self, network_pattern: str, mechanism: ClientMechanism) -> "X402Client":
         """
@@ -96,6 +128,14 @@ class X402Client:
         )
         self._mechanisms.append(MechanismEntry(network_pattern, mechanism, priority))
         self._mechanisms.sort(key=lambda e: e.priority, reverse=True)
+
+        if not self._has_balance_policy:
+            signer = mechanism.get_signer()
+            if signer is not None and hasattr(signer, "check_balance"):
+                from x402_tron.clients.token_selection import sufficient_balance_policy
+                self._policies.append(sufficient_balance_policy(signer))
+                self._has_balance_policy = True
+
         return self
 
     async def select_payment_requirements(
@@ -134,6 +174,11 @@ class X402Client:
 
         candidates = [r for r in candidates if self._find_mechanism(r.network) is not None]
         logger.debug(f"After mechanism filter: {len(candidates)} candidates")
+
+        for policy in self._policies:
+            result = policy(candidates)
+            candidates = await result if inspect.isawaitable(result) else result  # type: ignore[assignment]
+            logger.debug(f"After policy: {len(candidates)} candidates")
 
         if not candidates:
             logger.error("No supported payment requirements found")
