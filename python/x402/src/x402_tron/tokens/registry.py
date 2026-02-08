@@ -117,6 +117,31 @@ class TokenRegistry:
         return {info.address for info in tokens.values()}
 
     @classmethod
+    def get_network_tokens_by_symbol(cls, symbol: str) -> list[TokenInfo]:
+        """Find all tokens across networks matching the given symbol.
+
+        Args:
+            symbol: Token symbol (e.g. "USDT")
+
+        Returns:
+            List of matching TokenInfo (empty if none found)
+        """
+        results: list[TokenInfo] = []
+        upper = symbol.upper()
+        for tokens in cls._tokens.values():
+            if upper in tokens:
+                results.append(tokens[upper])
+        return results
+
+    @classmethod
+    def all_symbols(cls) -> set[str]:
+        """Return all known token symbols across all networks."""
+        symbols: set[str] = set()
+        for tokens in cls._tokens.values():
+            symbols.update(tokens.keys())
+        return symbols
+
+    @classmethod
     def parse_price(cls, price: str, network: str) -> dict[str, Any]:
         """Parse price string into asset amount
 

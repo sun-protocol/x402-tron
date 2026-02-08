@@ -13,6 +13,7 @@ from x402_tron.abi import get_payment_permit_eip712_types
 from x402_tron.address import AddressConverter
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.facilitator.base import FacilitatorMechanism
+from x402_tron.tokens import TokenRegistry
 from x402_tron.types import (
     KIND_MAP,
     FeeInfo,
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 # Configuration constants
-DEFAULT_BASE_FEE = 1_000_000
+DEFAULT_BASE_FEE = 0
 FEE_QUOTE_EXPIRY_SECONDS = 300
 
 
@@ -43,13 +44,22 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         self,
         signer: "FacilitatorSigner",
         fee_to: str | None = None,
-        base_fee: int = DEFAULT_BASE_FEE,
+        base_fee: dict[str, int] | None = None,
         allowed_tokens: set[str] | None = None,
     ) -> None:
         self._signer = signer
         self._fee_to = fee_to or signer.get_address()
-        self._base_fee = base_fee
         self._address_converter = self._get_address_converter()
+        self._base_fee_map: dict[str, int] = {}
+        if base_fee:
+            for symbol, fee in base_fee.items():
+                upper = symbol.upper()
+                if not TokenRegistry.get_network_tokens_by_symbol(upper):
+                    raise ValueError(
+                        f"Unknown token symbol '{symbol}' in base_fee. "
+                        f"Available: {TokenRegistry.all_symbols()}"
+                    )
+                self._base_fee_map[upper] = fee
         self._allowed_tokens: set[str] | None = (
             {self._address_converter.normalize(t) for t in allowed_tokens}
             if allowed_tokens is not None
@@ -57,7 +67,7 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         )
         self._logger = logging.getLogger(self.__class__.__name__)
         self._logger.info(
-            f"Initialized: fee_to={self._fee_to}, base_fee={base_fee}, "
+            f"Initialized: fee_to={self._fee_to}, base_fee={self._base_fee_map}, "
             f"allowed_tokens={self._allowed_tokens}"
         )
 
@@ -69,13 +79,20 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
     def scheme(self) -> str:
         return "exact"
 
+    def _get_base_fee(self, token_address: str, network: str) -> int:
+        """Get base fee for a token address by looking up its symbol."""
+        token_info = TokenRegistry.find_by_address(network, token_address)
+        if token_info and token_info.symbol.upper() in self._base_fee_map:
+            return self._base_fee_map[token_info.symbol.upper()]
+        return DEFAULT_BASE_FEE
+
     async def fee_quote(
         self,
         accept: PaymentRequirements,
         context: dict[str, Any] | None = None,
     ) -> FeeQuoteResponse:
         """Calculate fee quote based on gas estimation"""
-        fee_amount = str(self._base_fee)
+        fee_amount = str(self._get_base_fee(accept.asset, accept.network))
         self._logger.info(
             f"Fee quote requested: network={accept.network}, "
             f"amount={accept.amount}, fee={fee_amount}"
@@ -234,8 +251,9 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         if norm(permit.fee.fee_to) != norm(self._fee_to):
             self._logger.warning(f"FeeTo mismatch: {permit.fee.fee_to} != {self._fee_to}")
             return "fee_to_mismatch"
-        if int(permit.fee.fee_amount) < self._base_fee:
-            self._logger.warning(f"FeeAmount too low: {permit.fee.fee_amount} < {self._base_fee}")
+        expected_fee = self._get_base_fee(permit.payment.pay_token, requirements.network)
+        if int(permit.fee.fee_amount) < expected_fee:
+            self._logger.warning(f"FeeAmount too low: {permit.fee.fee_amount} < {expected_fee}")
             return "fee_amount_mismatch"
 
         now = int(time.time())
