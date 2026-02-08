@@ -3,9 +3,12 @@ Client mechanism base interface
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from x402_tron.types import PaymentPayload, PaymentRequirements
+
+if TYPE_CHECKING:
+    from x402_tron.signers.client.base import ClientSigner
 
 
 class ClientMechanism(ABC):
@@ -19,6 +22,14 @@ class ClientMechanism(ABC):
     def scheme(self) -> str:
         """Get the payment scheme name"""
         pass
+
+    def get_signer(self) -> "ClientSigner | None":
+        """Return the signer used by this mechanism, if any.
+
+        Used by X402Client to auto-register balance-aware policies.
+        Subclasses holding a signer should override this method.
+        """
+        return None
 
     @abstractmethod
     async def create_payment_payload(

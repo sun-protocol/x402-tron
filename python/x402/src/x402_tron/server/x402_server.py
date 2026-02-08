@@ -2,15 +2,16 @@
 X402Server - Core payment server for x402 protocol
 """
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
 from x402_tron.config import NetworkConfig
 from x402_tron.types import (
     PAYMENT_ONLY,
+    FeeQuoteResponse,
     PaymentPayload,
     PaymentPermitContext,
-    PaymentPermitContextDelivery,
     PaymentPermitContextMeta,
     PaymentRequired,
     PaymentRequiredExtensions,
@@ -18,7 +19,6 @@ from x402_tron.types import (
     SettleResponse,
     VerifyResponse,
 )
-from x402_tron.utils.eip712 import TRON_ZERO_ADDRESS
 
 if TYPE_CHECKING:
     from x402_tron.facilitator.facilitator_client import FacilitatorClient
@@ -74,8 +74,9 @@ class X402Server:
         Args:
             auto_register_tron: If True, automatically register TRON mechanisms for all networks
         """
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._mechanisms: dict[str, ServerMechanism] = {}
-        self._facilitators: list["FacilitatorClient"] = []
+        self._facilitator: "FacilitatorClient | None" = None
 
         if auto_register_tron:
             self._register_default_tron_mechanisms()
@@ -103,8 +104,8 @@ class X402Server:
         self.register(NetworkConfig.TRON_SHASTA, tron_mechanism)
         self.register(NetworkConfig.TRON_NILE, tron_mechanism)
 
-    def add_facilitator(self, client: "FacilitatorClient") -> "X402Server":
-        """Add a facilitator client.
+    def set_facilitator(self, client: "FacilitatorClient") -> "X402Server":
+        """Set the facilitator client.
 
         Args:
             client: FacilitatorClient instance
@@ -112,57 +113,77 @@ class X402Server:
         Returns:
             self for method chaining
         """
-        self._facilitators.append(client)
+        self._facilitator = client
         return self
 
     async def build_payment_requirements(
         self,
-        config: ResourceConfig,
-    ) -> PaymentRequirements:
-        """Build payment requirements from resource configuration.
+        configs: list[ResourceConfig],
+    ) -> list[PaymentRequirements]:
+        """Build payment requirements from resource configurations.
 
         Args:
-            config: Resource configuration
+            configs: List of resource configurations
 
         Returns:
-            PaymentRequirements
+            List of PaymentRequirements with fee info attached
         """
-        mechanism = self._mechanisms.get(config.network)
-        if mechanism is None:
-            raise ValueError(f"No mechanism registered for network: {config.network}")
+        requirements_list: list[PaymentRequirements] = []
+        for config in configs:
+            mechanism = self._mechanisms.get(config.network)
+            if mechanism is None:
+                raise ValueError(f"No mechanism registered for network: {config.network}")
 
-        asset_info = await mechanism.parse_price(config.price, config.network)
+            asset_info = await mechanism.parse_price(config.price, config.network)
 
-        requirements = PaymentRequirements(
-            scheme=config.scheme,
-            network=config.network,
-            amount=str(asset_info["amount"]),
-            asset=asset_info["asset"],
-            payTo=config.pay_to,
-            maxTimeoutSeconds=config.valid_for,
-        )
+            requirements = PaymentRequirements(
+                scheme=config.scheme,
+                network=config.network,
+                amount=str(asset_info["amount"]),
+                asset=asset_info["asset"],
+                payTo=config.pay_to,
+                maxTimeoutSeconds=config.valid_for,
+            )
 
-        requirements = await mechanism.enhance_payment_requirements(
-            requirements, config.delivery_mode
-        )
+            requirements = await mechanism.enhance_payment_requirements(
+                requirements, config.delivery_mode
+            )
+            requirements_list.append(requirements)
 
-        if self._facilitators:
-            facilitator = self._facilitators[0]
-            # Fetch and cache facilitator address for use in create_payment_required_response
+        if self._facilitator:
+            facilitator = self._facilitator
             await facilitator.fetch_facilitator_address()
 
-            # Get fee quote from facilitator (fee is required)
-            fee_quote = await facilitator.fee_quote(requirements)
-            if fee_quote:
-                if requirements.extra is None:
+            self._logger.info(
+                "fee_quote input: %s",
+                [(r.scheme, r.network, r.asset) for r in requirements_list],
+            )
+            fee_quotes = await facilitator.fee_quote(requirements_list)
+            # Build lookup by (scheme, network, asset) for matching
+            quote_map: dict[tuple[str, str, str], FeeQuoteResponse] = {
+                (q.scheme, q.network, q.asset): q for q in fee_quotes
+            }
+            self._logger.info("fee_quote result: %s", list(quote_map.keys()))
+            supported: list[PaymentRequirements] = []
+            for req in requirements_list:
+                fee_quote = quote_map.get((req.scheme, req.network, req.asset))
+                if fee_quote is None:
+                    self._logger.warning(
+                        f"Unsupported scheme/token: network={req.network}, "
+                        f"scheme={req.scheme}, asset={req.asset} (skipped)"
+                    )
+                    continue
+                if req.extra is None:
                     from x402_tron.types import PaymentRequirementsExtra
 
-                    requirements.extra = PaymentRequirementsExtra()
-                # Set facilitatorId in the fee info
+                    req.extra = PaymentRequirementsExtra()
                 fee_quote.fee.facilitator_id = facilitator.facilitator_id
-                requirements.extra.fee = fee_quote.fee
+                req.extra.fee = fee_quote.fee
+                supported.append(req)
+        else:
+            raise ValueError("Facilitator is not set")
 
-        return requirements
+        return supported
 
     def create_payment_required_response(
         self,
@@ -197,8 +218,8 @@ class X402Server:
 
         # Get caller (facilitator address) from first facilitator if not provided
         effective_caller = caller
-        if effective_caller is None and self._facilitators:
-            effective_caller = self._facilitators[0].facilitator_address
+        if effective_caller is None and self._facilitator:
+            effective_caller = self._facilitator.facilitator_address
             # Log for debugging
             import logging
 
@@ -215,11 +236,6 @@ class X402Server:
                     validBefore=valid_before or (now + 3600),
                 ),
                 caller=effective_caller,
-                delivery=PaymentPermitContextDelivery(
-                    receiveToken=TRON_ZERO_ADDRESS,
-                    miniReceiveAmount="0",
-                    tokenId="0",
-                ),
             )
         )
 
@@ -259,11 +275,10 @@ class X402Server:
             if not is_valid:
                 return VerifyResponse(isValid=False, invalidReason="invalid_signature_server")
 
-        facilitator = self._find_facilitator_for_payload(payload)
-        if facilitator is None:
+        if self._facilitator is None:
             return VerifyResponse(isValid=False, invalidReason="no_facilitator")
 
-        return await facilitator.verify(payload, requirements)
+        return await self._facilitator.verify(payload, requirements)
 
     async def settle_payment(
         self,
@@ -280,11 +295,10 @@ class X402Server:
         Returns:
             SettleResponse with tx_hash
         """
-        facilitator = self._find_facilitator_for_payload(payload)
-        if facilitator is None:
+        if self._facilitator is None:
             return SettleResponse(success=False, errorReason="no_facilitator")
 
-        return await facilitator.settle(payload, requirements)
+        return await self._facilitator.settle(payload, requirements)
 
     def _validate_payload_matches_requirements(
         self,
@@ -302,19 +316,3 @@ class X402Server:
             return False
 
         return True
-
-    def _find_facilitator_for_payload(self, payload: PaymentPayload) -> "FacilitatorClient | None":
-        """Find facilitator for the payload"""
-        if not self._facilitators:
-            return None
-
-        facilitator_id = None
-        if payload.accepted.extra and payload.accepted.extra.fee:
-            facilitator_id = payload.accepted.extra.fee.facilitator_id
-
-        if facilitator_id:
-            for f in self._facilitators:
-                if f.facilitator_id == facilitator_id:
-                    return f
-
-        return self._facilitators[0]

@@ -20,6 +20,7 @@ import {
   TronAddressConverter,
   TRON_ZERO_ADDRESS,
   paymentIdToBytes,
+  PermitValidationError,
 } from '../index.js';
 
 /**
@@ -33,6 +34,10 @@ export class ExactTronClientMechanism implements ClientMechanism {
     this.signer = signer;
   }
 
+  getSigner(): ClientSigner {
+    return this.signer;
+  }
+
   scheme(): string {
     return 'exact';
   }
@@ -44,7 +49,7 @@ export class ExactTronClientMechanism implements ClientMechanism {
   ): Promise<PaymentPayload> {
     const context = extensions?.paymentPermitContext;
     if (!context) {
-      throw new Error('paymentPermitContext is required');
+      throw new PermitValidationError('missing_context', 'paymentPermitContext is required');
     }
 
     const buyerAddress = this.signer.getAddress();
@@ -68,11 +73,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
       fee: {
         feeTo: requirements.extra?.fee?.feeTo || zeroAddress,
         feeAmount: requirements.extra?.fee?.feeAmount || '0',
-      },
-      delivery: {
-        receiveToken: context.delivery.receiveToken || zeroAddress,
-        miniReceiveAmount: context.delivery.miniReceiveAmount,
-        tokenId: context.delivery.tokenId,
       },
     };
 
@@ -116,11 +116,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
       fee: {
         feeTo: this.addressConverter.toEvmFormat(permit.fee.feeTo),
         feeAmount: BigInt(permit.fee.feeAmount),
-      },
-      delivery: {
-        receiveToken: this.addressConverter.toEvmFormat(permit.delivery.receiveToken),
-        miniReceiveAmount: BigInt(permit.delivery.miniReceiveAmount),
-        tokenId: BigInt(permit.delivery.tokenId),
       },
     };
 

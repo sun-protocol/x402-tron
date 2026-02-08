@@ -35,8 +35,6 @@ class ExactTronFacilitatorMechanism(BaseExactFacilitatorMechanism):
         message["meta"]["nonce"] = int(message["meta"]["nonce"])
         message["payment"]["payAmount"] = int(message["payment"]["payAmount"])
         message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
-        message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
-        message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
 
         # Keep paymentId as hex string (TronWeb format) - do NOT convert to bytes
         # message["meta"]["paymentId"] remains as "0x..." string
@@ -93,4 +91,5 @@ class ExactTronFacilitatorMechanism(BaseExactFacilitatorMechanism):
             abi=get_abi_json(PAYMENT_PERMIT_ABI),
             method="permitTransferFrom",
             args=args,
+            network=requirements.network,
         )

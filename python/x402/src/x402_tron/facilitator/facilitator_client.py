@@ -98,29 +98,29 @@ class FacilitatorClient:
 
     async def fee_quote(
         self,
-        accept: PaymentRequirements,
+        accepts: list[PaymentRequirements],
         context: dict[str, Any] | None = None,
-    ) -> FeeQuoteResponse:
+    ) -> list[FeeQuoteResponse]:
         """
-        Query fee quote for payment requirements.
+        Query fee quotes for a list of payment requirements.
 
         Args:
-            accept: Payment requirements
+            accepts: List of payment requirements
             context: Optional payment context
 
         Returns:
-            FeeQuoteResponse with fee information
+            List of FeeQuoteResponse, one per input requirement
         """
         client = await self._get_client()
-        payload = {
-            "accept": accept.model_dump(by_alias=True),
+        payload: dict[str, Any] = {
+            "accepts": [a.model_dump(by_alias=True) for a in accepts],
         }
         if context:
             payload["paymentPermitContext"] = context
 
         response = await client.post("/fee/quote", json=payload)
         response.raise_for_status()
-        return FeeQuoteResponse(**response.json())
+        return [FeeQuoteResponse(**item) for item in response.json()]
 
     async def verify(
         self,

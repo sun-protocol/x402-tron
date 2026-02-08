@@ -22,6 +22,15 @@ EIP712_DOMAIN_TYPE = [
 # ERC20 Token ABI
 ERC20_ABI: List[dict[str, Any]] = [
     {
+        "name": "balanceOf",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [
+            {"name": "account", "type": "address"},
+        ],
+        "outputs": [{"name": "", "type": "uint256"}],
+    },
+    {
         "name": "allowance",
         "type": "function",
         "stateMutability": "view",
@@ -83,15 +92,6 @@ PAYMENT_PERMIT_ABI: List[dict[str, Any]] = [
                             {"name": "feeAmount", "type": "uint256"},
                         ],
                     },
-                    {
-                        "name": "delivery",
-                        "type": "tuple",
-                        "components": [
-                            {"name": "receiveToken", "type": "address"},
-                            {"name": "miniReceiveAmount", "type": "uint256"},
-                            {"name": "tokenId", "type": "uint256"},
-                        ],
-                    },
                 ],
             },
             {"name": "owner", "type": "address"},
@@ -103,9 +103,16 @@ PAYMENT_PERMIT_ABI: List[dict[str, Any]] = [
         "outputs": [],
     },
     {
+        "inputs": [],
+        "name": "DOMAIN_SEPARATOR",
+        "stateMutability": "view",
+        "type": "function",
+        "outputs": [{"name": "", "type": "bytes32"}],
+    },
+    {
         "inputs": [
-            {"name": "owner", "type": "address"},
-            {"name": "wordPos", "type": "uint256"},
+            {"name": "", "type": "address"},
+            {"name": "", "type": "uint256"},
         ],
         "name": "nonceBitmap",
         "stateMutability": "view",
@@ -139,10 +146,9 @@ def get_payment_permit_eip712_types() -> dict[str, Any]:
       "uint256 validBefore)"
     - PAYMENT_TYPEHASH = "Payment(address payToken,uint256 payAmount,address payTo)"
     - FEE_TYPEHASH = "Fee(address feeTo,uint256 feeAmount)"
-    - DELIVERY_TYPEHASH = "Delivery(address receiveToken,uint256 miniReceiveAmount,uint256 tokenId)"
     - PAYMENT_PERMIT_DETAILS_TYPEHASH =
-      "PaymentPermitDetails(PermitMeta meta,address buyer,address caller,Payment payment,Fee fee,"
-      "Delivery delivery)..."
+      "PaymentPermitDetails(PermitMeta meta,address buyer,"
+      "address caller,Payment payment,Fee fee)..."
 
     Note: The primary type name is "PaymentPermitDetails" to match the contract's typehash.
     """
@@ -163,18 +169,12 @@ def get_payment_permit_eip712_types() -> dict[str, Any]:
             {"name": "feeTo", "type": "address"},
             {"name": "feeAmount", "type": "uint256"},
         ],
-        "Delivery": [
-            {"name": "receiveToken", "type": "address"},
-            {"name": "miniReceiveAmount", "type": "uint256"},
-            {"name": "tokenId", "type": "uint256"},
-        ],
         "PaymentPermitDetails": [
             {"name": "meta", "type": "PermitMeta"},
             {"name": "buyer", "type": "address"},
             {"name": "caller", "type": "address"},
             {"name": "payment", "type": "Payment"},
             {"name": "fee", "type": "Fee"},
-            {"name": "delivery", "type": "Delivery"},
         ],
     }
 

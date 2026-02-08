@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING, Any
 from x402_tron.abi import get_payment_permit_eip712_types
 from x402_tron.address import AddressConverter
 from x402_tron.config import NetworkConfig
+from x402_tron.exceptions import PermitValidationError
 from x402_tron.mechanisms.client.base import ClientMechanism
 from x402_tron.types import (
     PAYMENT_ONLY,
-    Delivery,
     Fee,
     Payment,
     PaymentPayload,
@@ -45,6 +45,9 @@ class BaseExactClientMechanism(ClientMechanism):
     def _get_address_converter(self) -> AddressConverter:
         """Get address converter, implemented by subclasses"""
         pass
+
+    def get_signer(self) -> "ClientSigner":
+        return self._signer
 
     def scheme(self) -> str:
         return "exact"
@@ -80,7 +83,7 @@ class BaseExactClientMechanism(ClientMechanism):
 
         context = extensions.get("paymentPermitContext") if extensions else None
         if context is None:
-            raise ValueError("paymentPermitContext is required")
+            raise PermitValidationError("missing_context", "paymentPermitContext is required")
 
         permit = self._build_permit(requirements, context)
         self._logger.debug(f"Buyer address: {permit.buyer}, paymentId: {permit.meta.payment_id}")
@@ -111,7 +114,6 @@ class BaseExactClientMechanism(ClientMechanism):
         """Build PaymentPermit from requirements and context"""
         buyer_address = self._signer.get_address()
         meta = context.get("meta", {})
-        delivery = context.get("delivery", {})
         converter = self._address_converter
 
         fee_to = converter.get_zero_address()
@@ -141,13 +143,6 @@ class BaseExactClientMechanism(ClientMechanism):
             fee=Fee(
                 feeTo=fee_to,
                 feeAmount=fee_amount,
-            ),
-            delivery=Delivery(
-                receiveToken=converter.normalize(
-                    delivery.get("receiveToken", converter.get_zero_address())
-                ),
-                miniReceiveAmount=str(delivery.get("miniReceiveAmount", "0")),
-                tokenId=str(delivery.get("tokenId", "0")),
             ),
         )
 

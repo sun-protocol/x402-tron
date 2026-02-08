@@ -13,6 +13,7 @@ from x402_tron.abi import get_payment_permit_eip712_types
 from x402_tron.address import AddressConverter
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.facilitator.base import FacilitatorMechanism
+from x402_tron.tokens import TokenRegistry
 from x402_tron.types import (
     KIND_MAP,
     FeeInfo,
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 # Configuration constants
-DEFAULT_BASE_FEE = 1_000_000
+DEFAULT_BASE_FEE = 0
 FEE_QUOTE_EXPIRY_SECONDS = 300
 
 
@@ -43,14 +44,32 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         self,
         signer: "FacilitatorSigner",
         fee_to: str | None = None,
-        base_fee: int = DEFAULT_BASE_FEE,
+        base_fee: dict[str, int] | None = None,
+        allowed_tokens: set[str] | None = None,
     ) -> None:
         self._signer = signer
         self._fee_to = fee_to or signer.get_address()
-        self._base_fee = base_fee
         self._address_converter = self._get_address_converter()
+        self._base_fee_map: dict[str, int] = {}
+        if base_fee:
+            for symbol, fee in base_fee.items():
+                upper = symbol.upper()
+                if not TokenRegistry.get_network_tokens_by_symbol(upper):
+                    raise ValueError(
+                        f"Unknown token symbol '{symbol}' in base_fee. "
+                        f"Available: {TokenRegistry.all_symbols()}"
+                    )
+                self._base_fee_map[upper] = fee
+        self._allowed_tokens: set[str] | None = (
+            {self._address_converter.normalize(t) for t in allowed_tokens}
+            if allowed_tokens is not None
+            else None
+        )
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.info(f"Initialized: fee_to={self._fee_to}, base_fee={base_fee}")
+        self._logger.info(
+            f"Initialized: fee_to={self._fee_to}, base_fee={self._base_fee_map}, "
+            f"allowed_tokens={self._allowed_tokens}"
+        )
 
     @abstractmethod
     def _get_address_converter(self) -> AddressConverter:
@@ -60,13 +79,39 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
     def scheme(self) -> str:
         return "exact"
 
+    def _get_base_fee(self, token_address: str, network: str) -> int | None:
+        """Get base fee for a token address by looking up its symbol.
+
+        Returns:
+            Fee amount from base_fee_map, or None if the token is unknown
+            or not configured in base_fee_map.
+        """
+        token_info = TokenRegistry.find_by_address(network, token_address)
+        if token_info is None:
+            return None
+        symbol = token_info.symbol.upper()
+        if symbol not in self._base_fee_map:
+            return None
+        return self._base_fee_map[symbol]
+
     async def fee_quote(
         self,
         accept: PaymentRequirements,
         context: dict[str, Any] | None = None,
-    ) -> FeeQuoteResponse:
-        """Calculate fee quote based on gas estimation"""
-        fee_amount = str(self._base_fee)
+    ) -> FeeQuoteResponse | None:
+        """Calculate fee quote for a single payment requirement.
+
+        Returns:
+            FeeQuoteResponse, or None if the token is not supported.
+        """
+        base_fee = self._get_base_fee(accept.asset, accept.network)
+        if base_fee is None:
+            self._logger.warning(
+                f"Unsupported token: asset={accept.asset}, network={accept.network}"
+            )
+            return None
+
+        fee_amount = str(base_fee)
         self._logger.info(
             f"Fee quote requested: network={accept.network}, "
             f"amount={accept.amount}, fee={fee_amount}"
@@ -77,8 +122,10 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
                 feeTo=self._fee_to,
                 feeAmount=fee_amount,
             ),
-            pricing="per_accept",
+            pricing="flat",
+            scheme=accept.scheme,
             network=accept.network,
+            asset=accept.asset,
             expiresAt=int(time.time()) + FEE_QUOTE_EXPIRY_SECONDS,
         )
 
@@ -168,7 +215,9 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
 
         self._logger.info(f"Transaction broadcast successful: txHash={tx_hash}")
         self._logger.info("Waiting for transaction receipt...")
-        receipt = await self._signer.wait_for_transaction_receipt(tx_hash)
+        receipt = await self._signer.wait_for_transaction_receipt(
+            tx_hash, network=requirements.network
+        )
         self._logger.info(f"Transaction confirmed: {receipt}")
 
         # Validate transaction status
@@ -190,31 +239,47 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
 
     def _validate_permit(self, permit: Any, requirements: PaymentRequirements) -> str | None:
         """Validate permit matches requirements, returns error reason or None"""
+        norm = self._address_converter.normalize
+
+        # Token whitelist check - reject unsupported tokens before any other validation
+        if self._allowed_tokens is not None:
+            if norm(permit.payment.pay_token) not in self._allowed_tokens:
+                self._logger.warning(
+                    f"Token not allowed: {permit.payment.pay_token} not in {self._allowed_tokens}"
+                )
+                return "token_not_allowed"
+
         if int(permit.payment.pay_amount) < int(requirements.amount):
             self._logger.warning(
                 f"Amount mismatch: {permit.payment.pay_amount} < {requirements.amount}"
             )
             return "amount_mismatch"
 
-        # Address comparison (case-insensitive)
-        if permit.payment.pay_to.lower() != requirements.pay_to.lower():
+        # Address comparison (normalize to handle hex/Base58 mixed inputs)
+        if norm(permit.payment.pay_to) != norm(requirements.pay_to):
             self._logger.warning(
                 f"PayTo mismatch: {permit.payment.pay_to} != {requirements.pay_to}"
             )
             return "payto_mismatch"
 
-        if permit.payment.pay_token.lower() != requirements.asset.lower():
+        if norm(permit.payment.pay_token) != norm(requirements.asset):
             self._logger.warning(
                 f"Token mismatch: {permit.payment.pay_token} != {requirements.asset}"
             )
             return "token_mismatch"
 
         # Fee validation: compare against facilitator's own configured fee
-        if permit.fee.fee_to.lower() != self._fee_to.lower():
+        if norm(permit.fee.fee_to) != norm(self._fee_to):
             self._logger.warning(f"FeeTo mismatch: {permit.fee.fee_to} != {self._fee_to}")
             return "fee_to_mismatch"
-        if int(permit.fee.fee_amount) < self._base_fee:
-            self._logger.warning(f"FeeAmount too low: {permit.fee.fee_amount} < {self._base_fee}")
+        expected_fee = self._get_base_fee(permit.payment.pay_token, requirements.network)
+        if expected_fee is None:
+            self._logger.warning(
+                f"Unsupported token for fee: {permit.payment.pay_token} on {requirements.network}"
+            )
+            return "unsupported_token"
+        if int(permit.fee.fee_amount) < expected_fee:
+            self._logger.warning(f"FeeAmount too low: {permit.fee.fee_amount} < {expected_fee}")
             return "fee_amount_mismatch"
 
         now = int(time.time())
@@ -301,7 +366,6 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         pay_token = converter.normalize(permit.payment.pay_token)
         pay_to = converter.normalize(permit.payment.pay_to)
         fee_to = converter.normalize(permit.fee.fee_to)
-        receive_token = converter.normalize(permit.delivery.receive_token)
 
         return (
             (  # meta tuple
@@ -315,9 +379,4 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
             caller,
             (pay_token, int(permit.payment.pay_amount), pay_to),
             (fee_to, int(permit.fee.fee_amount)),
-            (
-                receive_token,
-                int(permit.delivery.mini_receive_amount),
-                int(permit.delivery.token_id),
-            ),
         )

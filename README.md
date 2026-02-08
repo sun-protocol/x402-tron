@@ -72,17 +72,17 @@ from x402_tron.facilitator import FacilitatorClient
 app = FastAPI()
 server = X402Server()
 # Use a local or hosted facilitator
-server.add_facilitator(FacilitatorClient("http://localhost:8001"))
+server.set_facilitator(FacilitatorClient("http://localhost:8001"))
 
 @app.get("/protected")
 @x402_protected(
     server=server,
-    price="1 USDT",       # Supports USDT, USDD, and custom tokens
-    network="tron:nile",  # Recommended for testing
+    prices=["1 USDT"],  # Accept multiple tokens
+    network="tron:nile",              # Recommended for testing
     pay_to="<YOUR_WALLET_ADDRESS>"
 )
 async def protected_resource(request: Request):
-    return {"data": "This content was paid for with USDT on TRON"}
+    return {"data": "This content was paid for on TRON"}
 ```
 
 ### 3. Client (Buyer)
@@ -98,8 +98,8 @@ const tronWeb = new TronWeb({ fullHost: 'https://nile.trongrid.io', privateKey: 
 const signer = TronClientSigner.withPrivateKey(tronWeb, '...', 'nile');
 
 // Register Mechanism and create Fetch Client
-const x402Client = new X402Client();
-x402Client.register('tron:*', new ExactTronClientMechanism(signer));
+const x402Client = new X402Client()
+  .register('tron:*', new ExactTronClientMechanism(signer));
 const client = new X402FetchClient(x402Client);
 
 // The SDK handles the 402 flow automatically

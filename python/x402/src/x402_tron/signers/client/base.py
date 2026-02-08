@@ -52,6 +52,24 @@ class ClientSigner(ABC):
         pass
 
     @abstractmethod
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+    ) -> int:
+        """
+        Check token balance.
+
+        Args:
+            token: Token contract address
+            network: Network identifier
+
+        Returns:
+            Current balance (raw units)
+        """
+        pass
+
+    @abstractmethod
     async def check_allowance(
         self,
         token: str,

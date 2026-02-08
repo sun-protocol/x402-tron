@@ -9,11 +9,20 @@ import type {
   PaymentPayload,
   PaymentPermitContext,
 } from '../types/index.js';
+import { DefaultTokenSelectionStrategy } from './tokenSelection.js';
+import type { TokenSelectionStrategy } from './tokenSelection.js';
+import { UnsupportedNetworkError } from '../errors.js';
 
 /** Client mechanism interface */
 export interface ClientMechanism {
   /** Get payment scheme name */
   scheme(): string;
+
+  /**
+   * Return the signer used by this mechanism, if any.
+   * Used by X402Client to auto-register balance-aware policies.
+   */
+  getSigner?(): ClientSigner;
   
   /** Create payment payload */
   createPaymentPayload(
@@ -38,6 +47,9 @@ export interface ClientSigner {
     message: Record<string, unknown>
   ): Promise<string>;
   
+  /** Check token balance */
+  checkBalance(token: string, network: string): Promise<bigint>;
+
   /** Check token allowance */
   checkAllowance(token: string, amount: bigint, network: string): Promise<bigint>;
   
@@ -54,6 +66,16 @@ export interface ClientSigner {
 export type PaymentRequirementsSelector = (
   requirements: PaymentRequirements[]
 ) => PaymentRequirements;
+
+/**
+ * Policy that filters or reorders payment requirements.
+ *
+ * Policies are applied in order after mechanism filtering and before token selection.
+ * Return a subset (or reordered list) of the input requirements.
+ */
+export interface PaymentPolicy {
+  apply(requirements: PaymentRequirements[]): PaymentRequirements[] | Promise<PaymentRequirements[]>;
+}
 
 /** Filter options for selecting payment requirements */
 export interface PaymentRequirementsFilter {
@@ -76,6 +98,26 @@ interface MechanismEntry {
  */
 export class X402Client {
   private mechanisms: MechanismEntry[] = [];
+  private policies: PaymentPolicy[] = [];
+  private tokenStrategy?: TokenSelectionStrategy;
+
+  constructor(options?: { tokenStrategy?: TokenSelectionStrategy }) {
+    this.tokenStrategy = options?.tokenStrategy;
+  }
+
+  /**
+   * Register a payment policy
+   *
+   * Policies are applied in order after mechanism filtering
+   * and before token selection.
+   *
+   * @param policy - Function that filters/reorders payment requirements
+   * @returns this for method chaining
+   */
+  registerPolicy(policy: PaymentPolicy): X402Client {
+    this.policies.push(policy);
+    return this;
+  }
 
   /**
    * Register payment mechanism for network pattern
@@ -102,10 +144,10 @@ export class X402Client {
    * @param filters - Optional filters
    * @returns Selected payment requirements
    */
-  selectPaymentRequirements(
+  async selectPaymentRequirements(
     accepts: PaymentRequirements[],
     filters?: PaymentRequirementsFilter
-  ): PaymentRequirements {
+  ): Promise<PaymentRequirements> {
     let candidates = accepts;
 
     if (filters?.scheme) {
@@ -123,11 +165,19 @@ export class X402Client {
 
     candidates = candidates.filter(r => this.findMechanism(r.network) !== null);
 
-    if (candidates.length === 0) {
-      throw new Error('No supported payment requirements found');
+    for (const policy of this.policies) {
+      candidates = await policy.apply(candidates);
     }
 
-    return candidates[0];
+    if (candidates.length === 0) {
+      throw new UnsupportedNetworkError('No supported payment requirements found');
+    }
+
+    if (this.tokenStrategy) {
+      return this.tokenStrategy.select(candidates);
+    }
+
+    return new DefaultTokenSelectionStrategy().select(candidates);
   }
 
   /**
@@ -145,7 +195,7 @@ export class X402Client {
   ): Promise<PaymentPayload> {
     const mechanism = this.findMechanism(requirements.network);
     if (!mechanism) {
-      throw new Error(`No mechanism registered for network: ${requirements.network}`);
+      throw new UnsupportedNetworkError(`No mechanism registered for network: ${requirements.network}`);
     }
 
     return mechanism.createPaymentPayload(requirements, resource, extensions);
@@ -168,7 +218,7 @@ export class X402Client {
   ): Promise<PaymentPayload> {
     const requirements = selector
       ? selector(accepts)
-      : this.selectPaymentRequirements(accepts);
+      : await this.selectPaymentRequirements(accepts);
 
     return this.createPaymentPayload(requirements, resource, extensions);
   }

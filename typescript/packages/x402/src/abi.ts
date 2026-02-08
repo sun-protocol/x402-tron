@@ -40,18 +40,12 @@ export const PAYMENT_PERMIT_TYPES = {
     { name: 'feeTo', type: 'address' },
     { name: 'feeAmount', type: 'uint256' },
   ],
-  Delivery: [
-    { name: 'receiveToken', type: 'address' },
-    { name: 'miniReceiveAmount', type: 'uint256' },
-    { name: 'tokenId', type: 'uint256' },
-  ],
   PaymentPermitDetails: [
     { name: 'meta', type: 'PermitMeta' },
     { name: 'buyer', type: 'address' },
     { name: 'caller', type: 'address' },
     { name: 'payment', type: 'Payment' },
     { name: 'fee', type: 'Fee' },
-    { name: 'delivery', type: 'Delivery' },
   ],
 } as const;
 

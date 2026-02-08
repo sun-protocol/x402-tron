@@ -5,7 +5,15 @@
  */
 
 import type { ClientSigner } from '../index.js';
-import { getChainId, getPaymentPermitAddress, toEvmHex, type Hex } from '../index.js';
+import {
+  getChainId,
+  getPaymentPermitAddress,
+  toEvmHex,
+  type Hex,
+  SignatureCreationError,
+  InsufficientAllowanceError,
+  UnsupportedNetworkError,
+} from '../index.js';
 import type { TronWeb, TypedDataDomain, TypedDataField, TronNetwork } from './types.js';
 
 /** ERC20 function selectors */
@@ -19,12 +27,12 @@ export class TronClientSigner implements ClientSigner {
   private tronWeb: TronWeb;
   private privateKey: string | undefined;
   private address: string; // Base58 format
-  private network: TronNetwork;
+  private network?: TronNetwork;
 
   private constructor(
     tronWeb: TronWeb,
     address: string,
-    network: TronNetwork,
+    network?: TronNetwork,
     privateKey?: string
   ) {
     this.tronWeb = tronWeb;
@@ -36,10 +44,10 @@ export class TronClientSigner implements ClientSigner {
   /**
    * Create signer from TronWeb instance (browser wallet mode)
    */
-  static fromTronWeb(tronWeb: TronWeb, network: TronNetwork = 'mainnet'): TronClientSigner {
+  static fromTronWeb(tronWeb: TronWeb, network?: TronNetwork): TronClientSigner {
     const privateKey = tronWeb.defaultPrivateKey;
     if (!privateKey) {
-      throw new Error('TronWeb instance must have a default private key or be connected to a wallet');
+      throw new SignatureCreationError('TronWeb instance must have a default private key or be connected to a wallet');
     }
     const address = tronWeb.address.fromPrivateKey(privateKey);
     return new TronClientSigner(tronWeb, address, network);
@@ -51,7 +59,7 @@ export class TronClientSigner implements ClientSigner {
   static withPrivateKey(
     tronWeb: TronWeb,
     privateKey: string,
-    network: TronNetwork = 'mainnet'
+    network?: TronNetwork
   ): TronClientSigner {
     const cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
     const address = tronWeb.address.fromPrivateKey(cleanKey);
@@ -91,7 +99,7 @@ export class TronClientSigner implements ClientSigner {
     // Use signTypedData (stable API) or fall back to _signTypedData (legacy)
     const signFn = this.tronWeb.trx.signTypedData || this.tronWeb.trx._signTypedData;
     if (!signFn) {
-      throw new Error('TronWeb does not support signTypedData. Please upgrade to TronWeb >= 5.0');
+      throw new SignatureCreationError('TronWeb does not support signTypedData. Please upgrade to TronWeb >= 5.0');
     }
 
     return signFn.call(
@@ -103,8 +111,39 @@ export class TronClientSigner implements ClientSigner {
     );
   }
 
+  async checkBalance(token: string, network: string): Promise<bigint> {
+    const resolvedNetwork = network || (this.network ? `tron:${this.network}` : undefined);
+    if (!resolvedNetwork) {
+      throw new UnsupportedNetworkError('network is required for checkBalance');
+    }
+
+    try {
+      const ownerHex = toEvmHex(this.address);
+
+      const result = await this.tronWeb.transactionBuilder.triggerConstantContract(
+        token,
+        'balanceOf(address)',
+        {},
+        [{ type: 'address', value: ownerHex }],
+        this.address
+      );
+
+      if (result.result?.result && result.constant_result?.length) {
+        return BigInt('0x' + result.constant_result[0]);
+      }
+    } catch (error) {
+      console.error(`[TronClientSigner] Failed to check balance: ${error}`);
+    }
+
+    return BigInt(0);
+  }
+
   async checkAllowance(token: string, _amount: bigint, network: string): Promise<bigint> {
-    const spender = getPaymentPermitAddress(`tron:${this.network}`);
+    const resolvedNetwork = network || (this.network ? `tron:${this.network}` : undefined);
+    if (!resolvedNetwork) {
+      throw new UnsupportedNetworkError('network is required for checkAllowance');
+    }
+    const spender = getPaymentPermitAddress(resolvedNetwork);
     
     try {
       const ownerHex = toEvmHex(this.address);
@@ -148,13 +187,17 @@ export class TronClientSigner implements ClientSigner {
     }
 
     if (mode === 'interactive') {
-      throw new Error('Interactive approval not implemented - use wallet UI');
+      throw new InsufficientAllowanceError('Interactive approval not implemented - use wallet UI');
     }
 
     // Auto mode: send approve transaction
     console.log(`[ALLOWANCE] Insufficient allowance: ${currentAllowance} < ${amount}, sending approve...`);
     
-    const spender = getPaymentPermitAddress(`tron:${this.network}`);
+    const resolvedNetwork = network || (this.network ? `tron:${this.network}` : undefined);
+    if (!resolvedNetwork) {
+      throw new UnsupportedNetworkError('network is required for ensureAllowance');
+    }
+    const spender = getPaymentPermitAddress(resolvedNetwork);
     const spenderHex = toEvmHex(spender);
     
     // Use maxUint160 (2^160 - 1) to avoid repeated approvals

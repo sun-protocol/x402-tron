@@ -8,6 +8,7 @@ from typing import Any
 
 from x402_tron.abi import EIP712_DOMAIN_TYPE, ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE
 from x402_tron.config import NetworkConfig
+from x402_tron.exceptions import InsufficientAllowanceError, SignatureCreationError
 from x402_tron.signers.client.base import ClientSigner
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class TronClientSigner(ClientSigner):
         self._private_key = clean_key
         self._address = self._derive_address(clean_key)
         self._network = network
-        self._async_tron_client: Any = None
+        self._async_tron_clients: dict[str, Any] = {}
         logger.info(f"TronClientSigner initialized: address={self._address}, network={network}")
 
     @classmethod
@@ -37,20 +38,26 @@ class TronClientSigner(ClientSigner):
         """
         return cls(private_key, network)
 
-    def _ensure_async_tron_client(self) -> Any:
-        """Lazy initialize async tron_client.
+    def _ensure_async_tron_client(self, network: str | None = None) -> Any:
+        """Lazy initialize async tron_client for the given network.
+
+        Args:
+            network: Network identifier. Falls back to self._network if None.
 
         Returns:
             tronpy.AsyncTron instance or None
         """
-        if self._async_tron_client is None and self._network:
+        net = network or self._network
+        if not net:
+            return None
+        if net not in self._async_tron_clients:
             try:
                 from x402_tron.utils.tron_client import create_async_tron_client
 
-                self._async_tron_client = create_async_tron_client(self._network)
+                self._async_tron_clients[net] = create_async_tron_client(net)
             except ImportError:
-                pass
-        return self._async_tron_client
+                return None
+        return self._async_tron_clients[net]
 
     @staticmethod
     def _derive_address(private_key: str) -> str:
@@ -75,7 +82,7 @@ class TronClientSigner(ClientSigner):
             signature = pk.sign_msg(message)
             return signature.hex()
         except ImportError:
-            raise RuntimeError("tronpy is required for signing")
+            raise SignatureCreationError("tronpy is required for signing")
 
     async def sign_typed_data(
         self,
@@ -144,6 +151,37 @@ class TronClientSigner(ClientSigner):
             data_str = json.dumps({"domain": domain, "types": types, "message": message})
             return await self.sign_message(data_str.encode())
 
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+    ) -> int:
+        """Check TRC20 token balance"""
+        client = self._ensure_async_tron_client(network)
+        if client is None:
+            logger.warning("AsyncTron client not available, returning 0 balance")
+            return 0
+
+        try:
+            contract = await client.get_contract(token)
+            contract.abi = ERC20_ABI
+            balance = await contract.functions.balanceOf(self._address)
+            balance_int = int(balance)
+            from x402_tron.tokens import TokenRegistry
+
+            token_info = TokenRegistry.find_by_address(network, token)
+            decimals = token_info.decimals if token_info else 6
+            symbol = token_info.symbol if token_info else token[:8]
+            human = balance_int / (10**decimals)
+            logger.info(
+                f"Token balance: {human:.6f} {symbol} "
+                f"(raw={balance_int}, token={token}, network={network})"
+            )
+            return balance_int
+        except Exception as e:
+            logger.error(f"Failed to check balance: {e}")
+            return 0
+
     async def check_allowance(
         self,
         token: str,
@@ -165,7 +203,7 @@ class TronClientSigner(ClientSigner):
             )
             return 0
 
-        client = self._ensure_async_tron_client()
+        client = self._ensure_async_tron_client(network)
         if client is None:
             logger.warning("AsyncTron client not available, returning 0 allowance")
             return 0
@@ -208,9 +246,9 @@ class TronClientSigner(ClientSigner):
             raise NotImplementedError("Interactive approval not implemented")
 
         logger.info(f"Insufficient allowance ({current} < {amount}), requesting approval...")
-        client = self._ensure_async_tron_client()
+        client = self._ensure_async_tron_client(network)
         if client is None:
-            raise RuntimeError("AsyncTron client required for approval")
+            raise InsufficientAllowanceError("AsyncTron client required for approval")
 
         try:
             from tronpy.keys import PrivateKey
@@ -239,8 +277,7 @@ class TronClientSigner(ClientSigner):
                 logger.warning(f"Approval failed: {result}")
             return success
         except Exception as e:
-            logger.error(f"Approval transaction failed: {e}")
-            return False
+            raise InsufficientAllowanceError(f"Approval transaction failed: {e}") from e
 
     def _get_spender_address(self, network: str) -> str:
         """Get payment permit contract address (spender)"""

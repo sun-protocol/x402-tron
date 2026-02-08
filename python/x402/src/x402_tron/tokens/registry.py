@@ -5,7 +5,10 @@ Token registry - Centralized management of token configurations for all networks
 from dataclasses import dataclass
 from typing import Any
 
+from x402_tron.address.converter import TronAddressConverter
 from x402_tron.exceptions import UnknownTokenError
+
+_converter = TronAddressConverter()
 
 
 @dataclass
@@ -63,6 +66,19 @@ class TokenRegistry:
     }
 
     @classmethod
+    def register_token(cls, network: str, token: TokenInfo) -> None:
+        """Register a custom token for specified network
+
+        Args:
+            network: Network identifier (e.g. "tron:nile")
+            token: TokenInfo to register
+        """
+        if network not in cls._tokens:
+            cls._tokens[network] = {}
+        token.address = _converter.normalize(token.address)
+        cls._tokens[network][token.symbol.upper()] = token
+
+    @classmethod
     def get_token(cls, network: str, symbol: str) -> TokenInfo:
         """Get token information for specified network and symbol
 
@@ -79,8 +95,9 @@ class TokenRegistry:
     def find_by_address(cls, network: str, address: str) -> TokenInfo | None:
         """Find token information by address"""
         tokens = cls._tokens.get(network, {})
+        normalized = _converter.normalize(address)
         for info in tokens.values():
-            if info.address.lower() == address.lower():
+            if info.address == normalized:
                 return info
         return None
 
@@ -88,6 +105,41 @@ class TokenRegistry:
     def get_network_tokens(cls, network: str) -> dict[str, TokenInfo]:
         """Get all tokens for specified network"""
         return cls._tokens.get(network, {})
+
+    @classmethod
+    def get_network_token_addresses(cls, network: str) -> set[str]:
+        """Get all token addresses for specified network.
+
+        Returns:
+            Set of token contract addresses
+        """
+        tokens = cls._tokens.get(network, {})
+        return {info.address for info in tokens.values()}
+
+    @classmethod
+    def get_network_tokens_by_symbol(cls, symbol: str) -> list[TokenInfo]:
+        """Find all tokens across networks matching the given symbol.
+
+        Args:
+            symbol: Token symbol (e.g. "USDT")
+
+        Returns:
+            List of matching TokenInfo (empty if none found)
+        """
+        results: list[TokenInfo] = []
+        upper = symbol.upper()
+        for tokens in cls._tokens.values():
+            if upper in tokens:
+                results.append(tokens[upper])
+        return results
+
+    @classmethod
+    def all_symbols(cls) -> set[str]:
+        """Return all known token symbols across all networks."""
+        symbols: set[str] = set()
+        for tokens in cls._tokens.values():
+            symbols.update(tokens.keys())
+        return symbols
 
     @classmethod
     def parse_price(cls, price: str, network: str) -> dict[str, Any]:

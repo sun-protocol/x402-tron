@@ -43,8 +43,6 @@ class ExactTronServerMechanism(BaseExactServerMechanism):
         message["meta"]["nonce"] = int(message["meta"]["nonce"])
         message["payment"]["payAmount"] = int(message["payment"]["payAmount"])
         message["fee"]["feeAmount"] = int(message["fee"]["feeAmount"])
-        message["delivery"]["miniReceiveAmount"] = int(message["delivery"]["miniReceiveAmount"])
-        message["delivery"]["tokenId"] = int(message["delivery"]["tokenId"])
 
         # Convert paymentId to bytes for eth_account
         payment_id = message["meta"]["paymentId"]
@@ -57,8 +55,5 @@ class ExactTronServerMechanism(BaseExactServerMechanism):
         message["payment"]["payToken"] = tron_address_to_evm(message["payment"]["payToken"])
         message["payment"]["payTo"] = tron_address_to_evm(message["payment"]["payTo"])
         message["fee"]["feeTo"] = tron_address_to_evm(message["fee"]["feeTo"])
-        message["delivery"]["receiveToken"] = tron_address_to_evm(
-            message["delivery"]["receiveToken"]
-        )
 
         return message
