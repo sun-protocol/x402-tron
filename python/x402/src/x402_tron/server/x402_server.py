@@ -159,6 +159,8 @@ class X402Server:
                 # Set facilitatorId in the fee info
                 fee_quote.fee.facilitator_id = facilitator.facilitator_id
                 requirements.extra.fee = fee_quote.fee
+        else:
+            raise ValueError(f"Facilitator is not set")
 
         return requirements
 
