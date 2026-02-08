@@ -154,11 +154,16 @@ class X402Server:
             facilitator = self._facilitator
             await facilitator.fetch_facilitator_address()
 
+            self._logger.info(
+                "fee_quote input: %s",
+                [(r.scheme, r.network, r.asset) for r in requirements_list],
+            )
             fee_quotes = await facilitator.fee_quote(requirements_list)
             # Build lookup by (scheme, network, asset) for matching
             quote_map: dict[tuple[str, str, str], FeeQuoteResponse] = {
                 (q.scheme, q.network, q.asset): q for q in fee_quotes
             }
+            self._logger.info("fee_quote result: %s", list(quote_map.keys()))
             supported: list[PaymentRequirements] = []
             for req in requirements_list:
                 fee_quote = quote_map.get((req.scheme, req.network, req.asset))

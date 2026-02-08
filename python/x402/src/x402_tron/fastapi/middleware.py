@@ -274,6 +274,11 @@ class X402Middleware:
     ) -> JSONResponse:
         """Return 402 payment required response"""
         requirements_list = await self._server.build_payment_requirements(configs)
+        if not requirements_list:
+            return JSONResponse(
+                content={"error": "No supported payment options available"},
+                status_code=500,
+            )
 
         payment_required = self._server.create_payment_required_response(
             requirements=requirements_list,

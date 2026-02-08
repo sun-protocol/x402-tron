@@ -83,7 +83,8 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
         """Get base fee for a token address by looking up its symbol.
 
         Returns:
-            Fee amount, or None if the token is not supported.
+            Fee amount from base_fee_map, or None if the token is unknown
+            or not configured in base_fee_map.
         """
         token_info = TokenRegistry.find_by_address(network, token_address)
         if token_info is None:
@@ -272,6 +273,11 @@ class BaseExactFacilitatorMechanism(FacilitatorMechanism):
             self._logger.warning(f"FeeTo mismatch: {permit.fee.fee_to} != {self._fee_to}")
             return "fee_to_mismatch"
         expected_fee = self._get_base_fee(permit.payment.pay_token, requirements.network)
+        if expected_fee is None:
+            self._logger.warning(
+                f"Unsupported token for fee: {permit.payment.pay_token} on {requirements.network}"
+            )
+            return "unsupported_token"
         if int(permit.fee.fee_amount) < expected_fee:
             self._logger.warning(f"FeeAmount too low: {permit.fee.fee_amount} < {expected_fee}")
             return "fee_amount_mismatch"
