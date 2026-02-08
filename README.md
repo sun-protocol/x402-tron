@@ -44,7 +44,7 @@ npm install @bankofai/x402-tron
 
 ## AI Agent Integration
 
-x402-tron is designed for the Agentic Web. AI agents can autonomously negotiate and pay for resources using the [**x402-payment-tron**](https://github.com/bankofai/openclaw-extension/tree/main/skills/x402_payment_tron) skill.
+x402-tron is designed for the Agentic Web. AI agents can autonomously negotiate and pay for resources using the [**x402-tron-payment**](https://github.com/bankofai/skills-tron/tree/main/x402_tron_payment) skill.
 
 This skill enables agents to:
 
@@ -122,9 +122,9 @@ export TRON_GRID_API_KEY="your_trongrid_api_key_here"  # Recommended
 ```
 
 **Using with Agentic Tools:**
-You can add the [**x402-payment-tron**](https://github.com/bankofai/openclaw-extension/tree/main/skills/x402_payment_tron) skill to your favorite agentic tools:
+You can add the [**x402-tron-payment**](https://github.com/bankofai/skills-tron/tree/main/x402_tron_payment) skill to your favorite agentic tools:
 
-- **OpenClaw**: `npx clawhub install x402-payment-tron`
+- **OpenClaw**: `npx clawhub install x402-tron-payment`
 - **opencode**: Copy the skill to your project's `.opencode/skill/` directory to enable autonomous TRON payments.
 
 Once configured, your agent will:
