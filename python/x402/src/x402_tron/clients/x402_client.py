@@ -2,7 +2,6 @@
 X402Client - Core payment client for x402 protocol
 """
 
-import inspect
 import logging
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Protocol
 
@@ -41,10 +40,8 @@ class ClientMechanism(Protocol):
 
 PaymentRequirementsSelector = Callable[[list[PaymentRequirements]], PaymentRequirements]
 
-PaymentPolicy = Callable[
-    [list[PaymentRequirements]], Awaitable[list[PaymentRequirements]] | list[PaymentRequirements]
-]
-"""Policy function that filters or reorders payment requirements.
+PaymentPolicy = Callable[[list[PaymentRequirements]], Awaitable[list[PaymentRequirements]]]
+"""Async policy function that filters or reorders payment requirements.
 
 Policies are applied in order after mechanism filtering and before token selection.
 Return a subset (or reordered list) of the input requirements.
@@ -93,7 +90,6 @@ class X402Client:
         self._mechanisms: list[MechanismEntry] = []
         self._policies: list[PaymentPolicy] = []
         self._token_strategy = token_strategy
-        self._has_balance_policy = False
 
     def register_policy(self, policy: PaymentPolicy) -> "X402Client":
         """
@@ -128,15 +124,6 @@ class X402Client:
         )
         self._mechanisms.append(MechanismEntry(network_pattern, mechanism, priority))
         self._mechanisms.sort(key=lambda e: e.priority, reverse=True)
-
-        if not self._has_balance_policy:
-            signer = mechanism.get_signer()
-            if signer is not None and hasattr(signer, "check_balance"):
-                from x402_tron.clients.token_selection import sufficient_balance_policy
-
-                self._policies.append(sufficient_balance_policy(signer))
-                self._has_balance_policy = True
-
         return self
 
     async def select_payment_requirements(
@@ -177,8 +164,7 @@ class X402Client:
         logger.debug(f"After mechanism filter: {len(candidates)} candidates")
 
         for policy in self._policies:
-            result = policy(candidates)
-            candidates = await result if inspect.isawaitable(result) else result  # type: ignore[assignment]
+            candidates = await policy(candidates)
             logger.debug(f"After policy: {len(candidates)} candidates")
 
         if not candidates:

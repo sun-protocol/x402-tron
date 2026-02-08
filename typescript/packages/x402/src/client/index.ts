@@ -10,5 +10,6 @@ export type {
   PaymentRequirementsSelector,
   PaymentRequirementsFilter,
 } from './x402Client.js';
-export { DefaultTokenSelectionStrategy, sufficientBalancePolicy } from './tokenSelection.js';
+export { DefaultTokenSelectionStrategy } from './tokenSelection.js';
 export type { TokenSelectionStrategy } from './tokenSelection.js';
+export { sufficientBalancePolicy } from './policies.js';

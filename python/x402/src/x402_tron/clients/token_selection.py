@@ -8,13 +8,10 @@ by token decimals to compare real value (lower is better for the payer).
 
 import logging
 from decimal import Decimal
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from x402_tron.tokens import TokenRegistry
 from x402_tron.types import PaymentRequirements
-
-if TYPE_CHECKING:
-    from x402_tron.signers.client.base import ClientSigner
 
 logger = logging.getLogger(__name__)
 
@@ -60,63 +57,6 @@ def _normalized_cost(req: PaymentRequirements) -> Decimal:
     """
     decimals = _get_decimals(req)
     return Decimal(str(req.amount)) / Decimal(10) ** decimals
-
-
-def sufficient_balance_policy(signer: "ClientSigner"):
-    """Create a policy that filters out tokens with insufficient balance.
-
-    When the server accepts multiple tokens (e.g. USDT and USDD),
-    this policy checks the user's on-chain balance for each token
-    and removes options the user cannot afford.
-
-    This ensures that if USDT balance is insufficient but USDD has
-    enough balance, the client will fall back to USDD even if it
-    costs more.
-
-    Args:
-        signer: ClientSigner with check_balance capability
-
-    Returns:
-        Async policy function for use with X402Client.register_policy()
-    """
-
-    async def policy(
-        requirements: list[PaymentRequirements],
-    ) -> list[PaymentRequirements]:
-        affordable: list[PaymentRequirements] = []
-        for req in requirements:
-            balance = await signer.check_balance(req.asset, req.network)
-            needed = int(req.amount)
-            if hasattr(req, "extra") and req.extra and hasattr(req.extra, "fee"):
-                fee = req.extra.fee
-                if fee and hasattr(fee, "fee_amount"):
-                    needed += int(fee.fee_amount)
-            decimals = _get_decimals(req)
-            token_info = TokenRegistry.find_by_address(req.network, req.asset)
-            symbol = token_info.symbol if token_info else req.asset[:8]
-            divisor = 10**decimals
-            h_balance = balance / divisor
-            h_needed = needed / divisor
-            if balance >= needed:
-                logger.info(
-                    "%s on %s: balance=%.6f >= needed=%.6f (OK)",
-                    symbol,
-                    req.network,
-                    h_balance,
-                    h_needed,
-                )
-                affordable.append(req)
-            else:
-                logger.info(
-                    "%s on %s: balance=%.6f < needed=%.6f (skipped)",
-                    symbol,
-                    req.network,
-                    h_balance,
-                    h_needed,
-                )
-        return affordable if affordable else requirements
-
-    return policy
 
 
 class DefaultTokenSelectionStrategy:

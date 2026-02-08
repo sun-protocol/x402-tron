@@ -7,7 +7,6 @@
 
 import { findByAddress } from '../tokens.js';
 import type { PaymentRequirements } from '../types/index.js';
-import type { ClientSigner, PaymentPolicy } from './x402Client.js';
 
 /** Strategy for selecting which payment option to use */
 export interface TokenSelectionStrategy {
@@ -22,46 +21,6 @@ function getDecimals(req: PaymentRequirements): number {
 function normalizedCost(req: PaymentRequirements): number {
   const decimals = getDecimals(req);
   return Number(BigInt(req.amount)) / 10 ** decimals;
-}
-
-/**
- * Create a policy that filters out tokens with insufficient balance.
- *
- * When the server accepts multiple tokens (e.g. USDT and USDD),
- * this policy checks the user's on-chain balance for each token
- * and removes options the user cannot afford.
- *
- * This ensures that if USDT balance is insufficient but USDD has
- * enough balance, the client will fall back to USDD even if it
- * costs more.
- *
- * @param signer - ClientSigner with checkBalance capability
- * @returns Async policy function for use with X402Client.registerPolicy()
- */
-export function sufficientBalancePolicy(signer: ClientSigner): PaymentPolicy {
-  return async (requirements: PaymentRequirements[]): Promise<PaymentRequirements[]> => {
-    const affordable: PaymentRequirements[] = [];
-    for (const req of requirements) {
-      const balance = await signer.checkBalance(req.asset, req.network);
-      let needed = BigInt(req.amount);
-      if (req.extra?.fee?.feeAmount) {
-        needed += BigInt(req.extra.fee.feeAmount);
-      }
-      const decimals = getDecimals(req);
-      const token = findByAddress(req.network, req.asset);
-      const symbol = token?.symbol ?? req.asset.slice(0, 8);
-      const divisor = 10 ** decimals;
-      const hBalance = (Number(balance) / divisor).toFixed(6);
-      const hNeeded = (Number(needed) / divisor).toFixed(6);
-      if (balance >= needed) {
-        console.log(`[x402] ${symbol} on ${req.network}: balance=${hBalance} >= needed=${hNeeded} (OK)`);
-        affordable.push(req);
-      } else {
-        console.log(`[x402] ${symbol} on ${req.network}: balance=${hBalance} < needed=${hNeeded} (skipped)`);
-      }
-    }
-    return affordable.length > 0 ? affordable : requirements;
-  };
 }
 
 /**

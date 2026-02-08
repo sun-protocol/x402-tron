@@ -9,7 +9,7 @@ import type {
   PaymentPayload,
   PaymentPermitContext,
 } from '../types/index.js';
-import { DefaultTokenSelectionStrategy, sufficientBalancePolicy } from './tokenSelection.js';
+import { DefaultTokenSelectionStrategy } from './tokenSelection.js';
 import type { TokenSelectionStrategy } from './tokenSelection.js';
 import { UnsupportedNetworkError } from '../errors.js';
 
@@ -101,8 +101,6 @@ export class X402Client {
   private policies: PaymentPolicy[] = [];
   private tokenStrategy?: TokenSelectionStrategy;
 
-  private hasBalancePolicy = false;
-
   constructor(options?: { tokenStrategy?: TokenSelectionStrategy }) {
     this.tokenStrategy = options?.tokenStrategy;
   }
@@ -136,15 +134,6 @@ export class X402Client {
       priority,
     });
     this.mechanisms.sort((a, b) => b.priority - a.priority);
-
-    if (!this.hasBalancePolicy && mechanism.getSigner) {
-      const signer = mechanism.getSigner();
-      if (signer) {
-        this.policies.push(sufficientBalancePolicy(signer));
-        this.hasBalancePolicy = true;
-      }
-    }
-
     return this;
   }
 
