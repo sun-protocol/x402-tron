@@ -156,7 +156,7 @@ class PaymentPayloadData(BaseModel):
 
     signature: str
     merchant_signature: Optional[str] = Field(None, alias="merchantSignature")
-    payment_permit: PaymentPermit = Field(alias="paymentPermit")
+    payment_permit: Optional[PaymentPermit] = Field(None, alias="paymentPermit")
 
     class Config:
         populate_by_name = True
