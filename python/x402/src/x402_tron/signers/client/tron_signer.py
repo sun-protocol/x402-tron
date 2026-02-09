@@ -94,6 +94,8 @@ class TronClientSigner(ClientSigner):
 
         Note: The primaryType is determined from the types dict.
         For PaymentPermit contract, it should be "PaymentPermitDetails".
+
+        TODO: Update interface to accept primary_type explicitly.
         """
         # Determine primary type from types dict (should be the last/main type)
         # For PaymentPermit, the main type is "PaymentPermitDetails"

@@ -16,11 +16,21 @@ class NetworkConfig:
     TRON_SHASTA = "tron:shasta"
     TRON_NILE = "tron:nile"
 
+    # EVM Networks
+    EVM_MAINNET = "eip155:1"
+    EVM_SEPOLIA = "eip155:11155111"
+    EVM_BSC = "eip155:56"
+    EVM_BSC_TESTNET = "eip155:97"
+
     # TRON Chain IDs
     CHAIN_IDS: Dict[str, int] = {
         "tron:mainnet": 728126428,  # 0x2b6653dc
         "tron:shasta": 2494104990,  # 0x94a9059e
         "tron:nile": 3448148188,  # 0xcd8690dc
+        "eip155:1": 1,
+        "eip155:11155111": 11155111,
+        "eip155:56": 56,
+        "eip155:97": 97,
     }
 
     # PaymentPermit contract addresses
@@ -28,6 +38,8 @@ class NetworkConfig:
         "tron:mainnet": "TT8rEWbCoNX7vpEUauxb7rWJsTgs8vDLAn",
         "tron:shasta": "TR2XninQ3jsvRRLGTifFyUHTBysffooUjt",
         "tron:nile": "TFxDcGvS7zfQrS1YzcCMp673ta2NHHzsiH",
+        # Add generic EVM PaymentPermit address if known, or leave as placeholder
+        # "eip155:1": "0x...",
     }
 
     @classmethod

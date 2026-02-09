@@ -41,6 +41,8 @@ class ClientSigner(ABC):
         """
         Sign typed data (EIP-712).
 
+        TODO: Add primary_type argument to avoid heuristic deduction from types dict.
+
         Args:
             domain: EIP-712 domain
             types: Type definitions
