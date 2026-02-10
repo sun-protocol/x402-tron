@@ -30,7 +30,7 @@ class X402Middleware:
         middleware = X402Middleware(server)
 
         @app.get("/protected")
-        @middleware.protect(price="100 USDC", network="eip155:8453", pay_to="0x...")
+        @middleware.protect(prices=["100 USDC"], schemes=["exact"], network="eip155:8453", pay_to="0x...")
         async def protected_endpoint():
             return {"data": "secret"}
     """
@@ -40,51 +40,54 @@ class X402Middleware:
 
     def protect(
         self,
-        price: str | None = None,
+        prices: list[str],
+        schemes: list[str],
         network: str | None = None,
         pay_to: str | None = None,
-        scheme: str = "exact",
         valid_for: int = 3600,
         delivery_mode: str = "PAYMENT_ONLY",
-        prices: list[str] | None = None,
     ) -> Callable:
         """
         Decorator to protect endpoints with payment requirements.
 
-        Supports single token or multiple tokens per endpoint.
+        ``prices[i]`` uses ``schemes[i]``. Both lists must have the same length.
 
         Single token:
-            @middleware.protect(price="1 USDT", network="tron:nile", pay_to="T...")
-
-        Multiple tokens:
             @middleware.protect(
+                prices=["1 USDT"],
+                schemes=["exact"],
                 network="tron:nile",
                 pay_to="T...",
-                prices=["1 USDT", "1 USDD"],
+            )
+
+        Multiple tokens, per-token scheme:
+            @middleware.protect(
+                prices=["0.0001 USDT", "0.0001 DHLU"],
+                schemes=["exact", "native_exact"],
+                network="eip155:97",
+                pay_to="0x...",
             )
 
         Args:
-            price: Price string (e.g. "100 USDC"), for single-token mode
+            prices: List of price strings (e.g. ["0.0001 USDT", "0.0001 DHLU"])
+            schemes: List of scheme strings matching *prices* (e.g. ["exact", "native_exact"])
             network: Network identifier (shared by all prices)
             pay_to: Payment recipient address
-            scheme: Payment scheme
             valid_for: Payment validity period (seconds)
             delivery_mode: Delivery mode
-            prices: List of price strings for multi-token mode
 
         Returns:
             Decorated function
         """
-        if prices is not None:
-            if not network or not pay_to:
-                raise ValueError("network and pay_to are required when using prices list")
-            price_list = prices
-        else:
-            if not price or not network or not pay_to:
-                raise ValueError(
-                    "price, network, and pay_to are required when prices list is not provided"
-                )
-            price_list = [price]
+        if not prices or not schemes or not network or not pay_to:
+            raise ValueError("prices, schemes, network, and pay_to are required")
+        if len(schemes) != len(prices):
+            raise ValueError(
+                f"schemes length ({len(schemes)}) must match "
+                f"prices length ({len(prices)})"
+            )
+        price_list = prices
+        scheme_list = schemes
 
         # Validate all token symbols at startup
         from x402_tron.tokens import TokenRegistry
@@ -94,14 +97,14 @@ class X402Middleware:
 
         configs = [
             ResourceConfig(
-                scheme=scheme,
+                scheme=s,
                 network=network,
                 price=p,
                 pay_to=pay_to,
                 valid_for=valid_for,
                 delivery_mode=delivery_mode,
             )
-            for p in price_list
+            for p, s in zip(price_list, scheme_list)
         ]
 
         def decorator(func: Callable) -> Callable:
@@ -284,29 +287,32 @@ class X402Middleware:
 
 def x402_protected(
     server: X402Server,
+    prices: list[str],
+    schemes: list[str],
+    network: str,
     pay_to: str,
-    price: str | None = None,
-    network: str | None = None,
-    prices: list[str] | None = None,
-    scheme: str = "exact",
     **kwargs: Any,
 ) -> Callable:
     """
     Convenience decorator to protect endpoints.
 
     Single token:
-        @x402_protected(server, price="1 USDT", network="tron:nile", pay_to="T...")
-
-    Multiple tokens:
         @x402_protected(
             server,
+            prices=["1 USDT"],
+            schemes=["exact"],
             network="tron:nile",
             pay_to="T...",
-            prices=["1 USDT", "1 USDD"],
         )
 
-    Custom scheme:
-        @x402_protected(server, price="1 USDT", network="eip155:97", pay_to="0x...", scheme="exact")
+    Multiple tokens, per-token scheme:
+        @x402_protected(
+            server,
+            prices=["0.0001 USDT", "0.0001 DHLU"],
+            schemes=["exact", "native_exact"],
+            network="eip155:97",
+            pay_to="0x...",
+        )
     """
     middleware = X402Middleware(server)
-    return middleware.protect(price=price, network=network, pay_to=pay_to, prices=prices, scheme=scheme, **kwargs)
+    return middleware.protect(prices=prices, schemes=schemes, network=network, pay_to=pay_to, **kwargs)
