@@ -86,8 +86,7 @@ class X402Middleware:
             raise ValueError("prices, schemes, network, and pay_to are required")
         if len(schemes) != len(prices):
             raise ValueError(
-                f"schemes length ({len(schemes)}) must match "
-                f"prices length ({len(prices)})"
+                f"schemes length ({len(schemes)}) must match prices length ({len(prices)})"
             )
         price_list = prices
         scheme_list = schemes
@@ -319,6 +318,9 @@ def x402_protected(
     """
     middleware = X402Middleware(server)
     return middleware.protect(
-        prices=prices, schemes=schemes,
-        network=network, pay_to=pay_to, **kwargs,
+        prices=prices,
+        schemes=schemes,
+        network=network,
+        pay_to=pay_to,
+        **kwargs,
     )
