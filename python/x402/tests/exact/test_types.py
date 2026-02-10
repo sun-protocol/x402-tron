@@ -4,7 +4,7 @@ Tests for exact types and helpers.
 
 import time
 
-from x402_tron.mechanisms._exact_base.types import (
+from bankofai.x402.mechanisms._exact_base.types import (
     SCHEME_EXACT,
     TRANSFER_AUTH_EIP712_TYPES,
     TRANSFER_AUTH_PRIMARY_TYPE,

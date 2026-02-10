@@ -39,7 +39,7 @@ pip install -e .[all]
 The TypeScript SDK provides client-side integration tools.
 
 ```bash
-npm install @bankofai/x402-tron
+npm install @bankofai/x402
 ```
 
 ## AI Agent Integration
@@ -65,9 +65,9 @@ Protect your FastAPI endpoints with a single decorator.
 
 ```python
 from fastapi import FastAPI, Request
-from x402_tron.server import X402Server
-from x402_tron.fastapi import x402_protected
-from x402_tron.facilitator import FacilitatorClient
+from bankofai.x402.server import X402Server
+from bankofai.x402.fastapi import x402_protected
+from bankofai.x402.facilitator import FacilitatorClient
 
 app = FastAPI()
 server = X402Server()
@@ -91,7 +91,7 @@ Clients handle the `402` challenge-response loop automatically using the SDK.
 
 **TypeScript Example:**
 ```typescript
-import { X402Client, X402FetchClient, ExactPermitTronClientMechanism, TronClientSigner } from '@bankofai/x402-tron';
+import { X402Client, X402FetchClient, ExactPermitTronClientMechanism, TronClientSigner } from '@bankofai/x402';
 import { TronWeb } from 'tronweb';
 
 // Setup TronWeb and Signer

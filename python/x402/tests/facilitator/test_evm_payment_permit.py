@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from x402_tron.mechanisms.evm.exact_permit import ExactPermitEvmFacilitatorMechanism
-from x402_tron.tokens import TokenInfo, TokenRegistry
-from x402_tron.types import (
+from bankofai.x402.mechanisms.evm.exact_permit import ExactPermitEvmFacilitatorMechanism
+from bankofai.x402.tokens import TokenInfo, TokenRegistry
+from bankofai.x402.types import (
     Fee,
     Payment,
     PaymentPayload,

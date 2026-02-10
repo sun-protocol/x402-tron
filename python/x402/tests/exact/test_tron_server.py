@@ -4,10 +4,10 @@ Tests for ExactTronServerMechanism.
 
 import pytest
 
-from x402_tron.mechanisms.tron.exact import ExactTronServerMechanism
-from x402_tron.mechanisms._exact_base.types import SCHEME_EXACT
-from x402_tron.tokens import TokenInfo, TokenRegistry
-from x402_tron.types import PaymentRequirements
+from bankofai.x402.mechanisms._exact_base.types import SCHEME_EXACT
+from bankofai.x402.mechanisms.tron.exact import ExactTronServerMechanism
+from bankofai.x402.tokens import TokenInfo, TokenRegistry
+from bankofai.x402.types import PaymentRequirements
 
 USDT_ADDRESS = "TTestUSDTAddress1234567890123456789"
 

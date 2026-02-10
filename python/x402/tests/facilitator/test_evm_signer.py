@@ -1,6 +1,6 @@
 import pytest
 
-from x402_tron.signers.facilitator import EvmFacilitatorSigner
+from bankofai.x402.signers.facilitator import EvmFacilitatorSigner
 
 
 def test_evm_facilitator_signer_creation(mock_evm_private_key):
@@ -28,7 +28,7 @@ async def test_evm_verify_typed_data(mock_evm_private_key):
     from eth_account import Account
     from eth_account.messages import encode_typed_data
 
-    from x402_tron.abi import EIP712_DOMAIN_TYPE
+    from bankofai.x402.abi import EIP712_DOMAIN_TYPE
 
     full_types = {"EIP712Domain": EIP712_DOMAIN_TYPE, **types}
 

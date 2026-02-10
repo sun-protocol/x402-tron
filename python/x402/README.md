@@ -20,7 +20,7 @@ pip install "x402-tron[all]"
 ## Quick Start
 
 ```python
-from x402_tron.clients import X402Client
+from bankofai.x402.clients import X402Client
 
 client = X402Client()
 ```
@@ -30,7 +30,7 @@ If you want automatic handling of HTTP 402 responses, use `X402HttpClient`:
 ```python
 import httpx
 
-from x402_tron.clients import X402Client, X402HttpClient
+from bankofai.x402.clients import X402Client, X402HttpClient
 
 x402_client = X402Client()
 http_client = httpx.AsyncClient()

@@ -1,8 +1,8 @@
 import pytest
 
-from x402_tron.clients import X402Client
-from x402_tron.clients.x402_client import PaymentRequirementsFilter
-from x402_tron.types import PaymentRequirements
+from bankofai.x402.clients import X402Client
+from bankofai.x402.clients.x402_client import PaymentRequirementsFilter
+from bankofai.x402.types import PaymentRequirements
 
 
 class MockClientMechanism:

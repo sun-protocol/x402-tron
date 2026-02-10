@@ -4,10 +4,10 @@ Tests for ExactEvmServerMechanism.
 
 import pytest
 
-from x402_tron.mechanisms.evm.exact import ExactEvmServerMechanism
-from x402_tron.mechanisms._exact_base.types import SCHEME_EXACT
-from x402_tron.tokens import TokenInfo, TokenRegistry
-from x402_tron.types import PaymentRequirements
+from bankofai.x402.mechanisms._exact_base.types import SCHEME_EXACT
+from bankofai.x402.mechanisms.evm.exact import ExactEvmServerMechanism
+from bankofai.x402.tokens import TokenInfo, TokenRegistry
+from bankofai.x402.types import PaymentRequirements
 
 USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 

@@ -62,7 +62,7 @@ Documentation = "https://github.com/bankofai/x402-tron#readme"
 Repository = "https://github.com/bankofai/x402-tron"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/x402_tron"]
+packages = ["src/bankofai"]
 
 [tool.ruff]
 line-length = 100

@@ -4,9 +4,9 @@ Tests for ExactPermitEvmServerMechanism - EVM exact payment scheme server.
 
 import pytest
 
-from x402_tron.mechanisms.evm.exact_permit import ExactPermitEvmServerMechanism
-from x402_tron.tokens import TokenInfo, TokenRegistry
-from x402_tron.types import PaymentRequirements
+from bankofai.x402.mechanisms.evm.exact_permit import ExactPermitEvmServerMechanism
+from bankofai.x402.tokens import TokenInfo, TokenRegistry
+from bankofai.x402.types import PaymentRequirements
 
 USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 

@@ -4,19 +4,19 @@ TypeScript Client SDK for x402 Payment Protocol.
 
 ## Package
 
-- `@bankofai/x402-tron` - Complete TypeScript SDK with client, mechanisms, signers, and HTTP adapter
+- `@bankofai/x402` - Complete TypeScript SDK with client, mechanisms, signers, and HTTP adapter
 
 ## Installation
 
 ```bash
 # Install the package
-pnpm add @bankofai/x402-tron tronweb
+pnpm add @bankofai/x402 tronweb
 ```
 
 ## Quick Start
 
 ```typescript
-import { X402Client, ExactPermitTronClientMechanism, TronClientSigner, X402FetchClient } from '@bankofai/x402-tron';
+import { X402Client, ExactPermitTronClientMechanism, TronClientSigner, X402FetchClient } from '@bankofai/x402';
 import TronWeb from 'tronweb';
 
 // 1. Initialize TronWeb

@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from x402_tron.mechanisms.evm.exact import ExactEvmFacilitatorMechanism
-from x402_tron.mechanisms._exact_base.types import SCHEME_EXACT
-from x402_tron.tokens import TokenInfo, TokenRegistry
-from x402_tron.types import (
+from bankofai.x402.mechanisms._exact_base.types import SCHEME_EXACT
+from bankofai.x402.mechanisms.evm.exact import ExactEvmFacilitatorMechanism
+from bankofai.x402.tokens import TokenInfo, TokenRegistry
+from bankofai.x402.types import (
     PaymentPayload,
     PaymentPayloadData,
     PaymentRequirements,
