@@ -1,12 +1,12 @@
-# x402-tron
+# x402
 
-x402-tron is the TRON blockchain implementation of the **x402 open payment standard**. It turns the HTTP `402 Payment Required` status code into a programmable, accountless payment layer for APIs, digital content, and AI agents.
+x402 is the TRON blockchain implementation of the **x402 open payment standard**. It turns the HTTP `402 Payment Required` status code into a programmable, accountless payment layer for APIs, digital content, and AI agents.
 
-by leveraging TRON's high speed and low fees, x402-tron enables friction-free, machine-to-machine commerce without API keys, subscriptions, or sign-ups.
+by leveraging TRON's high speed and low fees, x402 enables friction-free, machine-to-machine commerce without API keys, subscriptions, or sign-ups.
 
 ---
 
-**[📚 Full Documentation](https://x402-tron-docs.bankofai.io/)** | **[💻 Demo Repository](https://github.com/bankofai/x402-tron-demo)**
+**[📚 Full Documentation](https://x402-docs.bankofai.io/)** | **[💻 Demo Repository](https://github.com/bankofai/x402-demo)**
 
 ---
 
@@ -28,8 +28,8 @@ The Python SDK includes support for Server (FastAPI/Flask), Client, and Facilita
 
 ```bash
 # Clone the repository
-git clone https://github.com/bankofai/x402-tron.git
-cd x402-tron/python/x402
+git clone https://github.com/bankofai/x402.git
+cd x402/python/x402
 
 # Install with all dependencies
 pip install -e .[all]
@@ -44,7 +44,7 @@ npm install @bankofai/x402
 
 ## AI Agent Integration
 
-x402-tron is designed for the Agentic Web. AI agents can autonomously negotiate and pay for resources using the [**x402-tron-payment**](https://github.com/bankofai/skills-tron/tree/main/x402_tron_payment) skill.
+x402 is designed for the Agentic Web. AI agents can autonomously negotiate and pay for resources using the [**x402-payment**](https://github.com/bankofai/skills-tron/tree/main/x402_tron_payment) skill.
 
 This skill enables agents to:
 
@@ -57,7 +57,7 @@ This skill enables agents to:
 ### 1. Facilitator
 The Facilitator is responsible for verifying TIP-712 signatures and executing on-chain settlements.
 
-- **Self-Hosted**: Developers currently need to deploy their own facilitator instance. Detailed deployment instructions can be found in the [**demo repository quick start**](https://github.com/bankofai/x402-tron-demo/tree/main?tab=readme-ov-file#quick-start).
+- **Self-Hosted**: Developers currently need to deploy their own facilitator instance. Detailed deployment instructions can be found in the [**demo repository quick start**](https://github.com/bankofai/x402-demo/tree/main?tab=readme-ov-file#quick-start).
 - **Official Facilitator**: An official, hosted facilitator service is **coming soon**, which will eliminate the need for server-side blockchain infrastructure.
 
 ### 2. Server (Seller)
@@ -137,7 +137,7 @@ Once configured, your agent will:
 
 ## Architecture
 
-The x402-tron protocol involves three parties:
+The x402 protocol involves three parties:
 
 - **Client**: Entity wanting to pay for a resource
 - **Resource Server**: HTTP server providing protected resources

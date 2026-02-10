@@ -57,9 +57,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bankofai/x402-tron"
-Documentation = "https://github.com/bankofai/x402-tron#readme"
-Repository = "https://github.com/bankofai/x402-tron"
+Homepage = "https://github.com/bankofai/x402"
+Documentation = "https://github.com/bankofai/x402#readme"
+Repository = "https://github.com/bankofai/x402"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bankofai"]

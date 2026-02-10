@@ -1,4 +1,4 @@
-# x402-tron
+# x402
 
 Python SDK for the x402 payment protocol (TRON-only).
 
@@ -39,6 +39,6 @@ client = X402HttpClient(http_client=http_client, x402_client=x402_client)
 
 ## Links
 
-- Repository: https://github.com/bankofai/x402-tron
-- Issues: https://github.com/bankofai/x402-tron/issues
+- Repository: https://github.com/bankofai/x402
+- Issues: https://github.com/bankofai/x402/issues
 - Contributing: https://github.com/bankofai/CONTRIBUTING.md

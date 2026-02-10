@@ -4,7 +4,6 @@
   "description": "x402 TypeScript SDK (TRON and EVM support)",
   "keywords": [
     "x402",
-    "x402-tron",
     "tron",
     "trx",
     "ethereum",
@@ -12,13 +11,13 @@
     "payment",
     "blockchain"
   ],
-  "homepage": "https://github.com/bankofai/x402-tron#readme",
+  "homepage": "https://github.com/bankofai/x402#readme",
   "bugs": {
-    "url": "https://github.com/bankofai/x402-tron/issues"
+    "url": "https://github.com/bankofai/x402/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bankofai/x402-tron.git",
+    "url": "git+https://github.com/bankofai/x402.git",
     "directory": "typescript/packages/x402"
   },
   "engines": {
