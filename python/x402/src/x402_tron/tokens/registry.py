@@ -47,6 +47,27 @@ class TokenRegistry:
                 symbol="DHLU",
             ),
         },
+        # BSC Mainnet (eip155:56)
+        "eip155:56": {
+            "USDC": TokenInfo(
+                address="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+                decimals=18,
+                name="USD Coin",
+                symbol="USDC",
+            ),
+            "USDT": TokenInfo(
+                address="0x55d398326f99059fF775485246999027B3197955",
+                decimals=18,
+                name="Tether USD",
+                symbol="USDT",
+            ),
+            "EPS": TokenInfo(
+                address="0xA7f552078dcC247C2684336020c03648500C6d9F",
+                decimals=18,
+                name="Ellipsis",
+                symbol="EPS",
+            ),
+        },
         # TRON Networks
         "tron:mainnet": {
             "USDT": TokenInfo(
