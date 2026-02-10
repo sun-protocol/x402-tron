@@ -1,5 +1,5 @@
 """
-Base classes for native_exact mechanism.
+Base classes for exact mechanism.
 
 Provides ChainAdapter ABC and base Client/Facilitator/Server mechanisms
 that delegate chain-specific operations to the adapter.
@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from x402_tron.mechanisms._base.client import ClientMechanism
 from x402_tron.mechanisms._base.facilitator import FacilitatorMechanism
-from x402_tron.mechanisms._native_exact_base.types import (
-    SCHEME_NATIVE_EXACT,
+from x402_tron.mechanisms._exact_base.types import (
+    SCHEME_EXACT,
     TRANSFER_AUTH_EIP712_TYPES,
     TransferAuthorization,
     build_eip712_domain,
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 class ChainAdapter(ABC):
-    """Encapsulates chain-specific differences for native_exact."""
+    """Encapsulates chain-specific differences for exact."""
 
     @abstractmethod
     def parse_chain_id(self, network: str) -> int:
@@ -77,7 +77,7 @@ class ChainAdapter(ABC):
 # ---------------------------------------------------------------------------
 
 
-class NativeExactBaseClientMechanism(ClientMechanism):
+class ExactBaseClientMechanism(ClientMechanism):
     """Base TransferWithAuthorization client mechanism."""
 
     def __init__(self, signer: "ClientSigner", adapter: ChainAdapter) -> None:
@@ -85,7 +85,7 @@ class NativeExactBaseClientMechanism(ClientMechanism):
         self._adapter = adapter
 
     def scheme(self) -> str:
-        return SCHEME_NATIVE_EXACT
+        return SCHEME_EXACT
 
     def get_signer(self) -> "ClientSigner":
         return self._signer
@@ -96,7 +96,7 @@ class NativeExactBaseClientMechanism(ClientMechanism):
         resource: str,
         extensions: dict[str, Any] | None = None,
     ) -> PaymentPayload:
-        """Create native_exact payment payload."""
+        """Create exact payment payload."""
         adapter = self._adapter
 
         from_addr = adapter.to_signing_address(self._signer.get_address())
@@ -135,7 +135,7 @@ class NativeExactBaseClientMechanism(ClientMechanism):
         message = build_eip712_message(authorization)
 
         logger.info(
-            "[NATIVE-EXACT] Signing TransferWithAuthorization: from=%s, to=%s, value=%s, token=%s",
+            "[EXACT] Signing TransferWithAuthorization: from=%s, to=%s, value=%s, token=%s",
             from_addr,
             to_addr,
             value,
@@ -166,10 +166,10 @@ class NativeExactBaseClientMechanism(ClientMechanism):
 # ---------------------------------------------------------------------------
 
 
-class NativeExactBaseFacilitatorMechanism(FacilitatorMechanism):
+class ExactBaseFacilitatorMechanism(FacilitatorMechanism):
     """Base TransferWithAuthorization facilitator mechanism.
 
-    Note: native_exact only supports a single transfer per authorization,
+    Note: exact only supports a single transfer per authorization,
     so the facilitator cannot collect fees from the payment itself.
     fee_quote always returns feeAmount=0.
     """
@@ -189,7 +189,7 @@ class NativeExactBaseFacilitatorMechanism(FacilitatorMechanism):
         )
 
     def scheme(self) -> str:
-        return SCHEME_NATIVE_EXACT
+        return SCHEME_EXACT
 
     # ------------------------------------------------------------------
     # fee_quote
@@ -284,7 +284,7 @@ class NativeExactBaseFacilitatorMechanism(FacilitatorMechanism):
         ]
 
         logger.info(
-            "[NATIVE-EXACT] Calling transferWithAuthorization on token=%s",
+            "[EXACT] Calling transferWithAuthorization on token=%s",
             token_address,
         )
 
@@ -401,14 +401,14 @@ class NativeExactBaseFacilitatorMechanism(FacilitatorMechanism):
 # ---------------------------------------------------------------------------
 
 
-class NativeExactBaseServerMechanism(ServerMechanism):
+class ExactBaseServerMechanism(ServerMechanism):
     """Base TransferWithAuthorization server mechanism."""
 
     def __init__(self, adapter: ChainAdapter) -> None:
         self._adapter = adapter
 
     def scheme(self) -> str:
-        return SCHEME_NATIVE_EXACT
+        return SCHEME_EXACT
 
     async def parse_price(self, price: str, network: str) -> dict[str, Any]:
         return TokenRegistry.parse_price(price, network)
@@ -449,9 +449,9 @@ class NativeExactBaseServerMechanism(ServerMechanism):
         signature: str,
         network: str,
     ) -> bool:
-        """Server-side signature check for native_exact.
+        """Server-side signature check for exact.
 
-        For native_exact, there is no PaymentPermit (permit is None).
+        For exact, there is no PaymentPermit (permit is None).
         Full signature verification is delegated to the facilitator,
         which has access to the complete payload including extensions.
         The server simply passes through here.

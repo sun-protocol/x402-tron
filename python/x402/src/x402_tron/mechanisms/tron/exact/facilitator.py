@@ -1,17 +1,17 @@
 """
-NativeExactTronFacilitatorMechanism - native_exact facilitator mechanism for TRON.
+ExactTronFacilitatorMechanism - exact facilitator mechanism for TRON.
 """
 
 from typing import TYPE_CHECKING
 
-from x402_tron.mechanisms._native_exact_base.base import NativeExactBaseFacilitatorMechanism
-from x402_tron.mechanisms.tron.native_exact.adapter import TronChainAdapter
+from x402_tron.mechanisms._exact_base.base import ExactBaseFacilitatorMechanism
+from x402_tron.mechanisms.tron.exact.adapter import TronChainAdapter
 
 if TYPE_CHECKING:
     from x402_tron.signers.facilitator import FacilitatorSigner
 
 
-class NativeExactTronFacilitatorMechanism(NativeExactBaseFacilitatorMechanism):
+class ExactTronFacilitatorMechanism(ExactBaseFacilitatorMechanism):
     """TransferWithAuthorization facilitator mechanism for TRON."""
 
     def __init__(

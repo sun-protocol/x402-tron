@@ -7,17 +7,17 @@ from x402_tron.mechanisms.evm.exact_permit import (
     ExactPermitEvmFacilitatorMechanism,
     ExactPermitEvmServerMechanism,
 )
-from x402_tron.mechanisms.evm.native_exact import (
-    NativeExactEvmClientMechanism,
-    NativeExactEvmFacilitatorMechanism,
-    NativeExactEvmServerMechanism,
+from x402_tron.mechanisms.evm.exact import (
+    ExactEvmClientMechanism,
+    ExactEvmFacilitatorMechanism,
+    ExactEvmServerMechanism,
 )
 
 __all__ = [
     "ExactPermitEvmClientMechanism",
     "ExactPermitEvmFacilitatorMechanism",
     "ExactPermitEvmServerMechanism",
-    "NativeExactEvmClientMechanism",
-    "NativeExactEvmFacilitatorMechanism",
-    "NativeExactEvmServerMechanism",
+    "ExactEvmClientMechanism",
+    "ExactEvmFacilitatorMechanism",
+    "ExactEvmServerMechanism",
 ]

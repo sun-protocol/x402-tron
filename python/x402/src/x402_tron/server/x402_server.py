@@ -158,18 +158,18 @@ class X402Server:
         if self._facilitator:
             facilitator = self._facilitator
 
-            # Split: native_exact doesn't need fee_quote
-            exact_reqs = [r for r in requirements_list if r.scheme != "native_exact"]
-            native_reqs = [r for r in requirements_list if r.scheme == "native_exact"]
+            # Split: exact doesn't need fee_quote
+            permit_reqs = [r for r in requirements_list if r.scheme != "exact"]
+            exact_reqs = [r for r in requirements_list if r.scheme == "exact"]
 
-            supported: list[PaymentRequirements] = list(native_reqs)
+            supported: list[PaymentRequirements] = list(exact_reqs)
 
-            if exact_reqs:
+            if permit_reqs:
                 self._logger.info(
                     "fee_quote input: %s",
-                    [(r.scheme, r.network, r.asset) for r in exact_reqs],
+                    [(r.scheme, r.network, r.asset) for r in permit_reqs],
                 )
-                fee_quotes = await facilitator.fee_quote(exact_reqs)
+                fee_quotes = await facilitator.fee_quote(permit_reqs)
                 self._logger.info(
                     "fee_quotes: %s",
                     [q.model_dump(by_alias=True) for q in fee_quotes],
@@ -178,7 +178,7 @@ class X402Server:
                     (q.scheme, q.network, q.asset): q for q in fee_quotes
                 }
                 self._logger.info("fee_quote result: %s", list(quote_map.keys()))
-                for req in exact_reqs:
+                for req in permit_reqs:
                     fee_quote = quote_map.get((req.scheme, req.network, req.asset))
                     if fee_quote is None:
                         self._logger.warning(

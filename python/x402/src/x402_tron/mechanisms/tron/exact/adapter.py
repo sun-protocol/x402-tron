@@ -1,10 +1,10 @@
 """
-TRON chain adapter for native_exact.
+TRON chain adapter for exact.
 """
 
 from x402_tron.address import TronAddressConverter
 from x402_tron.config import NetworkConfig
-from x402_tron.mechanisms._native_exact_base.base import ChainAdapter
+from x402_tron.mechanisms._exact_base.base import ChainAdapter
 
 
 class TronChainAdapter(ChainAdapter):

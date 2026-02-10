@@ -1,5 +1,5 @@
 """
-Types, ABI, and EIP-712 definitions for native_exact mechanism.
+Types, ABI, and EIP-712 definitions for exact mechanism.
 """
 
 import json
@@ -9,7 +9,7 @@ from typing import Any, List
 
 from pydantic import BaseModel, Field
 
-SCHEME_NATIVE_EXACT = "native_exact"
+SCHEME_EXACT = "exact"
 
 # Default validity period (1 hour)
 DEFAULT_VALIDITY_SECONDS = 3600
@@ -121,7 +121,7 @@ def build_eip712_domain(
     chain_id: int,
     verifying_contract: str,
 ) -> dict[str, Any]:
-    """Build EIP-712 domain dict for native_exact."""
+    """Build EIP-712 domain dict for exact."""
     return {
         "name": token_name,
         "version": token_version,

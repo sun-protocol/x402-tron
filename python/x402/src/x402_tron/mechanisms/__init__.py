@@ -4,13 +4,13 @@ x402 Mechanisms - Payment mechanisms for different chains
 Structure:
     _base/                  - ABC interfaces (ClientMechanism, FacilitatorMechanism, ServerMechanism)
     _exact_permit_base/     - Shared base classes for "exact_permit" scheme
-    _native_exact_base/     - Shared base classes for "native_exact" scheme
+    _exact_base/            - Shared base classes for "exact" scheme
     evm/                    - EVM chain implementations
         exact_permit/       - exact_permit scheme (client, facilitator, server)
-        native_exact/       - native_exact scheme (adapter, client, facilitator, server)
+        exact/              - exact scheme (adapter, client, facilitator, server)
     tron/                   - TRON chain implementations
         exact_permit/       - exact_permit scheme (client, facilitator, server)
-        native_exact/       - native_exact scheme (adapter, client, facilitator, server)
+        exact/              - exact scheme (adapter, client, facilitator, server)
 """
 
 from x402_tron.mechanisms import evm, tron
@@ -20,27 +20,27 @@ from x402_tron.mechanisms._exact_permit_base import (
     BaseExactPermitFacilitatorMechanism,
     BaseExactPermitServerMechanism,
 )
-from x402_tron.mechanisms._native_exact_base import (
+from x402_tron.mechanisms._exact_base import (
     ChainAdapter,
-    NativeExactBaseClientMechanism,
-    NativeExactBaseFacilitatorMechanism,
-    NativeExactBaseServerMechanism,
+    ExactBaseClientMechanism,
+    ExactBaseFacilitatorMechanism,
+    ExactBaseServerMechanism,
 )
 from x402_tron.mechanisms.evm import (
     ExactPermitEvmClientMechanism,
     ExactPermitEvmFacilitatorMechanism,
     ExactPermitEvmServerMechanism,
-    NativeExactEvmClientMechanism,
-    NativeExactEvmFacilitatorMechanism,
-    NativeExactEvmServerMechanism,
+    ExactEvmClientMechanism,
+    ExactEvmFacilitatorMechanism,
+    ExactEvmServerMechanism,
 )
 from x402_tron.mechanisms.tron import (
     ExactPermitTronClientMechanism,
     ExactPermitTronFacilitatorMechanism,
     ExactPermitTronServerMechanism,
-    NativeExactTronClientMechanism,
-    NativeExactTronFacilitatorMechanism,
-    NativeExactTronServerMechanism,
+    ExactTronClientMechanism,
+    ExactTronFacilitatorMechanism,
+    ExactTronServerMechanism,
 )
 
 __all__ = [
@@ -52,25 +52,25 @@ __all__ = [
     "BaseExactPermitClientMechanism",
     "BaseExactPermitFacilitatorMechanism",
     "BaseExactPermitServerMechanism",
-    # Native exact base
+    # Exact base
     "ChainAdapter",
-    "NativeExactBaseClientMechanism",
-    "NativeExactBaseFacilitatorMechanism",
-    "NativeExactBaseServerMechanism",
+    "ExactBaseClientMechanism",
+    "ExactBaseFacilitatorMechanism",
+    "ExactBaseServerMechanism",
     # EVM
     "ExactPermitEvmClientMechanism",
     "ExactPermitEvmFacilitatorMechanism",
     "ExactPermitEvmServerMechanism",
-    "NativeExactEvmClientMechanism",
-    "NativeExactEvmFacilitatorMechanism",
-    "NativeExactEvmServerMechanism",
+    "ExactEvmClientMechanism",
+    "ExactEvmFacilitatorMechanism",
+    "ExactEvmServerMechanism",
     # TRON
     "ExactPermitTronClientMechanism",
     "ExactPermitTronFacilitatorMechanism",
     "ExactPermitTronServerMechanism",
-    "NativeExactTronClientMechanism",
-    "NativeExactTronFacilitatorMechanism",
-    "NativeExactTronServerMechanism",
+    "ExactTronClientMechanism",
+    "ExactTronFacilitatorMechanism",
+    "ExactTronServerMechanism",
     # Subpackages
     "evm",
     "tron",

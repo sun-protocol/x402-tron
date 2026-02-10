@@ -1,11 +1,11 @@
 """
-Tests for NativeExactTronServerMechanism.
+Tests for ExactTronServerMechanism.
 """
 
 import pytest
 
-from x402_tron.mechanisms.tron.native_exact import NativeExactTronServerMechanism
-from x402_tron.mechanisms._native_exact_base.types import SCHEME_NATIVE_EXACT
+from x402_tron.mechanisms.tron.exact import ExactTronServerMechanism
+from x402_tron.mechanisms._exact_base.types import SCHEME_EXACT
 from x402_tron.tokens import TokenInfo, TokenRegistry
 from x402_tron.types import PaymentRequirements
 
@@ -24,12 +24,12 @@ def _register_test_token():
 
 @pytest.fixture
 def mechanism():
-    return NativeExactTronServerMechanism()
+    return ExactTronServerMechanism()
 
 
 class TestScheme:
     def test_scheme(self, mechanism):
-        assert mechanism.scheme() == SCHEME_NATIVE_EXACT
+        assert mechanism.scheme() == SCHEME_EXACT
 
 
 class TestParsePrice:
@@ -54,7 +54,7 @@ class TestParsePrice:
 class TestValidatePaymentRequirements:
     def test_valid_requirements(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="tron:nile",
             amount="1000000",
             asset=USDT_ADDRESS,
@@ -64,7 +64,7 @@ class TestValidatePaymentRequirements:
 
     def test_invalid_network(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="eip155:1",
             amount="1000000",
             asset=USDT_ADDRESS,
@@ -74,7 +74,7 @@ class TestValidatePaymentRequirements:
 
     def test_invalid_asset_format(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="tron:nile",
             amount="1000000",
             asset="0xNotTronAddress",
@@ -84,7 +84,7 @@ class TestValidatePaymentRequirements:
 
     def test_invalid_payto_format(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="tron:nile",
             amount="1000000",
             asset=USDT_ADDRESS,
@@ -94,7 +94,7 @@ class TestValidatePaymentRequirements:
 
     def test_zero_amount(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="tron:nile",
             amount="0",
             asset=USDT_ADDRESS,
@@ -104,7 +104,7 @@ class TestValidatePaymentRequirements:
 
     def test_negative_amount(self, mechanism):
         req = PaymentRequirements(
-            scheme="native_exact",
+            scheme="exact",
             network="tron:nile",
             amount="-100",
             asset=USDT_ADDRESS,

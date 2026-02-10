@@ -7,17 +7,17 @@ from x402_tron.mechanisms.tron.exact_permit import (
     ExactPermitTronFacilitatorMechanism,
     ExactPermitTronServerMechanism,
 )
-from x402_tron.mechanisms.tron.native_exact import (
-    NativeExactTronClientMechanism,
-    NativeExactTronFacilitatorMechanism,
-    NativeExactTronServerMechanism,
+from x402_tron.mechanisms.tron.exact import (
+    ExactTronClientMechanism,
+    ExactTronFacilitatorMechanism,
+    ExactTronServerMechanism,
 )
 
 __all__ = [
     "ExactPermitTronClientMechanism",
     "ExactPermitTronFacilitatorMechanism",
     "ExactPermitTronServerMechanism",
-    "NativeExactTronClientMechanism",
-    "NativeExactTronFacilitatorMechanism",
-    "NativeExactTronServerMechanism",
+    "ExactTronClientMechanism",
+    "ExactTronFacilitatorMechanism",
+    "ExactTronServerMechanism",
 ]

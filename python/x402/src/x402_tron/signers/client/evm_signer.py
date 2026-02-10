@@ -91,7 +91,7 @@ class EvmClientSigner(ClientSigner):
             )
 
             # Build EIP712Domain type dynamically from domain keys
-            # so it works for both exact (no version) and native_exact (with version)
+            # so it works for both exact_permit (no version) and exact (with version)
             domain_type = _eip712_domain_type_from_keys(domain)
 
             full_data = {

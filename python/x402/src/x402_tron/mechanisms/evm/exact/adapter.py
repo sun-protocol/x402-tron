@@ -1,8 +1,8 @@
 """
-EVM chain adapter for native_exact.
+EVM chain adapter for exact.
 """
 
-from x402_tron.mechanisms._native_exact_base.base import ChainAdapter
+from x402_tron.mechanisms._exact_base.base import ChainAdapter
 
 
 class EvmChainAdapter(ChainAdapter):

@@ -1,17 +1,17 @@
 """
-NativeExactEvmFacilitatorMechanism - native_exact facilitator mechanism for EVM.
+ExactEvmFacilitatorMechanism - exact facilitator mechanism for EVM.
 """
 
 from typing import TYPE_CHECKING
 
-from x402_tron.mechanisms._native_exact_base.base import NativeExactBaseFacilitatorMechanism
-from x402_tron.mechanisms.evm.native_exact.adapter import EvmChainAdapter
+from x402_tron.mechanisms._exact_base.base import ExactBaseFacilitatorMechanism
+from x402_tron.mechanisms.evm.exact.adapter import EvmChainAdapter
 
 if TYPE_CHECKING:
     from x402_tron.signers.facilitator import FacilitatorSigner
 
 
-class NativeExactEvmFacilitatorMechanism(NativeExactBaseFacilitatorMechanism):
+class ExactEvmFacilitatorMechanism(ExactBaseFacilitatorMechanism):
     """TransferWithAuthorization facilitator mechanism for EVM."""
 
     def __init__(

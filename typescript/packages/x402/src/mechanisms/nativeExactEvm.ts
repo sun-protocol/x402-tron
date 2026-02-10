@@ -1,5 +1,5 @@
 /**
- * NativeExactEvmClientMechanism - EVM client mechanism for "native_exact" payment scheme
+ * ExactEvmClientMechanism - EVM client mechanism for "exact" payment scheme
  *
  * Uses ERC-3009 TransferWithAuthorization with EIP-712 signing.
  * EVM addresses are used directly without conversion.
@@ -17,7 +17,7 @@ import {
 } from '../index.js';
 import { findByAddress } from '../tokens.js';
 import {
-  SCHEME_NATIVE_EXACT,
+  SCHEME_EXACT,
   TRANSFER_AUTH_EIP712_TYPES,
   buildEip712Domain,
   buildEip712Message,
@@ -27,9 +27,9 @@ import {
 import type { TransferAuthorization } from './nativeExact.js';
 
 /**
- * EVM client mechanism for "native_exact" payment scheme
+ * EVM client mechanism for "exact" payment scheme
  */
-export class NativeExactEvmClientMechanism implements ClientMechanism {
+export class ExactEvmClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
   private addressConverter = new EvmAddressConverter();
 
@@ -42,7 +42,7 @@ export class NativeExactEvmClientMechanism implements ClientMechanism {
   }
 
   scheme(): string {
-    return SCHEME_NATIVE_EXACT;
+    return SCHEME_EXACT;
   }
 
   async createPaymentPayload(

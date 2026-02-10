@@ -1,11 +1,11 @@
 """
-Tests for native_exact types and helpers.
+Tests for exact types and helpers.
 """
 
 import time
 
-from x402_tron.mechanisms._native_exact_base.types import (
-    SCHEME_NATIVE_EXACT,
+from x402_tron.mechanisms._exact_base.types import (
+    SCHEME_EXACT,
     TRANSFER_AUTH_EIP712_TYPES,
     TRANSFER_AUTH_PRIMARY_TYPE,
     TransferAuthorization,
@@ -112,7 +112,7 @@ class TestBuildEip712Domain:
 
 class TestConstants:
     def test_scheme_name(self):
-        assert SCHEME_NATIVE_EXACT == "native_exact"
+        assert SCHEME_EXACT == "exact"
 
     def test_primary_type(self):
         assert TRANSFER_AUTH_PRIMARY_TYPE == "TransferWithAuthorization"

@@ -1,15 +1,15 @@
 """
-Shared base classes for the "native_exact" payment scheme.
+Shared base classes for the "exact" payment scheme.
 """
 
-from x402_tron.mechanisms._native_exact_base.base import (
+from x402_tron.mechanisms._exact_base.base import (
     ChainAdapter,
-    NativeExactBaseClientMechanism,
-    NativeExactBaseFacilitatorMechanism,
-    NativeExactBaseServerMechanism,
+    ExactBaseClientMechanism,
+    ExactBaseFacilitatorMechanism,
+    ExactBaseServerMechanism,
 )
-from x402_tron.mechanisms._native_exact_base.types import (
-    SCHEME_NATIVE_EXACT,
+from x402_tron.mechanisms._exact_base.types import (
+    SCHEME_EXACT,
     TRANSFER_AUTH_EIP712_TYPES,
     TransferAuthorization,
     build_eip712_domain,
@@ -21,10 +21,10 @@ from x402_tron.mechanisms._native_exact_base.types import (
 
 __all__ = [
     "ChainAdapter",
-    "NativeExactBaseClientMechanism",
-    "NativeExactBaseFacilitatorMechanism",
-    "NativeExactBaseServerMechanism",
-    "SCHEME_NATIVE_EXACT",
+    "ExactBaseClientMechanism",
+    "ExactBaseFacilitatorMechanism",
+    "ExactBaseServerMechanism",
+    "SCHEME_EXACT",
     "TRANSFER_AUTH_EIP712_TYPES",
     "TransferAuthorization",
     "build_eip712_domain",

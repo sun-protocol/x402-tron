@@ -1,5 +1,5 @@
 /**
- * NativeExactTronClientMechanism - TRON client mechanism for "native_exact" payment scheme
+ * ExactTronClientMechanism - TRON client mechanism for "exact" payment scheme
  *
  * Uses ERC-3009 TransferWithAuthorization with TIP-712 signing.
  * Addresses are converted from TRON Base58 to EVM hex for signing.
@@ -17,7 +17,7 @@ import {
 } from '../index.js';
 import { findByAddress } from '../tokens.js';
 import {
-  SCHEME_NATIVE_EXACT,
+  SCHEME_EXACT,
   TRANSFER_AUTH_EIP712_TYPES,
   buildEip712Domain,
   buildEip712Message,
@@ -27,9 +27,9 @@ import {
 import type { TransferAuthorization } from './nativeExact.js';
 
 /**
- * TRON client mechanism for "native_exact" payment scheme
+ * TRON client mechanism for "exact" payment scheme
  */
-export class NativeExactTronClientMechanism implements ClientMechanism {
+export class ExactTronClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
   private addressConverter = new TronAddressConverter();
 
@@ -42,7 +42,7 @@ export class NativeExactTronClientMechanism implements ClientMechanism {
   }
 
   scheme(): string {
-    return SCHEME_NATIVE_EXACT;
+    return SCHEME_EXACT;
   }
 
   async createPaymentPayload(

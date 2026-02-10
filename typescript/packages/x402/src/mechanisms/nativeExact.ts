@@ -1,14 +1,14 @@
 /**
- * Shared types and helpers for native_exact mechanism.
+ * Shared types and helpers for exact mechanism.
  *
- * native_exact uses ERC-3009 TransferWithAuthorization for direct token transfers
+ * exact uses ERC-3009 TransferWithAuthorization for direct token transfers
  * without going through a PaymentPermit contract.
  */
 
 import type { Hex } from '../address.js';
 
 /** Scheme name */
-export const SCHEME_NATIVE_EXACT = 'native_exact';
+export const SCHEME_EXACT = 'exact';
 
 /** Default validity period (1 hour) */
 export const DEFAULT_VALIDITY_SECONDS = 3600;
@@ -41,7 +41,7 @@ export const TRANSFER_AUTH_EIP712_TYPES = {
 export const TRANSFER_AUTH_PRIMARY_TYPE = 'TransferWithAuthorization';
 
 /**
- * Build EIP-712 domain for native_exact
+ * Build EIP-712 domain for exact
  */
 export function buildEip712Domain(
   tokenName: string,
