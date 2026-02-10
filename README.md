@@ -77,9 +77,10 @@ server.set_facilitator(FacilitatorClient("http://localhost:8001"))
 @app.get("/protected")
 @x402_protected(
     server=server,
-    prices=["1 USDT"],  # Accept multiple tokens
-    network="tron:nile",              # Recommended for testing
-    pay_to="<YOUR_WALLET_ADDRESS>"
+    prices=["1 USDT"],
+    schemes=["exact"],
+    network="tron:nile",
+    pay_to="<YOUR_WALLET_ADDRESS>",
 )
 async def protected_resource(request: Request):
     return {"data": "This content was paid for on TRON"}
