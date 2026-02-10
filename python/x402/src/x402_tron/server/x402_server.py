@@ -75,7 +75,7 @@ class X402Server:
             auto_register_tron: If True, automatically register TRON mechanisms for all networks
         """
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._mechanisms: dict[str, ServerMechanism] = {}
+        self._mechanisms: dict[str, dict[str, ServerMechanism]] = {}
         self._facilitator: "FacilitatorClient | None" = None
 
         if auto_register_tron:
@@ -92,7 +92,10 @@ class X402Server:
         Returns:
             self for method chaining
         """
-        self._mechanisms[network] = mechanism
+        scheme = mechanism.scheme()
+        if network not in self._mechanisms:
+            self._mechanisms[network] = {}
+        self._mechanisms[network][scheme] = mechanism
         return self
 
     def _register_default_tron_mechanisms(self) -> None:
@@ -130,9 +133,11 @@ class X402Server:
         """
         requirements_list: list[PaymentRequirements] = []
         for config in configs:
-            mechanism = self._mechanisms.get(config.network)
+            mechanism = self._find_mechanism(config.network, config.scheme)
             if mechanism is None:
-                raise ValueError(f"No mechanism registered for network: {config.network}")
+                raise ValueError(
+                    f"No mechanism registered for network={config.network}, scheme={config.scheme}"
+                )
 
             asset_info = await mechanism.parse_price(config.price, config.network)
 
@@ -266,7 +271,7 @@ class X402Server:
             return VerifyResponse(isValid=False, invalidReason="payload_mismatch")
 
         # Server-side signature verification to prevent incorrect signatures from frontend
-        mechanism = self._mechanisms.get(requirements.network)
+        mechanism = self._find_mechanism(requirements.network, requirements.scheme)
         if mechanism is not None:
             permit = payload.payload.payment_permit
             signature = payload.payload.signature
@@ -299,6 +304,13 @@ class X402Server:
             return SettleResponse(success=False, errorReason="no_facilitator")
 
         return await self._facilitator.settle(payload, requirements)
+
+    def _find_mechanism(self, network: str, scheme: str) -> ServerMechanism | None:
+        """Find mechanism for network and scheme"""
+        network_mechanisms = self._mechanisms.get(network)
+        if network_mechanisms is None:
+            return None
+        return network_mechanisms.get(scheme)
 
     def _validate_payload_matches_requirements(
         self,

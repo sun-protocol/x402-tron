@@ -71,6 +71,7 @@ async def test_verify_payment_with_invalid_signature(
     """Test that server rejects invalid signatures"""
     # Create mock mechanism that returns False for signature verification
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact"
     mock_mechanism.verify_signature = AsyncMock(return_value=False)
 
     # Register mock mechanism
@@ -102,6 +103,7 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
     """Test that server accepts valid signatures and delegates to facilitator"""
     # Create mock mechanism that returns True for signature verification
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact"
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
 
     # Register mock mechanism
@@ -168,6 +170,7 @@ async def test_verify_payment_payload_mismatch(mock_server, sample_permit, sampl
     """Test that payload mismatch is caught before signature verification"""
     # Create mock mechanism
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact"
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
     mock_server.register("tron:shasta", mock_mechanism)
 

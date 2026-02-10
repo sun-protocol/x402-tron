@@ -168,7 +168,9 @@ class X402Client:
                 candidates = [r for r in candidates if r.network == filters.network]
                 logger.debug(f"After network filter: {len(candidates)} candidates")
 
-        candidates = [r for r in candidates if self._find_mechanism(r.network) is not None]
+        candidates = [
+            r for r in candidates if self._find_mechanism(r.scheme, r.network) is not None
+        ]
         logger.debug(f"After mechanism filter: {len(candidates)} candidates")
 
         for policy in self._policies:
@@ -212,13 +214,18 @@ class X402Client:
             Payment payload
         """
         logger.info(
-            f"Creating payment payload for network={requirements.network}, resource={resource}"
+            f"Creating payment payload for scheme={requirements.scheme}, "
+            f"network={requirements.network}, resource={resource}"
         )
-        mechanism = self._find_mechanism(requirements.network)
+        mechanism = self._find_mechanism(requirements.scheme, requirements.network)
         if mechanism is None:
-            logger.error(f"No mechanism registered for network: {requirements.network}")
+            logger.error(
+                f"No mechanism registered for scheme={requirements.scheme}, "
+                f"network={requirements.network}"
+            )
             raise UnsupportedNetworkError(
-                f"No mechanism registered for network: {requirements.network}"
+                f"No mechanism registered for scheme={requirements.scheme}, "
+                f"network={requirements.network}"
             )
 
         logger.debug(f"Using mechanism: {mechanism.__class__.__name__}")
@@ -252,10 +259,10 @@ class X402Client:
 
         return await self.create_payment_payload(requirements, resource, extensions)
 
-    def _find_mechanism(self, network: str) -> ClientMechanism | None:
-        """Find mechanism for network"""
+    def _find_mechanism(self, scheme: str, network: str) -> ClientMechanism | None:
+        """Find mechanism for scheme and network"""
         for entry in self._mechanisms:
-            if self._match_pattern(entry.pattern, network):
+            if entry.mechanism.scheme() == scheme and self._match_pattern(entry.pattern, network):
                 return entry.mechanism
         return None
 
