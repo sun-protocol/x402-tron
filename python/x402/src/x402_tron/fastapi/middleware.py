@@ -30,7 +30,10 @@ class X402Middleware:
         middleware = X402Middleware(server)
 
         @app.get("/protected")
-        @middleware.protect(prices=["100 USDC"], schemes=["exact"], network="eip155:8453", pay_to="0x...")
+        @middleware.protect(
+            prices=["100 USDC"], schemes=["exact"],
+            network="eip155:8453", pay_to="0x...",
+        )
         async def protected_endpoint():
             return {"data": "secret"}
     """
@@ -315,4 +318,7 @@ def x402_protected(
         )
     """
     middleware = X402Middleware(server)
-    return middleware.protect(prices=prices, schemes=schemes, network=network, pay_to=pay_to, **kwargs)
+    return middleware.protect(
+        prices=prices, schemes=schemes,
+        network=network, pay_to=pay_to, **kwargs,
+    )

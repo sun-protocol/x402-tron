@@ -5,7 +5,7 @@ EvmClientSigner - EVM client signer implementation
 import logging
 from typing import Any
 
-from x402_tron.abi import EIP712_DOMAIN_TYPE, ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE
+from x402_tron.abi import ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE
 from x402_tron.config import NetworkConfig
 from x402_tron.exceptions import InsufficientAllowanceError, SignatureCreationError
 from x402_tron.signers.client.base import ClientSigner

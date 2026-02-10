@@ -5,7 +5,7 @@ EvmFacilitatorSigner - EVM facilitator signer implementation
 import logging
 from typing import Any
 
-from x402_tron.abi import EIP712_DOMAIN_TYPE, PAYMENT_PERMIT_PRIMARY_TYPE
+from x402_tron.abi import PAYMENT_PERMIT_PRIMARY_TYPE
 from x402_tron.signers.facilitator.base import FacilitatorSigner
 from x402_tron.signers.utils import _eip712_domain_type_from_keys, resolve_provider_uri
 
