@@ -39,28 +39,6 @@ export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
   'eip155:56': '0x1825bB32db3443dEc2cc7508b2D818fc13EaD878',
 };
 
-/** Default RPC URLs for EVM networks */
-export const EVM_RPC_URLS: Record<string, string> = {
-  'eip155:97': 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-  'eip155:56': 'https://bsc-dataseed.binance.org/',
-  // 'eip155:1': 'https://eth.llamarpc.com',
-};
-
-/** Default TronGrid hosts for TRON networks */
-export const TRON_RPC_URLS: Record<string, string> = {
-  'tron:mainnet': 'https://api.trongrid.io',
-  'tron:shasta': 'https://api.shasta.trongrid.io',
-  'tron:nile': 'https://nile.trongrid.io',
-};
-
-/**
- * Resolve a network identifier to an RPC URL.
- * Returns the URL from the built-in map, or undefined if not configured.
- */
-export function resolveRpcUrl(network: string): string | undefined {
-  return EVM_RPC_URLS[network] ?? TRON_RPC_URLS[network];
-}
-
 /** Zero address for TRON */
 export const TRON_ZERO_ADDRESS = 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb';
 

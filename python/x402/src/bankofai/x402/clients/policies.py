@@ -22,15 +22,6 @@ def _get_decimals(req: PaymentRequirements) -> int:
     return token.decimals if token else 6
 
 
-def _match_pattern(pattern: str, network: str) -> bool:
-    """Match a network against a pattern (e.g. 'tron:*' matches 'tron:nile')."""
-    if pattern == network:
-        return True
-    if pattern.endswith(":*"):
-        return network.startswith(pattern[:-1])
-    return False
-
-
 class SufficientBalancePolicy:
     """Policy that filters out requirements with insufficient balance.
 
@@ -38,30 +29,12 @@ class SufficientBalancePolicy:
     this policy checks the user's on-chain balance for each option
     and removes requirements the user cannot afford.
 
-    Supports multi-network setups: pass a single signer for single-network
-    use, or a dict[networkPattern, signer] for multi-network.
-
-    Requirements whose network has no matching signer are kept as-is
-    (not filtered out), so downstream mechanism matching can still work.
-
     If all requirements are unaffordable, returns an empty list so the
     caller can raise an appropriate error.
     """
 
-    def __init__(
-        self,
-        signers: "ClientSigner | dict[str, ClientSigner]",
-    ) -> None:
-        if isinstance(signers, dict):
-            self._signers: list[tuple[str, "ClientSigner"]] = list(signers.items())
-        else:
-            self._signers = [("*", signers)]
-
-    def _find_signer(self, network: str) -> "ClientSigner | None":
-        for pattern, signer in self._signers:
-            if pattern == "*" or _match_pattern(pattern, network):
-                return signer
-        return None
+    def __init__(self, signer: "ClientSigner") -> None:
+        self._signer = signer
 
     async def apply(
         self,
@@ -69,20 +42,7 @@ class SufficientBalancePolicy:
     ) -> list[PaymentRequirements]:
         affordable: list[PaymentRequirements] = []
         for req in requirements:
-            signer = self._find_signer(req.network)
-            if signer is None:
-                # No signer for this network — keep the requirement so
-                # mechanism matching can still select it.
-                affordable.append(req)
-                continue
-
-            try:
-                balance = await signer.check_balance(req.asset, req.network)
-            except Exception:
-                # Signer cannot query this network; keep the requirement.
-                affordable.append(req)
-                continue
-
+            balance = await self._signer.check_balance(req.asset, req.network)
             needed = int(req.amount)
             if hasattr(req, "extra") and req.extra and hasattr(req.extra, "fee"):
                 fee = req.extra.fee
