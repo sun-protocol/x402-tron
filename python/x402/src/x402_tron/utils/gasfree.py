@@ -33,43 +33,60 @@ GASFREE_API_BASE_URL = "https://api.gasfree.io/v1"
 class GasFreeAPIClient:
     """Official GasFree HTTP API client implementation"""
 
-    def __init__(self, base_url: str = GASFREE_API_BASE_URL):
-        self.base_url = base_url
+    def __init__(self, base_url: str):
+        self.base_url = base_url.rstrip("/")
 
-    async def get_nonce(self, user: str, token: str, chain_id: int) -> int:
-        """Get the current nonce for a user/token/chainId combination"""
+    async def get_nonce(self, user: str, _token: str, _chain_id: int) -> int:
+        """Get the current recommended nonce for a user account
+        Official endpoint: GET /api/v1/address/{accountAddress}
+        """
         async with httpx.AsyncClient() as client:
-            url = f"{self.base_url}/gasfree/nonce"
-            params = {
-                "user": user,
-                "token": token,
-                "chainId": chain_id,
-            }
+            url = f"{self.base_url}/api/v1/address/{user}"
             try:
-                response = await client.get(url, params=params)
+                response = await client.get(url)
                 response.raise_for_status()
-                data = response.json()
-                # Assuming the response format is {"nonce": N} or similar
+                result = response.json()
+                if result.get("code") != 200:
+                    raise RuntimeError(f"API error: {result.get('message') or result.get('reason')}")
+                
+                data = result.get("data", {})
                 return int(data.get("nonce", 0))
             except Exception as e:
                 logger.warning(f"Failed to get nonce from GasFree API: {e}. Defaulting to 0.")
                 return 0
 
     async def submit(self, domain: Dict[str, Any], message: Dict[str, Any], signature: str) -> str:
-        """Submit a signed GasFree transaction to the official relayer"""
+        """Submit a signed GasFree transaction to the official relayer
+        Official endpoint: POST /api/v1/gasfree/submit
+        """
         async with httpx.AsyncClient() as client:
-            url = f"{self.base_url}/gasfree/submit"
-            # Format according to TIP-712 submission standard
+            url = f"{self.base_url}/api/v1/gasfree/submit"
+            
+            # 官方 API 提交格式要求（基于文档 3.3 章节）
+            # 注意：sig 参数不带 0x 前缀
+            sig = signature[2:] if signature.startswith("0x") else signature
             payload = {
-                "domain": domain,
-                "message": message,
-                "signature": signature,
+                "token": message["token"],
+                "serviceProvider": message["serviceProvider"],
+                "user": message["user"],
+                "receiver": message["receiver"],
+                "value": message["value"],
+                "maxFee": message["maxFee"],
+                "deadline": message["deadline"],
+                "version": message["version"],
+                "nonce": message["nonce"],
+                "sig": sig,
             }
+            
             try:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
-                data = response.json()
-                return data.get("txHash")
+                result = response.json()
+                if result.get("code") != 200:
+                    raise RuntimeError(f"API error: {result.get('message') or result.get('reason')}")
+                
+                data = result.get("data", {})
+                return data.get("id") # 返回 traceId
             except Exception as e:
                 logger.error(f"Failed to submit GasFree transaction: {e}")
                 raise

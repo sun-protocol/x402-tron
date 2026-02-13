@@ -6,7 +6,7 @@ from x402_tron.config import NetworkConfig
 
 def test_gasfree_address_calculation():
     # Test vector for GasFree address calculation
-    user_address = "TDn5i9p6U5vD5S6C6D6E6F6G6H6I6J6K6L"  # Mock address
+    user_address = "TQr1nSWDLWgmJ3tkbFZANnaFcB5ci7Hvxa"  # Valid TRON address
 
     # We mock keccak to avoid dependency issues in test environment
     # In a real environment, eth-hash or pysha3 would be used

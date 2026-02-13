@@ -1,41 +1,96 @@
 # AGENTS.md
 
-## Project overview
+## Project Overview
 
-x402 is a decentralized pay-per-request protocol.
+x402 is a decentralized pay-per-request protocol leveraging the HTTP `402 Payment Required` status code.
+- **Client**: Signs `PaymentPermit` (TIP-712 structured data).
+- **Server**: Validates permits and provides resources.
+- **Facilitator**: Verifies and settles payments on-chain (TRON).
 
-- Client signs `PaymentPermit`
-- Server validates
-- Facilitator settles
+Supported chains: EVM, TRON. This repository focuses on the TRON implementation.
 
-Supported chains: EVM, TRON
+## Working Style & Ethics
 
-## Working style
+- **Parallelism**: ALWAYS use parallel tool calls for independent tasks (e.g., searching and reading).
+- **Test-Driven**: Write a reproduction test case before fixing bugs or adding features.
+- **Minimalism**: Focus on "why" in comments. Keep PRs small (one fix/feature per PR).
+- **Proactiveness**: Fix small issues (linting, types) in touched files proactively.
+- **No Auto-Commits**: NEVER proactively commit changes to the git repository. You must only commit when explicitly asked by the user.
 
-- ALWAYS USE PARALLEL TOOLS WHEN APPLICABLE.
+## Repository Structure
 
-## Repo structure
+- `python/x402/`: Python SDK source, tests, and tools.
+  - `src/x402_tron/`: Core TRON implementation (Signers, Mechanisms, SDK).
+  - `src/x402/`: Generic utilities and base classes.
+  - `tests/`: Organized by component (client, server, facilitator, utils).
+- `typescript/packages/x402/`: TypeScript Client SDK.
+  - `src/`: Signers, Mechanisms, and Fetch Client implementation.
+- `scripts/`: Shared maintenance and deployment scripts.
 
-- Python SDK: `python/x402/src/x402/` (Client + Server + Facilitator)
-- TypeScript SDK: `typescript/packages/` (Client only)
-- Architecture: SDK → Mechanisms/Signers → Utils
+## Development Commands
 
-## Naming conventions
+### Python (`python/x402/`)
+- **Setup**: `pip install -e .[all]` (Includes `tron`, `fastapi`, `flask`).
+- **Test All**: `pytest`
+- **Single Test**: `pytest tests/path/to/test_file.py`
+- **Single Case**: `pytest tests/path/to/test_file.py::test_function_name`
+- **Lint**: `ruff check .`
+- **Format**: `ruff format .`
+- **Type Check**: `mypy .` (Strict mode is enabled in `pyproject.toml`).
 
-- Mechanisms: `Exact{Chain}{Role}Mechanism` (e.g., `ExactTronClientMechanism`)
-- Signers: `{Chain}{Role}Signer` (e.g., `TronClientSigner`)
-- SDK: `X402{Role}` (e.g., `X402Client`)
-- Files: `snake_case.py` (Python), `camelCase.ts` (TypeScript)
+### TypeScript (`typescript/packages/x402/`)
+- **Setup**: `pnpm install` (preferred) or `npm install`
+- **Build**: `npm run build` (runs `tsc`).
+- **Test All**: `npm test` (Verify if tests exist in the specific package).
+- **Single Test**: Use `vitest` or `jest` flags if available (check `package.json`).
+- **Lint**: `npm run lint` (if available) or `tsc --noEmit`.
 
-## Security considerations
+## Code Style Guidelines
 
-- Do not commit private keys, seed phrases, API keys, or signing secrets
-- Use environment variables (or local config files) for secrets; keep examples sanitized
-- Avoid printing sensitive data (e.g., raw signatures, permits) in logs and tests
+### General
+- **Naming Patterns**:
+  - Mechanisms: `Exact{Chain}{Role}Mechanism` (e.g., `ExactTronClientMechanism`).
+  - Signers: `{Chain}{Role}Signer` (e.g., `TronClientSigner`).
+  - SDK Entrypoints: `X402{Role}` (e.g., `X402Client`, `X402Server`).
+- **Async**: Use `async`/`await` for all I/O bound operations and blockchain interactions.
 
-## PR checklist
+### Python Specific
+- **Imports**: 
+  - Group standard library, third-party, and local imports.
+  - Use absolute imports (e.g., `from x402_tron.utils import ...`).
+- **Naming**: `snake_case` for files, variables, and functions; `PascalCase` for classes; `UPPER_CASE` for constants.
+- **Types**: MANDATORY strict typing using the `typing` module. Use `Protocol` for interfaces.
+- **Docstrings**: Google style (Args, Returns, Raises).
+- **Error Handling**: Define custom exceptions in `src/x402_tron/exceptions.py`. Wrap low-level blockchain errors in domain-specific exceptions.
+- **Logging**: Use `logger = logging.getLogger(__name__)`.
 
-- Run `ruff format .` and `pytest` before committing
-- Update tests and docs
-- Title: `[x402] <description>`
-- Write tests first
+### TypeScript Specific
+- **Imports**: **CRITICAL: Relative imports MUST include the `.js` extension** (e.g., `import { X } from './utils.js'`). This is required for ESM compatibility.
+- **Naming**: `camelCase` for files, variables, and methods; `PascalCase` for classes and interfaces.
+- **Types**: Explicit interfaces for all public APIs. Avoid `any` at all costs. Use `Unknown` if type is truly dynamic.
+- **Error Handling**: Use custom Error classes. Provide descriptive error messages.
+
+## Security Considerations
+
+- **Secret Management**:
+  - NEVER commit private keys, seed phrases, or API keys.
+  - Use `.env` files (ignored by git) for development secrets.
+  - Sanitize all logs and test outputs to prevent leaking signatures or permits.
+- **Blockchain Safety**:
+  - Use dedicated wallets for development.
+  - Always verify addresses and network IDs (`tron:mainnet`, `tron:nile`, `tron:shasta`).
+  - Ensure transaction simulation or dry-runs where applicable.
+
+## PR Checklist
+
+1. **Tests**: Ensure new code is covered and existing tests pass.
+2. **Linting**: Run `ruff format .` (Python) and verify TS builds.
+3. **Docs**: Update `README.md` or inline docs if public APIs change.
+4. **Commits**: Use descriptive messages; prefix with `[x402]`.
+5. **No Secrets**: Double-check that no sensitive data is staged.
+
+## Agent Specific Instructions
+
+- When exploring, start by listing the root and then drilling into `python/x402/src/x402_tron` or `typescript/packages/x402/src`.
+- If a tool call fails, analyze the error and try an alternative approach before asking for help.
+- Always check `pyproject.toml` or `package.json` to verify dependencies before suggesting new ones.

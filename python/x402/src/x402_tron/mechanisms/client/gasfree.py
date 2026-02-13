@@ -63,6 +63,8 @@ class GasFreeTronClientMechanism(ClientMechanism):
 
         network = requirements.network
         user_address = self._signer.get_address()
+        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
+        api_client = GasFreeAPIClient(api_base_url)
 
         # 1. Calculate GasFree address
         controller = NetworkConfig.get_gasfree_controller_address(network)
@@ -100,13 +102,13 @@ class GasFreeTronClientMechanism(ClientMechanism):
         deadline = meta.get("validBefore") or int(time.time()) + 3600
 
         # Get Nonce via HTTP API
+        # We always fetch from API for GasFree to ensure we have the correct sequential nonce,
+        # ignoring any random nonce provided by the server in meta.
         chain_id = NetworkConfig.get_chain_id(network)
-        nonce = meta.get("nonce")
-        if nonce is None:
-            self._logger.info(f"Fetching nonce for {user_address} from GasFree API...")
-            nonce = await self._api_client.get_nonce(
-                user=user_address, token=requirements.asset, chain_id=chain_id
-            )
+        self._logger.info(f"Fetching nonce for {user_address} from GasFree API...")
+        nonce = await api_client.get_nonce(
+            user=user_address, token=requirements.asset, chain_id=chain_id
+        )
 
         nonce = int(nonce)
 

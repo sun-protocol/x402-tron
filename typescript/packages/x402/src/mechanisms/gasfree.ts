@@ -7,7 +7,8 @@ import {
   ClientMechanism,
   ClientSigner,
 } from '../index.js';
-import { getChainId } from '../config.js';
+import { getChainId, getGasFreeApiBaseUrl } from '../config.js';
+import { GasFreeAPIClient } from '../utils/gasfree.js';
 
 /**
  * GasFreeTronClientMechanism - GasFree payment mechanism for TRON.
@@ -34,6 +35,8 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     const network = requirements.network;
     const chainId = getChainId(network);
     const userAddress = this.signer.getAddress();
+    const apiBaseUrl = getGasFreeApiBaseUrl(network);
+    const apiClient = new GasFreeAPIClient(apiBaseUrl);
 
     // 1. Initialize GasFree SDK
     const gasFree = new TronGasFree({
@@ -51,9 +54,10 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     const maxFee = requirements.extra?.fee?.feeAmount || '100000';
     const deadline = meta.validBefore || Math.floor(Date.now() / 1000) + 3600;
     
-    // Nonce should ideally come from GasFree API if not provided
-    // For now we use extensions or default to '0'
-    const nonce = meta.nonce || '0';
+    // Nonce should come from GasFree API to ensure it's correct for the contract
+    // We prioritize the API over the meta.nonce which might be a random value from the server
+    console.info(`Fetching nonce for ${userAddress} from GasFree API...`);
+    const nonce = await apiClient.getNonce(userAddress, requirements.asset, chainId);
 
     const params = {
       token: requirements.asset,

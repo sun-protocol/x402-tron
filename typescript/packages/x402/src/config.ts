@@ -20,7 +20,7 @@ export const PAYMENT_PERMIT_ADDRESSES: Record<string, string> = {
 
 /** GasFreeController contract addresses */
 export const GASFREE_CONTROLLER_ADDRESSES: Record<string, string> = {
-  'tron:mainnet': 'TFFAMQLZybALaLb4uxHA9RBE7pxhUAjF3U',
+  'tron:mainnet': 'TFFAMLQZybALab4uxHA9RBE7pxhUAjfF3U',
   'tron:shasta': 'TQghdCeVDA6CnuNVTUhfaAyPfTetqZWNpm',
   'tron:nile': 'THQGuFzL87ZqhxkgqYEryRAd7gqFqL5rdc',
 };
@@ -30,6 +30,13 @@ export const GASFREE_BEACON_ADDRESSES: Record<string, string> = {
   'tron:mainnet': 'TSP9UW6FQhT76XD2jWA6ipGMx3yGbjDffP',
   'tron:shasta': 'TQ1jvA3nLDMDNbJoMPLzTPoqAg8NvZ5CCW',
   'tron:nile': 'TLtCGmaxH3PbuaF6kbybwteZcHptEdgQGC',
+};
+
+/** GasFree API Base URLs */
+export const GASFREE_API_BASE_URLS: Record<string, string> = {
+  'tron:mainnet': 'https://open.gasfree.io/tron',
+  'tron:shasta': 'https://open-test.gasfree.io/shasta', // 按官方规律推测
+  'tron:nile': 'https://open-test.gasfree.io/nile',
 };
 
 /** Zero address for TRON */
@@ -65,6 +72,13 @@ export function getGasFreeControllerAddress(network: string): string {
  */
 export function getGasFreeBeaconAddress(network: string): string {
   return GASFREE_BEACON_ADDRESSES[network] ?? TRON_ZERO_ADDRESS;
+}
+
+/**
+ * Get GasFree API Base URL for network
+ */
+export function getGasFreeApiBaseUrl(network: string): string {
+  return GASFREE_API_BASE_URLS[network] ?? 'https://api.gasfree.io/v1';
 }
 
 /**
