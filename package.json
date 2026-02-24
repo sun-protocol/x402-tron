@@ -1,5 +1,5 @@
 {
-  "name": "x402-tron",
+  "name": "x402",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -15,6 +15,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "tronweb": "^6.2.0"
+    "tronweb": "^6.2.0",
+    "viem": "^2.45.2"
   }
 }

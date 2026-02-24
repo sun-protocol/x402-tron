@@ -37,16 +37,6 @@ export interface Fee {
   feeAmount: string;
 }
 
-/** Delivery information (for on-chain delivery) */
-export interface Delivery {
-  /** Delivery asset contract address */
-  receiveToken: string;
-  /** Minimum delivery quantity */
-  miniReceiveAmount: string;
-  /** Token ID (for ERC721/ERC1155) */
-  tokenId: string;
-}
-
 /** Payment permit structure */
 export interface PaymentPermit {
   /** Permit metadata */
@@ -59,8 +49,6 @@ export interface PaymentPermit {
   payment: Payment;
   /** Fee information */
   fee: Fee;
-  /** Delivery information */
-  delivery: Delivery;
 }
 
 /** Payment requirements from server */
@@ -92,6 +80,7 @@ export interface PaymentRequirementsExtra {
     facilitatorId?: string;
     feeTo: string;
     feeAmount: string;
+    caller?: string;
   };
 }
 
@@ -103,13 +92,6 @@ export interface PaymentPermitContext {
     nonce: string;
     validAfter: number;
     validBefore: number;
-  };
-  /** Caller address (facilitator that will execute the permit) */
-  caller?: string;
-  delivery: {
-    receiveToken: string;
-    miniReceiveAmount: string;
-    tokenId: string;
   };
 }
 

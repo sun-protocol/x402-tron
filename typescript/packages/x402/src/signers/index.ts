@@ -3,6 +3,7 @@
  */
 
 export { TronClientSigner } from './signer.js';
+export { EvmClientSigner } from './evmSigner.js';
 export type {
   TronWeb,
   TypedDataDomain,

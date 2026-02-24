@@ -3,8 +3,8 @@ requires = ["hatchling>=1.18.0,<1.22.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "x402-tron"
-version = "0.1.6"
+name = "bankofai-x402"
+version = "0.3.1"
 description = "x402 Payment Protocol SDK for Python"
 readme = "README.md"
 license = {text = "MIT"}
@@ -39,10 +39,13 @@ dev-dependencies = [
 
 [project.optional-dependencies]
 tron = ["tronpy>=0.4.0"]
+evm = ["web3>=6.0.0", "eth-account>=0.8.0"]
 fastapi = ["fastapi>=0.100.0"]
 flask = ["flask>=2.0.0"]
 all = [
     "tronpy>=0.4.0",
+    "web3>=6.0.0",
+    "eth-account>=0.8.0",
     "fastapi>=0.100.0",
     "flask>=2.0.0",
 ]
@@ -54,12 +57,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/open-aibank/x402-tron"
-Documentation = "https://github.com/open-aibank/x402-tron#readme"
-Repository = "https://github.com/open-aibank/x402-tron"
+Homepage = "https://github.com/bankofai/x402"
+Documentation = "https://github.com/bankofai/x402#readme"
+Repository = "https://github.com/bankofai/x402"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/x402_tron"]
+packages = ["src/bankofai"]
 
 [tool.ruff]
 line-length = 100

@@ -1,6 +1,6 @@
 """Tests for payment ID generation utilities"""
 
-from x402_tron.utils import generate_payment_id
+from bankofai.x402.utils import generate_payment_id
 
 
 def test_generate_payment_id_format():

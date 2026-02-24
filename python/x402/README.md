@@ -1,26 +1,26 @@
-# x402-tron
+# x402
 
 Python SDK for the x402 payment protocol (TRON-only).
 
 ## Installation
 
 ```bash
-pip install x402-tron
+pip install bankofai-x402
 ```
 
 Optional extras:
 
 ```bash
-pip install "x402-tron[tron]"
-pip install "x402-tron[fastapi]"
-pip install "x402-tron[flask]"
-pip install "x402-tron[all]"
+pip install "bankofai-x402[tron]"
+pip install "bankofai-x402[fastapi]"
+pip install "bankofai-x402[flask]"
+pip install "bankofai-x402[all]"
 ```
 
 ## Quick Start
 
 ```python
-from x402_tron.clients import X402Client
+from bankofai.x402.clients import X402Client
 
 client = X402Client()
 ```
@@ -30,7 +30,7 @@ If you want automatic handling of HTTP 402 responses, use `X402HttpClient`:
 ```python
 import httpx
 
-from x402_tron.clients import X402Client, X402HttpClient
+from bankofai.x402.clients import X402Client, X402HttpClient
 
 x402_client = X402Client()
 http_client = httpx.AsyncClient()
@@ -39,6 +39,6 @@ client = X402HttpClient(http_client=http_client, x402_client=x402_client)
 
 ## Links
 
-- Repository: https://github.com/open-aibank/x402-tron
-- Issues: https://github.com/open-aibank/x402-tron/issues
-- Contributing: https://github.com/open-aibank/CONTRIBUTING.md
+- Repository: https://github.com/bankofai/x402
+- Issues: https://github.com/bankofai/x402/issues
+- Contributing: https://github.com/bankofai/CONTRIBUTING.md

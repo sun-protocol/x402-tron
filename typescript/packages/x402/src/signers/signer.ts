@@ -5,8 +5,17 @@
  */
 
 import type { ClientSigner } from '../index.js';
-import { getChainId, getPaymentPermitAddress, toEvmHex, type Hex } from '../index.js';
-import type { TronWeb, TypedDataDomain, TypedDataField, TronNetwork } from './types.js';
+import {
+  getPaymentPermitAddress,
+  toEvmHex,
+  type Hex,
+  SignatureCreationError,
+  InsufficientAllowanceError,
+  UnsupportedNetworkError,
+  TRON_RPC_URLS,
+} from '../index.js';
+import { TronWeb as TronWebClass } from 'tronweb';
+import type { TronWeb, TypedDataDomain, TypedDataField } from './types.js';
 
 /** ERC20 function selectors */
 const ERC20_ALLOWANCE_SELECTOR = 'allowance(address,address)';
@@ -16,46 +25,48 @@ const ERC20_APPROVE_SELECTOR = 'approve(address,uint256)';
  * TRON client signer implementation using TronWeb's signTypedData
  */
 export class TronClientSigner implements ClientSigner {
-  private tronWeb: TronWeb;
-  private privateKey: string | undefined;
+  private privateKey: string;
   private address: string; // Base58 format
-  private network: TronNetwork;
+  private tronWebInstances: Map<string, TronWeb> = new Map();
 
-  private constructor(
-    tronWeb: TronWeb,
-    address: string,
-    network: TronNetwork,
-    privateKey?: string
-  ) {
-    this.tronWeb = tronWeb;
-    this.address = address;
-    this.network = network;
-    this.privateKey = privateKey;
-  }
-
-  /**
-   * Create signer from TronWeb instance (browser wallet mode)
-   */
-  static fromTronWeb(tronWeb: TronWeb, network: TronNetwork = 'mainnet'): TronClientSigner {
-    const privateKey = tronWeb.defaultPrivateKey;
-    if (!privateKey) {
-      throw new Error('TronWeb instance must have a default private key or be connected to a wallet');
-    }
-    const address = tronWeb.address.fromPrivateKey(privateKey);
-    return new TronClientSigner(tronWeb, address, network);
-  }
-
-  /**
-   * Create signer with explicit private key
-   */
-  static withPrivateKey(
-    tronWeb: TronWeb,
-    privateKey: string,
-    network: TronNetwork = 'mainnet'
-  ): TronClientSigner {
+  constructor(privateKey: string) {
     const cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
-    const address = tronWeb.address.fromPrivateKey(cleanKey);
-    return new TronClientSigner(tronWeb, address, network, cleanKey);
+    this.privateKey = cleanKey;
+    // Derive address using a temporary TronWeb instance (pure crypto, no network needed)
+    const tw = this.createTronWeb('https://nile.trongrid.io');
+    this.address = tw.address.fromPrivateKey(cleanKey);
+  }
+
+  /**
+   * Get or create a TronWeb instance for the given network.
+   */
+  private getTronWeb(network?: string): TronWeb {
+    const host = network ? TRON_RPC_URLS[network] : undefined;
+    const key = host ?? '__default__';
+    let tw = this.tronWebInstances.get(key);
+    if (!tw) {
+      if (!host) {
+        throw new UnsupportedNetworkError(`No RPC URL configured for network: ${network}`);
+      }
+      tw = this.createTronWeb(host);
+      this.tronWebInstances.set(key, tw);
+    }
+    return tw;
+  }
+
+  private getDefaultTronWeb(): TronWeb {
+    let tw = this.tronWebInstances.get('__default__');
+    if (!tw) {
+      tw = this.createTronWeb('https://nile.trongrid.io');
+      this.tronWebInstances.set('__default__', tw);
+    }
+    return tw;
+  }
+
+  private createTronWeb(fullHost: string): TronWeb {
+    const apiKey = typeof process !== 'undefined' ? process.env?.TRON_GRID_API_KEY : undefined;
+    const headers = apiKey ? { 'TRON-PRO-API-KEY': apiKey } : undefined;
+    return new TronWebClass({ fullHost, privateKey: this.privateKey, headers }) as unknown as TronWeb;
   }
 
   getAddress(): string {
@@ -70,7 +81,9 @@ export class TronClientSigner implements ClientSigner {
     const messageHex = Array.from(message)
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
-    return this.tronWeb.trx.signMessageV2(messageHex, this.privateKey);
+    // Signing is pure crypto — any TronWeb instance works
+    const tw = this.getDefaultTronWeb();
+    return tw.trx.signMessageV2(messageHex, this.privateKey);
   }
 
   /**
@@ -88,14 +101,16 @@ export class TronClientSigner implements ClientSigner {
       verifyingContract: domain.verifyingContract as string,
     };
 
+    // Signing is pure crypto — any TronWeb instance works
+    const tw = this.getDefaultTronWeb();
     // Use signTypedData (stable API) or fall back to _signTypedData (legacy)
-    const signFn = this.tronWeb.trx.signTypedData || this.tronWeb.trx._signTypedData;
+    const signFn = tw.trx.signTypedData || tw.trx._signTypedData;
     if (!signFn) {
-      throw new Error('TronWeb does not support signTypedData. Please upgrade to TronWeb >= 5.0');
+      throw new SignatureCreationError('TronWeb does not support signTypedData. Please upgrade to TronWeb >= 5.0');
     }
 
     return signFn.call(
-      this.tronWeb.trx,
+      tw.trx,
       typedDomain,
       types as Record<string, TypedDataField[]>,
       message,
@@ -103,14 +118,38 @@ export class TronClientSigner implements ClientSigner {
     );
   }
 
+  async checkBalance(token: string, network: string): Promise<bigint> {
+    try {
+      const ownerHex = toEvmHex(this.address);
+
+      const tw = this.getTronWeb(network);
+      const result = await tw.transactionBuilder.triggerConstantContract(
+        token,
+        'balanceOf(address)',
+        {},
+        [{ type: 'address', value: ownerHex }],
+        this.address
+      );
+
+      if (result.result?.result && result.constant_result?.length) {
+        return BigInt('0x' + result.constant_result[0]);
+      }
+    } catch (error) {
+      console.error(`[TronClientSigner] Failed to check balance: ${error}`);
+    }
+
+    return BigInt(0);
+  }
+
   async checkAllowance(token: string, _amount: bigint, network: string): Promise<bigint> {
-    const spender = getPaymentPermitAddress(`tron:${this.network}`);
+    const spender = getPaymentPermitAddress(network);
     
     try {
       const ownerHex = toEvmHex(this.address);
       const spenderHex = toEvmHex(spender);
 
-      const result = await this.tronWeb.transactionBuilder.triggerConstantContract(
+      const tw = this.getTronWeb(network);
+      const result = await tw.transactionBuilder.triggerConstantContract(
         token,
         ERC20_ALLOWANCE_SELECTOR,
         {},
@@ -148,13 +187,13 @@ export class TronClientSigner implements ClientSigner {
     }
 
     if (mode === 'interactive') {
-      throw new Error('Interactive approval not implemented - use wallet UI');
+      throw new InsufficientAllowanceError('Interactive approval not implemented - use wallet UI');
     }
 
     // Auto mode: send approve transaction
     console.log(`[ALLOWANCE] Insufficient allowance: ${currentAllowance} < ${amount}, sending approve...`);
     
-    const spender = getPaymentPermitAddress(`tron:${this.network}`);
+    const spender = getPaymentPermitAddress(network);
     const spenderHex = toEvmHex(spender);
     
     // Use maxUint160 (2^160 - 1) to avoid repeated approvals
@@ -162,7 +201,8 @@ export class TronClientSigner implements ClientSigner {
     
     try {
       // Build approve transaction
-      const tx = await this.tronWeb.transactionBuilder.triggerSmartContract(
+      const tw = this.getTronWeb(network);
+      const tx = await tw.transactionBuilder.triggerSmartContract(
         token,
         ERC20_APPROVE_SELECTOR,
         {
@@ -177,19 +217,19 @@ export class TronClientSigner implements ClientSigner {
       );
 
       if (!tx.result?.result) {
-        console.error('[ALLOWANCE] Failed to build approve transaction');
-        return false;
+        throw new InsufficientAllowanceError('Failed to build approve transaction');
       }
 
       // Sign transaction
-      const signedTx = await this.tronWeb.trx.sign(tx.transaction, this.privateKey);
+      const signedTx = await tw.trx.sign(tx.transaction, this.privateKey);
 
       // Broadcast transaction
-      const broadcast = await this.tronWeb.trx.sendRawTransaction(signedTx);
+      const broadcast = await tw.trx.sendRawTransaction(signedTx);
       
       if (!broadcast.result) {
-        console.error('[ALLOWANCE] Failed to broadcast approve transaction:', broadcast);
-        return false;
+        throw new InsufficientAllowanceError(
+          `Failed to broadcast approve transaction: ${JSON.stringify(broadcast)}`,
+        );
       }
 
       console.log(`[ALLOWANCE] Approve transaction sent: ${broadcast.txid}`);
@@ -199,7 +239,7 @@ export class TronClientSigner implements ClientSigner {
       for (let i = 0; i < 10; i++) {
         await new Promise(resolve => setTimeout(resolve, 3000));
         try {
-          const info = await this.tronWeb.trx.getTransactionInfo(txid);
+          const info = await tw.trx.getTransactionInfo(txid);
           if (info && info.blockNumber) {
             const success = info.receipt?.result === 'SUCCESS';
             console.log(`[ALLOWANCE] Approve confirmed: ${success ? 'SUCCESS' : 'FAILED'}`);
@@ -213,8 +253,10 @@ export class TronClientSigner implements ClientSigner {
       console.log('[ALLOWANCE] Approve transaction not confirmed within timeout, assuming success');
       return true;
     } catch (error) {
-      console.error('[ALLOWANCE] Approve transaction failed:', error);
-      return false;
+      if (error instanceof InsufficientAllowanceError) throw error;
+      throw new InsufficientAllowanceError(
+        `Approve transaction failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

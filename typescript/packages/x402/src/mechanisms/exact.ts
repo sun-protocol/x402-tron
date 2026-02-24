@@ -1,5 +1,5 @@
 /**
- * ExactTronClientMechanism - TRON client mechanism for "exact" payment scheme
+ * ExactPermitTronClientMechanism - TRON client mechanism for "exact_permit" payment scheme
  *
  * Uses TIP-712 (TRON's EIP-712 implementation) for signing PaymentPermit.
  */
@@ -20,12 +20,13 @@ import {
   TronAddressConverter,
   TRON_ZERO_ADDRESS,
   paymentIdToBytes,
+  PermitValidationError,
 } from '../index.js';
 
 /**
- * TRON client mechanism for "exact" payment scheme
+ * TRON client mechanism for "exact_permit" payment scheme
  */
-export class ExactTronClientMechanism implements ClientMechanism {
+export class ExactPermitTronClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
   private addressConverter = new TronAddressConverter();
 
@@ -33,8 +34,12 @@ export class ExactTronClientMechanism implements ClientMechanism {
     this.signer = signer;
   }
 
+  getSigner(): ClientSigner {
+    return this.signer;
+  }
+
   scheme(): string {
-    return 'exact';
+    return 'exact_permit';
   }
 
   async createPaymentPayload(
@@ -44,7 +49,7 @@ export class ExactTronClientMechanism implements ClientMechanism {
   ): Promise<PaymentPayload> {
     const context = extensions?.paymentPermitContext;
     if (!context) {
-      throw new Error('paymentPermitContext is required');
+      throw new PermitValidationError('missing_context', 'paymentPermitContext is required');
     }
 
     const buyerAddress = this.signer.getAddress();
@@ -59,7 +64,7 @@ export class ExactTronClientMechanism implements ClientMechanism {
         validBefore: context.meta.validBefore,
       },
       buyer: buyerAddress,
-      caller: context.caller || zeroAddress,  // Use facilitator address from context, fallback to zero
+      caller: requirements.extra?.fee?.caller || zeroAddress,
       payment: {
         payToken: requirements.asset,
         payAmount: requirements.amount,
@@ -68,11 +73,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
       fee: {
         feeTo: requirements.extra?.fee?.feeTo || zeroAddress,
         feeAmount: requirements.extra?.fee?.feeAmount || '0',
-      },
-      delivery: {
-        receiveToken: context.delivery.receiveToken || zeroAddress,
-        miniReceiveAmount: context.delivery.miniReceiveAmount,
-        tokenId: context.delivery.tokenId,
       },
     };
 
@@ -116,11 +116,6 @@ export class ExactTronClientMechanism implements ClientMechanism {
       fee: {
         feeTo: this.addressConverter.toEvmFormat(permit.fee.feeTo),
         feeAmount: BigInt(permit.fee.feeAmount),
-      },
-      delivery: {
-        receiveToken: this.addressConverter.toEvmFormat(permit.delivery.receiveToken),
-        miniReceiveAmount: BigInt(permit.delivery.miniReceiveAmount),
-        tokenId: BigInt(permit.delivery.tokenId),
       },
     };
 

@@ -1,6 +1,6 @@
-# Contributing to x402-tron
+# Contributing to x402
 
-First off, thank you for considering contributing to x402-tron! It's people like you who make x402-tron such a great tool.
+First off, thank you for considering contributing to x402! It's people like you who make x402 such a great tool.
 
 ## Code of Conduct
 
@@ -20,7 +20,7 @@ By participating in this project, you agree to abide by our Code of Conduct. We 
 
 - Use a clear and descriptive title for the issue to identify the suggestion.
 - Provide a step-by-step description of the suggested enhancement in as many details as possible.
-- Explain why this enhancement would be useful to most x402-tron users.
+- Explain why this enhancement would be useful to most x402 users.
 
 ### Pull Requests
 

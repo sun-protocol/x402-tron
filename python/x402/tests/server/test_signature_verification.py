@@ -6,9 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from x402_tron.server.x402_server import X402Server
-from x402_tron.types import (
-    Delivery,
+from bankofai.x402.server.x402_server import X402Server
+from bankofai.x402.types import (
     Fee,
     Payment,
     PaymentPayload,
@@ -49,11 +48,6 @@ def sample_permit():
             feeTo="TTestFeeToAddress1111111111111111",
             feeAmount="10000",
         ),
-        delivery=Delivery(
-            receiveToken="T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
-            miniReceiveAmount="0",
-            tokenId="0",
-        ),
     )
 
 
@@ -61,7 +55,7 @@ def sample_permit():
 def sample_requirements():
     """Create sample payment requirements"""
     return PaymentRequirements(
-        scheme="exact",
+        scheme="exact_permit",
         network="tron:shasta",
         amount="1000000",
         asset="TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
@@ -77,6 +71,7 @@ async def test_verify_payment_with_invalid_signature(
     """Test that server rejects invalid signatures"""
     # Create mock mechanism that returns False for signature verification
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact_permit"
     mock_mechanism.verify_signature = AsyncMock(return_value=False)
 
     # Register mock mechanism
@@ -108,6 +103,7 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
     """Test that server accepts valid signatures and delegates to facilitator"""
     # Create mock mechanism that returns True for signature verification
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact_permit"
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
 
     # Register mock mechanism
@@ -117,7 +113,7 @@ async def test_verify_payment_with_valid_signature(mock_server, sample_permit, s
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
-    mock_server.add_facilitator(mock_facilitator)
+    mock_server.set_facilitator(mock_facilitator)
 
     # Create payload with valid signature
     payload = PaymentPayload(
@@ -149,7 +145,7 @@ async def test_verify_payment_without_mechanism(mock_server, sample_permit, samp
     mock_facilitator = MagicMock()
     mock_facilitator.facilitator_id = "test_facilitator"
     mock_facilitator.verify = AsyncMock(return_value=VerifyResponse(isValid=True))
-    mock_server.add_facilitator(mock_facilitator)
+    mock_server.set_facilitator(mock_facilitator)
 
     # Create payload
     payload = PaymentPayload(
@@ -174,6 +170,7 @@ async def test_verify_payment_payload_mismatch(mock_server, sample_permit, sampl
     """Test that payload mismatch is caught before signature verification"""
     # Create mock mechanism
     mock_mechanism = MagicMock()
+    mock_mechanism.scheme.return_value = "exact_permit"
     mock_mechanism.verify_signature = AsyncMock(return_value=True)
     mock_server.register("tron:shasta", mock_mechanism)
 

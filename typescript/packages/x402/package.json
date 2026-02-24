@@ -1,22 +1,23 @@
 {
-  "name": "@open-aibank/x402-tron",
-  "version": "0.1.6",
-  "description": "x402-tron TypeScript SDK (TRON-only)",
+  "name": "@bankofai/x402",
+  "version": "0.3.1",
+  "description": "x402 TypeScript SDK (TRON and EVM support)",
   "keywords": [
     "x402",
-    "x402-tron",
     "tron",
     "trx",
+    "ethereum",
+    "evm",
     "payment",
     "blockchain"
   ],
-  "homepage": "https://github.com/open-aibank/x402-tron#readme",
+  "homepage": "https://github.com/bankofai/x402#readme",
   "bugs": {
-    "url": "https://github.com/open-aibank/x402-tron/issues"
+    "url": "https://github.com/bankofai/x402/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/open-aibank/x402-tron.git",
+    "url": "git+https://github.com/bankofai/x402.git",
     "directory": "typescript/packages/x402"
   },
   "engines": {
@@ -41,14 +42,19 @@
   ],
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "tronweb": "^5.0.0 || ^6.0.0"
   },
+  "dependencies": {
+    "viem": "^2.45.2"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
   },
   "publishConfig": {
     "access": "public"

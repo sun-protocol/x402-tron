@@ -1,5 +1,4 @@
-from x402_tron.types import (
-    Delivery,
+from bankofai.x402.types import (
     Fee,
     Payment,
     PaymentPermit,
@@ -26,11 +25,6 @@ def test_payment_permit_creation():
             payTo="TTestPayToAddress",
         ),
         fee=Fee(feeTo="TTestFeeAddress", feeAmount="10000"),
-        delivery=Delivery(
-            receiveToken="T0000000000000000000000000000000",
-            miniReceiveAmount="0",
-            tokenId="0",
-        ),
     )
 
     assert permit.buyer == "TTestBuyerAddress"
@@ -41,7 +35,7 @@ def test_payment_permit_creation():
 def test_payment_requirements_creation():
     """测试 PaymentRequirements 模型创建"""
     requirements = PaymentRequirements(
-        scheme="exact",
+        scheme="exact_permit",
         network="tron:shasta",
         amount="1000000",
         asset="TTestUSDTAddress",
@@ -49,7 +43,7 @@ def test_payment_requirements_creation():
         maxTimeoutSeconds=3600,
     )
 
-    assert requirements.scheme == "exact"
+    assert requirements.scheme == "exact_permit"
     assert requirements.network == "tron:shasta"
     assert requirements.amount == "1000000"
 
@@ -72,11 +66,6 @@ def test_payment_permit_serialization():
             payTo="TTestPayToAddress",
         ),
         fee=Fee(feeTo="TTestFeeAddress", feeAmount="10000"),
-        delivery=Delivery(
-            receiveToken="T0000000000000000000000000000000",
-            miniReceiveAmount="0",
-            tokenId="0",
-        ),
     )
 
     data = permit.model_dump(by_alias=True)
