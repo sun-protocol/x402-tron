@@ -16,6 +16,11 @@ class GasFreeFacilitator(X402Facilitator):
     Pre-registered with GasFreeFacilitatorMechanism for easier initialization.
     """
 
-    def __init__(self, networks: list[str], signer: TronFacilitatorSigner) -> None:
+    def __init__(
+        self,
+        networks: list[str],
+        signer: TronFacilitatorSigner,
+        base_fee: int = 1_000_000,
+    ) -> None:
         super().__init__()
-        self.register(networks, GasFreeFacilitatorMechanism(signer))
+        self.register(networks, GasFreeFacilitatorMechanism(signer, base_fee=base_fee))

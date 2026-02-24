@@ -22,6 +22,18 @@ class InsufficientGasFreeBalance(X402Error):
         )
 
 
+class GasFreeAccountNotActivated(X402Error):
+    """Raised when GasFree wallet is not activated (deployed)"""
+
+    def __init__(self, address: str, gasfree_address: str):
+        self.address = address
+        self.gasfree_address = gasfree_address
+        super().__init__(
+            f"GasFree account for {address} ({gasfree_address}) is not activated. "
+            "Please activate your GasFree wallet before making payments."
+        )
+
+
 class SignatureError(X402Error):
     """Signature-related error"""
 

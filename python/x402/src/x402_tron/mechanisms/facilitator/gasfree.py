@@ -5,7 +5,6 @@ GasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for T
 import logging
 from typing import Any, Optional
 
-from x402_tron.abi import get_abi_json
 from x402_tron.address import AddressConverter, TronAddressConverter
 from x402_tron.config import NetworkConfig
 from x402_tron.mechanisms.facilitator.base_exact import BaseExactFacilitatorMechanism
@@ -17,48 +16,14 @@ from x402_tron.utils.gasfree import (
 )
 
 
-# GasFreeController ABI (Subset for settlement)
-GASFREE_CONTROLLER_ABI = [
-    {
-        "inputs": [
-            {
-                "components": [
-                    {"internalType": "address", "name": "token", "type": "address"},
-                    {"internalType": "address", "name": "serviceProvider", "type": "address"},
-                    {"internalType": "address", "name": "user", "type": "address"},
-                    {"internalType": "address", "name": "receiver", "type": "address"},
-                    {"internalType": "uint256", "name": "value", "type": "uint256"},
-                    {"internalType": "uint256", "name": "maxFee", "type": "uint256"},
-                    {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-                    {"internalType": "uint256", "name": "version", "type": "uint256"},
-                    {"internalType": "uint256", "name": "nonce", "type": "uint256"},
-                ],
-                "internalType": "struct GasFreeController.PermitTransfer",
-                "name": "permit",
-                "type": "tuple",
-            },
-            {"internalType": "bytes", "name": "sig", "type": "bytes"},
-        ],
-        "name": "transferFrom",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function",
-    }
-]
-
-
 class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
     """GasFree facilitator mechanism for TRON"""
 
-    def __init__(self, signer: Any) -> None:
-        super().__init__(signer)
-        self._api_client = GasFreeAPIClient()
+    def scheme(self) -> str:
+        return "gasfree_exact"
 
     def _get_address_converter(self) -> AddressConverter:
         return TronAddressConverter()
-
-    def scheme(self) -> str:
-        return "gasfree_exact"
 
     async def _verify_signature(
         self,
@@ -104,8 +69,13 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
         requirements: PaymentRequirements,
     ) -> Optional[str]:
         """Settle GasFree transaction via official HTTP API"""
-        controller = NetworkConfig.get_gasfree_controller_address(requirements.network)
-        chain_id = NetworkConfig.get_chain_id(requirements.network)
+        network = requirements.network
+        controller = NetworkConfig.get_gasfree_controller_address(network)
+        chain_id = NetworkConfig.get_chain_id(network)
+        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
+        api_key = NetworkConfig.get_gasfree_api_key(network)
+        api_secret = NetworkConfig.get_gasfree_api_secret(network)
+        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
         converter = self._address_converter
 
         # Build the message for the API
@@ -123,34 +93,11 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
 
         domain = get_gasfree_domain(chain_id, controller)
 
-        self._logger.info(f"Settling GasFree via Official HTTP API...")
+        self._logger.info(f"Settling GasFree via Official HTTP API Proxy...")
 
         try:
-            tx_hash = await self._api_client.submit(
-                domain=domain, message=message, signature=signature
-            )
+            tx_hash = await api_client.submit(domain=domain, message=message, signature=signature)
             return tx_hash
         except Exception as e:
-            self._logger.warning(
-                f"Official API submission failed: {e}. Falling back to direct contract call..."
-            )
-            # Fallback to direct contract call if API fails
-            permit_tuple = {
-                "token": message["token"],
-                "serviceProvider": message["serviceProvider"],
-                "user": message["user"],
-                "receiver": message["receiver"],
-                "value": int(message["value"]),
-                "maxFee": int(message["maxFee"]),
-                "deadline": int(message["deadline"]),
-                "version": 1,
-                "nonce": int(message["nonce"]),
-            }
-            sig_bytes = bytes.fromhex(signature[2:] if signature.startswith("0x") else signature)
-
-            return await self._signer.write_contract(
-                contract_address=controller,
-                abi=get_abi_json(GASFREE_CONTROLLER_ABI),
-                method="transferFrom",
-                args=[permit_tuple, sig_bytes],
-            )
+            self._logger.error(f"GasFree API submission failed: {e}")
+            raise

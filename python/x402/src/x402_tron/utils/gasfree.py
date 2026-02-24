@@ -2,13 +2,14 @@
 GasFree utility functions for address calculation, TIP-712 hashing, and HTTP API interaction.
 """
 
-import hashlib
+import hmac
 import logging
+import time
 from typing import Any, Dict, Optional
 
 import httpx
 
-from x402_tron.utils.address import evm_address_to_tron, tron_address_to_evm
+from x402_tron.utils.address import tron_address_to_evm
 
 logger = logging.getLogger(__name__)
 
@@ -27,41 +28,84 @@ GASFREE_PERMIT_TRANSFER_TYPES = {
     ]
 }
 
-GASFREE_API_BASE_URL = "https://api.gasfree.io/v1"
+GASFREE_API_BASE_URL = "https://open.gasfree.io/tron"
 
 
 class GasFreeAPIClient:
     """Official GasFree HTTP API client implementation"""
 
-    def __init__(self, base_url: str):
+    def __init__(
+        self, base_url: str, api_key: Optional[str] = None, api_secret: Optional[str] = None
+    ):
         self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.api_secret = api_secret
 
-    async def get_nonce(self, user: str, _token: str, _chain_id: int) -> int:
+    def _generate_signature(self, method: str, path: str, timestamp: int) -> str:
+        """Generate HMAC-SHA256 signature for API authentication"""
+        if not self.api_secret:
+            return ""
+
+        # String to sign: {method}{path}{timestamp}
+        msg = f"{method.upper()}{path}{timestamp}"
+        import base64
+
+        signature_bytes = hmac.new(
+            self.api_secret.encode("utf-8"), msg.encode("utf-8"), digestmod="sha256"
+        ).digest()
+        return base64.b64encode(signature_bytes).decode("utf-8")
+
+    def _get_headers(self, method: str, path: str) -> Dict[str, str]:
+        """Generate headers with authentication"""
+        headers = {"Content-Type": "application/json"}
+        if not self.api_key or not self.api_secret:
+            return headers
+
+        timestamp = int(time.time())
+        signature = self._generate_signature(method, path, timestamp)
+
+        headers.update(
+            {"Timestamp": str(timestamp), "Authorization": f"ApiKey {self.api_key}:{signature}"}
+        )
+        return headers
+
+    async def get_nonce(self, user: str, token: str, chain_id: int) -> int:
         """Get the current recommended nonce for a user account
         Official endpoint: GET /api/v1/address/{accountAddress}
         """
+        data = await self.get_address_info(user)
+        return int(data.get("nonce", 0))
+
+    async def get_address_info(self, user: str) -> Dict[str, Any]:
+        """Get account info (activation, balance, nonce) for a user
+        Official endpoint: GET /api/v1/address/{accountAddress}
+        """
+        path = f"/api/v1/address/{user}"
         async with httpx.AsyncClient() as client:
-            url = f"{self.base_url}/api/v1/address/{user}"
+            url = f"{self.base_url}{path}"
             try:
-                response = await client.get(url)
+                headers = self._get_headers("GET", path)
+                response = await client.get(url, headers=headers)
                 response.raise_for_status()
                 result = response.json()
                 if result.get("code") != 200:
-                    raise RuntimeError(f"API error: {result.get('message') or result.get('reason')}")
-                
-                data = result.get("data", {})
-                return int(data.get("nonce", 0))
+                    raise RuntimeError(
+                        f"API error: {result.get('message') or result.get('reason')}"
+                    )
+
+                return result.get("data", {})
             except Exception as e:
-                logger.warning(f"Failed to get nonce from GasFree API: {e}. Defaulting to 0.")
-                return 0
+                logger.error(f"Failed to get address info from GasFree API: {e}")
+                raise
 
     async def submit(self, domain: Dict[str, Any], message: Dict[str, Any], signature: str) -> str:
         """Submit a signed GasFree transaction to the official relayer
         Official endpoint: POST /api/v1/gasfree/submit
         """
+        path = "/api/v1/gasfree/submit"
         async with httpx.AsyncClient() as client:
-            url = f"{self.base_url}/api/v1/gasfree/submit"
-            
+            url = f"{self.base_url}{path}"
+
             # 官方 API 提交格式要求（基于文档 3.3 章节）
             # 注意：sig 参数不带 0x 前缀
             sig = signature[2:] if signature.startswith("0x") else signature
@@ -70,23 +114,27 @@ class GasFreeAPIClient:
                 "serviceProvider": message["serviceProvider"],
                 "user": message["user"],
                 "receiver": message["receiver"],
-                "value": message["value"],
-                "maxFee": message["maxFee"],
-                "deadline": message["deadline"],
-                "version": message["version"],
-                "nonce": message["nonce"],
+                "value": str(message["value"]),
+                "maxFee": str(message["maxFee"]),
+                "deadline": int(message["deadline"]),
+                "version": int(message["version"]),
+                "nonce": int(message["nonce"]),
                 "sig": sig,
+                "requestId": f"x402-{int(time.time())}-{sig[:8]}",
             }
-            
+
             try:
-                response = await client.post(url, json=payload)
+                headers = self._get_headers("POST", path)
+                response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
                 result = response.json()
                 if result.get("code") != 200:
-                    raise RuntimeError(f"API error: {result.get('message') or result.get('reason')}")
-                
+                    raise RuntimeError(
+                        f"API error: {result.get('message') or result.get('reason')}"
+                    )
+
                 data = result.get("data", {})
-                return data.get("id") # 返回 traceId
+                return data.get("id")  # 返回 traceId
             except Exception as e:
                 logger.error(f"Failed to submit GasFree transaction: {e}")
                 raise
@@ -100,82 +148,3 @@ def get_gasfree_domain(chain_id: int, verifying_contract: str) -> Dict[str, Any]
         "chainId": chain_id,
         "verifyingContract": tron_address_to_evm(verifying_contract),
     }
-
-
-class GasFreeTronAddressCalculator:
-    """Helper for calculating GasFree CREATE2 addresses"""
-
-    @staticmethod
-    def keccak256(data: bytes) -> bytes:
-        """Keccak256 hash"""
-        try:
-            from eth_hash.auto import keccak
-
-            return keccak(data)
-        except ImportError:
-            # Fallback for environments without eth-hash
-            try:
-                import sha3
-
-                return sha3.keccak_256(data).digest()
-            except ImportError:
-                raise RuntimeError("Keccak256 implementation (eth-hash or pysha3) required")
-
-    @classmethod
-    def calculate_salt(cls, address: str) -> str:
-        """Calculate salt from address (0x + address padded to 32 bytes)"""
-        evm_addr = tron_address_to_evm(address)
-        addr_hex = evm_addr[2:].lower()
-        return "0x" + addr_hex.rjust(64, "0")
-
-    @classmethod
-    def get_initialize_selector(cls) -> str:
-        """Get initialize(address) selector: 0xfe4b84df"""
-        return "0xfe4b84df"
-
-    @classmethod
-    def calculate_bytecode_hash(cls, address: str, beacon: str, creation_code: str) -> str:
-        """Calculate bytecode hash for CREATE2"""
-        salt = cls.calculate_salt(address)
-        initialize_data = cls.get_initialize_selector() + salt[2:]
-
-        beacon_evm = tron_address_to_evm(beacon)
-        beacon_hex = beacon_evm[2:].lower().rjust(64, "0")
-
-        data_bytes = bytes.fromhex(initialize_data[2:])
-        data_len = len(data_bytes)
-
-        offset_hex = hex(64).split("x")[1].rjust(64, "0")
-        length_hex = hex(data_len).split("x")[1].rjust(64, "0")
-        data_hex = initialize_data[2:].ljust((data_len + 31) // 32 * 64, "0")
-
-        encoded_args = beacon_hex + offset_hex + length_hex + data_hex
-
-        code_hex = creation_code[2:] if creation_code.startswith("0x") else creation_code
-        full_bytecode = bytes.fromhex(code_hex) + bytes.fromhex(encoded_args)
-
-        return "0x" + cls.keccak256(full_bytecode).hex()
-
-    @classmethod
-    def calculate_gasfree_address(
-        cls,
-        user_address: str,
-        gasfree_controller: str,
-        beacon: str,
-        creation_code: str,
-    ) -> str:
-        """Calculate CREATE2 GasFree address"""
-        salt_hex = cls.calculate_salt(user_address)
-        bytecode_hash_hex = cls.calculate_bytecode_hash(user_address, beacon, creation_code)
-
-        prefix = bytes.fromhex("41")  # TRON use 0x41 for CREATE2 prefix
-        controller_evm = tron_address_to_evm(gasfree_controller)
-        controller_bytes = bytes.fromhex(controller_evm[2:])
-        salt_bytes = bytes.fromhex(salt_hex[2:])
-        bytecode_hash_bytes = bytes.fromhex(bytecode_hash_hex[2:])
-
-        create2_input = prefix + controller_bytes + salt_bytes + bytecode_hash_bytes
-        address_hash = cls.keccak256(create2_input)
-
-        evm_addr = "0x" + address_hash[12:].hex()
-        return evm_address_to_tron(evm_addr)

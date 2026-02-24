@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from x402_tron.address import TronAddressConverter
 from x402_tron.config import NetworkConfig
 
+from x402_tron.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from x402_tron.mechanisms.client.base import ClientMechanism
 from x402_tron.types import (
     PAYMENT_ONLY,
@@ -22,11 +23,9 @@ from x402_tron.types import (
     PermitMeta,
     ResourceInfo,
 )
-from x402_tron.address import TronAddressConverter
 from x402_tron.utils.gasfree import (
     GASFREE_PERMIT_TRANSFER_TYPES,
     GasFreeAPIClient,
-    GasFreeTronAddressCalculator,
     get_gasfree_domain,
 )
 
@@ -45,7 +44,6 @@ class GasFreeTronClientMechanism(ClientMechanism):
     def __init__(self, signer: "ClientSigner") -> None:
         self._signer = signer
         self._address_converter = TronAddressConverter()
-        self._api_client = GasFreeAPIClient()
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def scheme(self) -> str:
@@ -64,33 +62,27 @@ class GasFreeTronClientMechanism(ClientMechanism):
         network = requirements.network
         user_address = self._signer.get_address()
         api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
-        api_client = GasFreeAPIClient(api_base_url)
+        api_key = NetworkConfig.get_gasfree_api_key(network)
+        api_secret = NetworkConfig.get_gasfree_api_secret(network)
+        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
 
-        # 1. Calculate GasFree address
-        controller = NetworkConfig.get_gasfree_controller_address(network)
-        beacon = NetworkConfig.get_gasfree_beacon_address(network)
-        creation_code = NetworkConfig.get_gasfree_creation_code(network)
+        # 1. Fetch account info from GasFree API
+        # This replaces local address calculation and provides activation/balance status
+        self._logger.info(f"Fetching account info for {user_address} from GasFree API...")
+        account_info = await api_client.get_address_info(user_address)
 
-        gasfree_address = GasFreeTronAddressCalculator.calculate_gasfree_address(
-            user_address, controller, beacon, creation_code
-        )
+        gasfree_address = account_info.get("gasFreeAddress")
+        is_active = account_info.get("active", False)
+        nonce = int(account_info.get("nonce", 0))
 
-        # 1.1 Check balance
-        skip_balance_check = (extensions or {}).get("skipBalanceCheck", False)
-        if not skip_balance_check:
-            # Note: In a real implementation, this would call the TRON client
-            # to verify requirements.asset balance of gasfree_address >= requirements.amount + maxFee
-            self._logger.info(f"Verifying balance for {gasfree_address}...")
-            # For design purposes, we assume balance is checked here.
-            # If insufficient, it should raise InsufficientGasFreeBalance error.
+        if not gasfree_address:
+            raise RuntimeError(f"Could not retrieve GasFree address for {user_address}")
 
-        self._logger.info(f"[GASFREE] User Wallet: {user_address}")
-        self._logger.info(f"[GASFREE] GasFree Address: {gasfree_address}")
-        self._logger.info(f"[GASFREE] Token: {requirements.asset}")
-        self._logger.info(f"[GASFREE] Amount: {requirements.amount}")
+        # 2. Check activation status (Requirement 3.3.2)
+        if not is_active:
+            raise GasFreeAccountNotActivated(user_address, gasfree_address)
 
-        # 2. Prepare GasFree transaction parameters
-        # We map these to x402 PaymentPermit structure for compatibility
+        # 3. Prepare GasFree transaction parameters
         context = (extensions or {}).get("paymentPermitContext") or {}
         meta = context.get("meta") or {}
 
@@ -99,21 +91,46 @@ class GasFreeTronClientMechanism(ClientMechanism):
         if requirements.extra and requirements.extra.fee:
             max_fee = requirements.extra.fee.fee_amount
 
+        # 4. Check balance and transfer fee (Requirement 3.3.3)
+        skip_balance_check = (extensions or {}).get("skipBalanceCheck", False)
+
+        # Find the asset in the account info to get balance and protocol transfer fee
+        assets = account_info.get("assets", [])
+        asset_balance = 0
+        transfer_fee = 0
+        target_token = self._address_converter.normalize(requirements.asset)
+
+        for asset in assets:
+            if asset.get("tokenAddress") == target_token:
+                asset_balance = int(asset.get("balance", 0))
+                transfer_fee = int(asset.get("transferFee", 0))
+                break
+
+        # Ensure max_fee is at least the protocol's transferFee
+        max_fee_val = int(max_fee)
+        if max_fee_val < transfer_fee:
+            self._logger.info(
+                f"Increasing maxFee from {max_fee_val} to {transfer_fee} "
+                "to meet GasFree protocol requirement"
+            )
+            max_fee_val = transfer_fee
+            max_fee = str(max_fee_val)
+
+        if not skip_balance_check:
+            self._logger.info(f"Verifying balance for {gasfree_address}...")
+            required_total = int(requirements.amount) + max_fee_val
+            if asset_balance < required_total:
+                raise InsufficientGasFreeBalance(gasfree_address, required_total, asset_balance)
+
         deadline = meta.get("validBefore") or int(time.time()) + 3600
 
-        # Get Nonce via HTTP API
-        # We always fetch from API for GasFree to ensure we have the correct sequential nonce,
-        # ignoring any random nonce provided by the server in meta.
-        chain_id = NetworkConfig.get_chain_id(network)
-        self._logger.info(f"Fetching nonce for {user_address} from GasFree API...")
-        nonce = await api_client.get_nonce(
-            user=user_address, token=requirements.asset, chain_id=chain_id
-        )
+        self._logger.info(f"[GASFREE] User Wallet: {user_address}")
+        self._logger.info(f"[GASFREE] GasFree Address: {gasfree_address}")
+        self._logger.info(f"[GASFREE] Token: {requirements.asset}")
+        self._logger.info(f"[GASFREE] Amount: {requirements.amount}")
+        self._logger.info(f"[GASFREE] Max Fee: {max_fee}")
 
-        nonce = int(nonce)
-
-        # 3. Build GasFree TIP-712 Message
-        # The fields must match GasFree PermitTransfer exactly
+        # 5. Build GasFree TIP-712 Message
         message = {
             "token": self._address_converter.to_evm_format(requirements.asset),
             "serviceProvider": self._address_converter.to_evm_format(requirements.pay_to),
@@ -126,9 +143,10 @@ class GasFreeTronClientMechanism(ClientMechanism):
             "nonce": int(nonce),
         }
 
-        # 4. Sign
+        # 6. Sign
         self._logger.info("Signing GasFree transaction with TIP-712...")
         chain_id = NetworkConfig.get_chain_id(network)
+        controller = NetworkConfig.get_gasfree_controller_address(network)
         domain = get_gasfree_domain(chain_id, controller)
 
         signature = await self._signer.sign_typed_data(
@@ -137,8 +155,7 @@ class GasFreeTronClientMechanism(ClientMechanism):
             message=message,
         )
 
-        # 5. Pack into PaymentPayload
-        # We reuse PaymentPermit structure to avoid breaking the core protocol
+        # 7. Pack into PaymentPayload
         permit = PaymentPermit(
             meta=PermitMeta(
                 kind=PAYMENT_ONLY,
@@ -148,14 +165,14 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 validBefore=int(deadline),
             ),
             buyer=user_address,
-            caller=controller,  # Indicating GasFreeController is the caller
+            caller=controller,
             payment=Payment(
                 payToken=requirements.asset,
                 payAmount=requirements.amount,
                 payTo=requirements.pay_to,
             ),
             fee=Fee(
-                feeTo=requirements.pay_to,  # Typically ServiceProvider
+                feeTo=requirements.pay_to,
                 feeAmount=max_fee,
             ),
             delivery=Delivery(
