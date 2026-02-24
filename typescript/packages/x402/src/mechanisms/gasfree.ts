@@ -6,16 +6,12 @@ import {
   DeliveryKind,
   ClientMechanism,
   ClientSigner,
-  toEvmHex,
 } from '../index.js';
 import { getChainId, getGasFreeApiBaseUrl } from '../config.js';
 import { GasFreeAPIClient } from '../utils/gasfree.js';
 
 /**
- * GasFreeTronClientMechanism - GasFree payment mechanism for TRON.
- * 
- * Supports USDT and USDD payments without TRX gas fees.
- * Based on the @gasfree/gasfree-sdk.
+ * GasFreeTronClientMechanism - GasFree payment mechanism for TRON (USDT/USDD).
  */
 export class GasFreeTronClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
@@ -39,76 +35,57 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     const apiBaseUrl = getGasFreeApiBaseUrl(network);
     const apiClient = new GasFreeAPIClient(apiBaseUrl);
 
-    // 1. Fetch account info from GasFree API
-    // This replaces local address calculation and provides activation/balance status
-    console.info(`Fetching account info for ${userAddress} from GasFree API...`);
+    // 1. Fetch account info
+    console.debug(`Fetching account info for ${userAddress} from GasFree API...`);
     const accountInfo = await apiClient.getAddressInfo(userAddress);
-    
     const gasfreeAddress = accountInfo.gasFreeAddress;
-    const isActive = accountInfo.active;
-    const nonce = accountInfo.nonce;
-
+    
     if (!gasfreeAddress) {
       throw new Error(`Could not retrieve GasFree address for ${userAddress}`);
     }
 
-    // 2. Check activation status (Requirement 3.3.2)
-    if (!isActive) {
-      throw new Error(`GasFree account for ${userAddress} (${gasfreeAddress}) is not activated. Please activate your GasFree wallet before making payments.`);
+    // 2. Check activation status
+    if (!accountInfo.active) {
+      throw new Error(`GasFree account for ${userAddress} (${gasfreeAddress}) is not activated.`);
     }
 
-    // 3. Assemble parameters
-    const context = (extensions?.paymentPermitContext as any) || {};
-    const meta = context.meta || {};
+    // 3. Prepare maxFee and validate against protocol transferFee
+    const asset = accountInfo.assets.find((a: any) => a.tokenAddress === requirements.asset);
+    const transferFee = BigInt(asset?.transferFee || '0');
     
-    // Default maxFee to 0.1 USDT/USDD (10^5) if not provided
-    let maxFee = requirements.extra?.fee?.feeAmount || '100000';
-
-    // 4. Check balance and transfer fee (Requirement 3.3.3)
-    // Find the asset in the account info to get balance and protocol transfer fee
-    // Note: API returns tokenAddress in Base58 format
-    const asset = accountInfo.assets.find((a: any) => 
-      a.tokenAddress === requirements.asset
-    );
-
-    let transferFee = BigInt(0);
-    if (asset) {
-      transferFee = BigInt(asset.transferFee || '0');
+    let maxFee = requirements.extra?.fee?.feeAmount;
+    if (!maxFee) {
+        // Default to transferFee from API, or 1 USDT (10^6) as a safe fallback
+        maxFee = transferFee > 0n ? transferFee.toString() : '1000000';
     }
 
-    // Ensure maxFee is at least the protocol's transferFee
     let maxFeeBig = BigInt(maxFee);
     if (maxFeeBig < transferFee) {
-      console.info(`Increasing maxFee from ${maxFeeBig} to ${transferFee} to meet GasFree protocol requirement`);
+      console.debug(`Increasing maxFee to ${transferFee} to meet protocol requirement`);
       maxFeeBig = transferFee;
       maxFee = maxFeeBig.toString();
     }
 
+    // 4. Balance verification
     const skipBalanceCheck = (extensions as any)?.skipBalanceCheck || false;
     if (!skipBalanceCheck) {
-      console.info(`Verifying balance for ${gasfreeAddress}...`);
-      
       if (asset) {
-          // Use balance from API if available
           const assetBalance = BigInt(asset.balance || '0');
           const requiredTotal = BigInt(requirements.amount) + maxFeeBig;
           if (assetBalance < requiredTotal) {
-            throw new Error(`Insufficient balance in GasFree wallet ${gasfreeAddress}. Required: ${requiredTotal}, Current: ${assetBalance}. Please top up.`);
+            throw new Error(`Insufficient balance in GasFree wallet ${gasfreeAddress}.`);
           }
       } else {
-        // Asset not found in GasFree account at all
-        throw new Error(`Asset ${requirements.asset} not found in GasFree account ${gasfreeAddress}. Please top up.`);
+        throw new Error(`Asset ${requirements.asset} not found in GasFree account ${gasfreeAddress}.`);
       }
     }
 
-    const deadline = meta.validBefore || Math.floor(Date.now() / 1000) + 3600;
+    const deadline = (extensions as any)?.paymentPermitContext?.meta?.validBefore || Math.floor(Date.now() / 1000) + 3600;
     
-    // Initialize GasFree SDK for signing
-    const gasFree = new TronGasFree({
-      chainId,
-    });
+    const gasFree = new TronGasFree({ chainId });
 
-    const params = {
+    // 5. Sign TIP-712 typed data
+    const { domain, types, message } = gasFree.assembleGasFreeTransactionJson({
       token: requirements.asset,
       serviceProvider: requirements.payTo,
       user: userAddress,
@@ -117,28 +94,22 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
       maxFee: maxFee,
       deadline: deadline.toString(),
       version: '1',
-      nonce: nonce.toString(),
-    };
-
-    // 5. Get TIP-712 typed data
-
-    const { domain, types, message } = gasFree.assembleGasFreeTransactionJson(params);
-
-    // 5. Sign
+      nonce: accountInfo.nonce.toString(),
+    });
+    
     const signature = await this.signer.signTypedData(domain, types, message);
 
-    // 6. Build PaymentPermit structure for compatibility
-    // We map GasFree parameters to PaymentPermit fields
+    // 6. Build PaymentPermit structure
     const paymentPermit: PaymentPermit = {
       meta: {
         kind: 'PAYMENT_ONLY' as DeliveryKind,
-        paymentId: meta.paymentId || '',
-        nonce: nonce.toString(),
-        validAfter: meta.validAfter || 0,
+        paymentId: (extensions as any)?.paymentPermitContext?.meta?.paymentId || '',
+        nonce: accountInfo.nonce.toString(),
+        validAfter: (extensions as any)?.paymentPermitContext?.meta?.validAfter || 0,
         validBefore: Number(deadline),
       },
       buyer: userAddress,
-      caller: domain.verifyingContract, // The GasFreeController
+      caller: domain.verifyingContract, 
       payment: {
         payToken: requirements.asset,
         payAmount: requirements.amount,

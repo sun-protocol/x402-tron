@@ -1,10 +1,11 @@
 """
-GasFree utility functions for address calculation, TIP-712 hashing, and HTTP API interaction.
+GasFree utility functions for TIP-712 hashing and HTTP API interaction.
 """
 
 import hmac
 import logging
 import time
+import base64
 from typing import Any, Dict, Optional
 
 import httpx
@@ -32,7 +33,7 @@ GASFREE_API_BASE_URL = "https://open.gasfree.io/tron"
 
 
 class GasFreeAPIClient:
-    """Official GasFree HTTP API client implementation"""
+    """Official GasFree HTTP API client implementation with HMAC authentication"""
 
     def __init__(
         self, base_url: str, api_key: Optional[str] = None, api_secret: Optional[str] = None
@@ -46,10 +47,7 @@ class GasFreeAPIClient:
         if not self.api_secret:
             return ""
 
-        # String to sign: {method}{path}{timestamp}
         msg = f"{method.upper()}{path}{timestamp}"
-        import base64
-
         signature_bytes = hmac.new(
             self.api_secret.encode("utf-8"), msg.encode("utf-8"), digestmod="sha256"
         ).digest()
@@ -70,16 +68,12 @@ class GasFreeAPIClient:
         return headers
 
     async def get_nonce(self, user: str, token: str, chain_id: int) -> int:
-        """Get the current recommended nonce for a user account
-        Official endpoint: GET /api/v1/address/{accountAddress}
-        """
+        """Get the recommended nonce for a user account"""
         data = await self.get_address_info(user)
         return int(data.get("nonce", 0))
 
     async def get_address_info(self, user: str) -> Dict[str, Any]:
-        """Get account info (activation, balance, nonce) for a user
-        Official endpoint: GET /api/v1/address/{accountAddress}
-        """
+        """Get account info (activation, balance, nonce) for a user"""
         path = f"/api/v1/address/{user}"
         async with httpx.AsyncClient() as client:
             url = f"{self.base_url}{path}"
@@ -92,22 +86,16 @@ class GasFreeAPIClient:
                     raise RuntimeError(
                         f"API error: {result.get('message') or result.get('reason')}"
                     )
-
                 return result.get("data", {})
             except Exception as e:
                 logger.error(f"Failed to get address info from GasFree API: {e}")
                 raise
 
     async def submit(self, domain: Dict[str, Any], message: Dict[str, Any], signature: str) -> str:
-        """Submit a signed GasFree transaction to the official relayer
-        Official endpoint: POST /api/v1/gasfree/submit
-        """
+        """Submit a signed GasFree transaction to the official relayer"""
         path = "/api/v1/gasfree/submit"
         async with httpx.AsyncClient() as client:
             url = f"{self.base_url}{path}"
-
-            # 官方 API 提交格式要求（基于文档 3.3 章节）
-            # 注意：sig 参数不带 0x 前缀
             sig = signature[2:] if signature.startswith("0x") else signature
             payload = {
                 "token": message["token"],
@@ -132,9 +120,8 @@ class GasFreeAPIClient:
                     raise RuntimeError(
                         f"API error: {result.get('message') or result.get('reason')}"
                     )
-
                 data = result.get("data", {})
-                return data.get("id")  # 返回 traceId
+                return data.get("id")  # Returns traceId
             except Exception as e:
                 logger.error(f"Failed to submit GasFree transaction: {e}")
                 raise

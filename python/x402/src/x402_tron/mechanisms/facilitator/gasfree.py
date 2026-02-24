@@ -31,7 +31,7 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
         signature: str,
         network: str,
     ) -> bool:
-        """Verify GasFree TIP-712 signature"""
+        """Verify GasFree TIP-712 signature locally before forwarding"""
         controller = NetworkConfig.get_gasfree_controller_address(network)
         chain_id = NetworkConfig.get_chain_id(network)
         converter = self._address_converter
@@ -51,8 +51,8 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
 
         domain = get_gasfree_domain(chain_id, controller)
 
-        self._logger.info(f"[VERIFY GASFREE] Domain: {domain}")
-        self._logger.info(f"[VERIFY GASFREE] Message: {message}")
+        self._logger.debug(f"[VERIFY GASFREE] Domain: {domain}")
+        self._logger.debug(f"[VERIFY GASFREE] Message: {message}")
 
         return await self._signer.verify_typed_data(
             address=permit.buyer,
@@ -78,7 +78,6 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
         api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
         converter = self._address_converter
 
-        # Build the message for the API
         message = {
             "token": converter.to_evm_format(permit.payment.pay_token),
             "serviceProvider": converter.to_evm_format(permit.fee.fee_to),
@@ -93,11 +92,11 @@ class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
 
         domain = get_gasfree_domain(chain_id, controller)
 
-        self._logger.info(f"Settling GasFree via Official HTTP API Proxy...")
-
+        self._logger.debug(f"Settling GasFree via Official HTTP API Proxy...")
         try:
-            tx_hash = await api_client.submit(domain=domain, message=message, signature=signature)
-            return tx_hash
+            return await api_client.submit(domain=domain,
+                                           message=message,
+                                           signature=signature)
         except Exception as e:
-            self._logger.error(f"GasFree API submission failed: {e}")
+            self._logger.error(f"GasFree API settlement failed: {e}")
             raise

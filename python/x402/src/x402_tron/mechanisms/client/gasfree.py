@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 from x402_tron.address import TronAddressConverter
 from x402_tron.config import NetworkConfig
-
 from x402_tron.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from x402_tron.mechanisms.client.base import ClientMechanism
 from x402_tron.types import (
@@ -34,12 +33,7 @@ if TYPE_CHECKING:
 
 
 class GasFreeTronClientMechanism(ClientMechanism):
-    """GasFree payment mechanism for TRON.
-
-    This mechanism allows users to pay with USDT/USDD without having TRX for gas.
-    It automatically calculates the user's GasFree address and signs a TIP-712
-    permit for the GasFreeController.
-    """
+    """GasFree payment mechanism for TRON"""
 
     def __init__(self, signer: "ClientSigner") -> None:
         self._signer = signer
@@ -55,10 +49,7 @@ class GasFreeTronClientMechanism(ClientMechanism):
         resource: str,
         extensions: dict[str, Any] | None = None,
     ) -> PaymentPayload:
-        """Create GasFree payment payload"""
-        self._logger.info("=" * 60)
-        self._logger.info(f"Creating GasFree payment payload for: {resource}")
-
+        """Create GasFree payment payload using official API for status checks and nonce"""
         network = requirements.network
         user_address = self._signer.get_address()
         api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
@@ -66,35 +57,23 @@ class GasFreeTronClientMechanism(ClientMechanism):
         api_secret = NetworkConfig.get_gasfree_api_secret(network)
         api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
 
-        # 1. Fetch account info from GasFree API
-        # This replaces local address calculation and provides activation/balance status
-        self._logger.info(f"Fetching account info for {user_address} from GasFree API...")
+        # 1. Fetch account info
+        self._logger.debug(
+            f"Fetching account info for {user_address} from GasFree API...")
         account_info = await api_client.get_address_info(user_address)
-
         gasfree_address = account_info.get("gasFreeAddress")
         is_active = account_info.get("active", False)
         nonce = int(account_info.get("nonce", 0))
 
         if not gasfree_address:
-            raise RuntimeError(f"Could not retrieve GasFree address for {user_address}")
+            raise RuntimeError(
+                f"Could not retrieve GasFree address for {user_address}")
 
-        # 2. Check activation status (Requirement 3.3.2)
+        # 2. Check activation status
         if not is_active:
             raise GasFreeAccountNotActivated(user_address, gasfree_address)
 
-        # 3. Prepare GasFree transaction parameters
-        context = (extensions or {}).get("paymentPermitContext") or {}
-        meta = context.get("meta") or {}
-
-        # Default maxFee to 0.1 USDT (10^5) if not provided by server
-        max_fee = "100000"
-        if requirements.extra and requirements.extra.fee:
-            max_fee = requirements.extra.fee.fee_amount
-
-        # 4. Check balance and transfer fee (Requirement 3.3.3)
-        skip_balance_check = (extensions or {}).get("skipBalanceCheck", False)
-
-        # Find the asset in the account info to get balance and protocol transfer fee
+        # 3. Prepare maxFee and validate against protocol transferFee
         assets = account_info.get("assets", [])
         asset_balance = 0
         transfer_fee = 0
@@ -106,45 +85,61 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 transfer_fee = int(asset.get("transferFee", 0))
                 break
 
-        # Ensure max_fee is at least the protocol's transferFee
+        # Facilitator base fee is usually 1,000,000 (1 USDT)
+        max_fee = str(transfer_fee)
+        if requirements.extra and requirements.extra.fee:
+            max_fee = requirements.extra.fee.fee_amount
+        elif transfer_fee == 0:
+            max_fee = "1000000"  # Default fallback to 1 USDT if API returns 0
+
         max_fee_val = int(max_fee)
         if max_fee_val < transfer_fee:
-            self._logger.info(
-                f"Increasing maxFee from {max_fee_val} to {transfer_fee} "
-                "to meet GasFree protocol requirement"
+            self._logger.debug(
+                f"Increasing maxFee to {transfer_fee} to meet protocol requirement"
             )
             max_fee_val = transfer_fee
             max_fee = str(max_fee_val)
 
+        # 4. Balance verification
+        skip_balance_check = (extensions or {}).get("skipBalanceCheck", False)
         if not skip_balance_check:
-            self._logger.info(f"Verifying balance for {gasfree_address}...")
+            self._logger.debug(f"Verifying balance for {gasfree_address}...")
             required_total = int(requirements.amount) + max_fee_val
             if asset_balance < required_total:
-                raise InsufficientGasFreeBalance(gasfree_address, required_total, asset_balance)
+                raise InsufficientGasFreeBalance(gasfree_address,
+                                                 required_total, asset_balance)
 
-        deadline = meta.get("validBefore") or int(time.time()) + 3600
+        deadline = (extensions or {}).get("paymentPermitContext", {}).get(
+            "meta", {}).get("validBefore") or int(time.time()) + 3600
 
-        self._logger.info(f"[GASFREE] User Wallet: {user_address}")
-        self._logger.info(f"[GASFREE] GasFree Address: {gasfree_address}")
-        self._logger.info(f"[GASFREE] Token: {requirements.asset}")
-        self._logger.info(f"[GASFREE] Amount: {requirements.amount}")
-        self._logger.info(f"[GASFREE] Max Fee: {max_fee}")
+        self._logger.debug(f"[GASFREE] User Wallet: {user_address}")
+        self._logger.debug(f"[GASFREE] GasFree Address: {gasfree_address}")
+        self._logger.debug(f"[GASFREE] Token: {requirements.asset}")
+        self._logger.debug(f"[GASFREE] Amount: {requirements.amount}")
+        self._logger.debug(f"[GASFREE] Max Fee: {max_fee}")
 
-        # 5. Build GasFree TIP-712 Message
+        # 5. Sign TIP-712 Message
+        self._logger.debug("Signing GasFree transaction with TIP-712...")
         message = {
-            "token": self._address_converter.to_evm_format(requirements.asset),
-            "serviceProvider": self._address_converter.to_evm_format(requirements.pay_to),
-            "user": self._address_converter.to_evm_format(user_address),
-            "receiver": self._address_converter.to_evm_format(requirements.pay_to),
-            "value": int(requirements.amount),
-            "maxFee": int(max_fee),
-            "deadline": int(deadline),
-            "version": 1,
-            "nonce": int(nonce),
+            "token":
+            self._address_converter.to_evm_format(requirements.asset),
+            "serviceProvider":
+            self._address_converter.to_evm_format(requirements.pay_to),
+            "user":
+            self._address_converter.to_evm_format(user_address),
+            "receiver":
+            self._address_converter.to_evm_format(requirements.pay_to),
+            "value":
+            int(requirements.amount),
+            "maxFee":
+            max_fee_val,
+            "deadline":
+            int(deadline),
+            "version":
+            1,
+            "nonce":
+            nonce,
         }
-
-        # 6. Sign
-        self._logger.info("Signing GasFree transaction with TIP-712...")
         chain_id = NetworkConfig.get_chain_id(network)
         controller = NetworkConfig.get_gasfree_controller_address(network)
         domain = get_gasfree_domain(chain_id, controller)
@@ -155,13 +150,18 @@ class GasFreeTronClientMechanism(ClientMechanism):
             message=message,
         )
 
-        # 7. Pack into PaymentPayload
+        # 6. Pack into PaymentPayload
         permit = PaymentPermit(
             meta=PermitMeta(
                 kind=PAYMENT_ONLY,
-                paymentId=meta.get("paymentId", ""),
+                paymentId=(extensions
+                           or {}).get("paymentPermitContext",
+                                      {}).get("meta", {}).get("paymentId", ""),
                 nonce=str(nonce),
-                validAfter=meta.get("validAfter", 0),
+                validAfter=(extensions
+                            or {}).get("paymentPermitContext",
+                                       {}).get("meta",
+                                               {}).get("validAfter", 0),
                 validBefore=int(deadline),
             ),
             buyer=user_address,
@@ -181,9 +181,6 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 tokenId="0",
             ),
         )
-
-        self._logger.info("GasFree payment payload created successfully")
-        self._logger.info("=" * 60)
 
         return PaymentPayload(
             x402Version=2,
