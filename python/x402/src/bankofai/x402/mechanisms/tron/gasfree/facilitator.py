@@ -7,7 +7,9 @@ from typing import Optional
 
 from bankofai.x402.address.converter import AddressConverter, TronAddressConverter
 from bankofai.x402.config import NetworkConfig
-from bankofai.x402.mechanisms._exact_permit_base.facilitator import BaseExactFacilitatorMechanism
+from bankofai.x402.mechanisms._exact_permit_base.facilitator import (
+    BaseExactPermitFacilitatorMechanism,
+)
 from bankofai.x402.types import PaymentPermit, PaymentRequirements
 from bankofai.x402.utils.gasfree import (
     GASFREE_PERMIT_TRANSFER_TYPES,
@@ -16,7 +18,7 @@ from bankofai.x402.utils.gasfree import (
 )
 
 
-class GasFreeFacilitatorMechanism(BaseExactFacilitatorMechanism):
+class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
     """GasFree facilitator mechanism for TRON (API Proxy mode)"""
 
     def scheme(self) -> str:

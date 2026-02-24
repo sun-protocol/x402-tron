@@ -12,7 +12,6 @@ from bankofai.x402.exceptions import GasFreeAccountNotActivated, InsufficientGas
 from bankofai.x402.mechanisms._base.client import ClientMechanism
 from bankofai.x402.types import (
     PAYMENT_ONLY,
-    Delivery,
     Fee,
     Payment,
     PaymentPayload,
@@ -165,19 +164,15 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 feeTo=requirements.pay_to,
                 feeAmount=max_fee,
             ),
-            delivery=Delivery(
-                receiveToken=self._address_converter.get_zero_address(),
-                miniReceiveAmount="0",
-                tokenId="0",
-            ),
         )
 
         return PaymentPayload(
             x402Version=2,
-            resource=ResourceInfo(url=resource),
+            resource=ResourceInfo(url=resource, mimeType="application/json"),
             accepted=requirements,
             payload=PaymentPayloadData(
                 signature=signature,
+                merchantSignature=None,
                 paymentPermit=permit,
             ),
             extensions={
