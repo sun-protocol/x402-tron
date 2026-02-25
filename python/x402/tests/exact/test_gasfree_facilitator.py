@@ -1,5 +1,5 @@
 """
-Tests for GasFreeFacilitatorMechanism with standard TRON addresses.
+Tests for ExactGasFreeFacilitatorMechanism with standard TRON addresses.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
-from bankofai.x402.mechanisms.tron.gasfree.facilitator import GasFreeFacilitatorMechanism
+from bankofai.x402.mechanisms.tron.exact_gasfree.facilitator import ExactGasFreeFacilitatorMechanism
 from bankofai.x402.types import (
     Fee,
     Payment,
@@ -89,12 +89,12 @@ class TestGasFreeFacilitator:
     async def test_verify_calls_signer_with_correct_data(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = GasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")
             with patch(
-                "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
+                "bankofai.x402.mechanisms.tron.exact_gasfree.facilitator.GasFreeAPIClient"
             ) as mock_api:
                 mock_api.return_value.get_providers = AsyncMock(
                     return_value=[{"address": FACILITATOR_ADDR}]
@@ -120,10 +120,10 @@ class TestGasFreeFacilitator:
     async def test_settle_submits_to_api(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = GasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
 
         with patch(
-            "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
+            "bankofai.x402.mechanisms.tron.exact_gasfree.facilitator.GasFreeAPIClient"
         ) as mock_class:
             mock_api = mock_class.return_value
             mock_api.get_providers = AsyncMock(return_value=[{"address": FACILITATOR_ADDR}])
@@ -142,7 +142,7 @@ class TestGasFreeFacilitator:
     async def test_verify_fail_on_amount_mismatch(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = GasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
 
         # Client signed for 0.5 USDT, but server requirements is 1 USDT
         gasfree_payload.payload.payment_permit.payment.pay_amount = "500000"
@@ -159,12 +159,12 @@ class TestGasFreeFacilitator:
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
         mock_facilitator_signer.verify_typed_data.return_value = False
-        mechanism = GasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")
             with patch(
-                "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
+                "bankofai.x402.mechanisms.tron.exact_gasfree.facilitator.GasFreeAPIClient"
             ) as mock_api:
                 mock_api.return_value.get_providers = AsyncMock(
                     return_value=[{"address": FACILITATOR_ADDR}]

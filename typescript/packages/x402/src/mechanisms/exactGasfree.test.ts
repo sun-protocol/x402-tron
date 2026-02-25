@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GasFreeTronClientMechanism } from './gasfree.js';
+import { ExactGasFreeClientMechanism } from './gasfree.js';
 import { GasFreeAPIClient } from '../utils/gasfree.js';
 import { PaymentRequirements, ClientSigner } from '../index.js';
 
@@ -29,18 +29,18 @@ vi.mock('../utils/gasfree.js', () => {
     });
 
 
-describe('GasFreeTronClientMechanism', () => {
+describe('ExactGasFreeClientMechanism', () => {
   const USDT_ADDRESS = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
   const MOCK_ADDR = 'TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC';
   let mockSigner: any;
-  let mechanism: GasFreeTronClientMechanism;
+  let mechanism: ExactGasFreeClientMechanism;
 
   beforeEach(() => {
     mockSigner = {
       getAddress: vi.fn().mockReturnValue(MOCK_ADDR),
       signTypedData: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(65)),
     };
-    mechanism = new GasFreeTronClientMechanism(mockSigner as unknown as ClientSigner);
+    mechanism = new ExactGasFreeClientMechanism(mockSigner as unknown as ClientSigner);
   });
 
   it('should create a valid payment payload', async () => {

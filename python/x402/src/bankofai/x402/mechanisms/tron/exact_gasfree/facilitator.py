@@ -1,5 +1,5 @@
 """
-GasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for TRON.
+ExactGasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for TRON.
 """
 
 import time
@@ -25,7 +25,7 @@ from bankofai.x402.utils.gasfree import (
 )
 
 
-class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
+class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
     """GasFree facilitator mechanism for TRON (API Proxy mode)"""
 
     def scheme(self) -> str:

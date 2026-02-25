@@ -1,5 +1,5 @@
 """
-GasFreeTronClientMechanism - GasFree payment scheme client mechanism for TRON.
+ExactGasFreeClientMechanism - GasFree payment scheme client mechanism for TRON.
 """
 
 import logging
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from bankofai.x402.signers.client.base import ClientSigner
 
 
-class GasFreeTronClientMechanism(ClientMechanism):
+class ExactGasFreeClientMechanism(ClientMechanism):
     """GasFree payment mechanism for TRON (USDT/USDD)"""
 
     def __init__(self, signer: "ClientSigner") -> None:

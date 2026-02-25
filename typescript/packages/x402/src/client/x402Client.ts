@@ -4,7 +4,7 @@
  * Manages payment mechanism registry and coordinates payment flows.
  */
 
-import { GasFreeTronClientMechanism } from '../mechanisms/gasfree.js';
+import { ExactGasFreeClientMechanism } from '../mechanisms/exactGasfree.js';
 import type {
   PaymentRequirements,
   PaymentPayload,
@@ -157,7 +157,7 @@ export class X402Client {
    * @returns this for method chaining
    */
   registerGasFree(signer: ClientSigner): X402Client {
-    return this.register('tron:*', new GasFreeTronClientMechanism(signer));
+    return this.register('tron:*', new ExactGasFreeClientMechanism(signer));
   }
 
   /**

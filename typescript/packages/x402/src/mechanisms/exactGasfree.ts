@@ -16,7 +16,7 @@ import {
 import { GASFREE_TYPES, GasFreeAPIClient } from '../utils/gasfree.js';
 import { findByAddress } from '../tokens.js';
 
-export class GasFreeTronClientMechanism implements ClientMechanism {
+export class ExactGasFreeClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
 
   constructor(signer: ClientSigner) {

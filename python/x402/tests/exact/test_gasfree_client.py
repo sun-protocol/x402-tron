@@ -1,5 +1,5 @@
 """
-Tests for GasFreeTronClientMechanism.
+Tests for ExactGasFreeClientMechanism.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
-from bankofai.x402.mechanisms.tron.gasfree.client import GasFreeTronClientMechanism
+from bankofai.x402.mechanisms.tron.exact_gasfree.client import ExactGasFreeClientMechanism
 from bankofai.x402.types import PaymentRequirements
 
 USDT_ADDRESS = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"
@@ -35,7 +35,7 @@ def nile_requirements():
 
 @pytest.fixture
 def mock_api_client():
-    with patch("bankofai.x402.mechanisms.tron.gasfree.client.GasFreeAPIClient") as mock:
+    with patch("bankofai.x402.mechanisms.tron.exact_gasfree.client.GasFreeAPIClient") as mock:
         client_instance = mock.return_value
         client_instance.get_address_info = AsyncMock(
             return_value={
@@ -61,7 +61,7 @@ def mock_api_client():
 class TestGasFreeClient:
     @pytest.mark.anyio
     async def test_create_payment_payload(self, mock_signer, nile_requirements, mock_api_client):
-        mechanism = GasFreeTronClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer)
         payload = await mechanism.create_payment_payload(
             nile_requirements, "https://example.com/resource"
         )
@@ -84,7 +84,7 @@ class TestGasFreeClient:
         nile_requirements.extra.fee = MagicMock()
         nile_requirements.extra.fee.fee_amount = "100000"
 
-        mechanism = GasFreeTronClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer)
         payload = await mechanism.create_payment_payload(
             nile_requirements, "https://example.com/resource"
         )
@@ -98,7 +98,7 @@ class TestGasFreeClient:
 
         mock_api_client.get_address_info.return_value["assets"][0]["balance"] = 1000000
 
-        mechanism = GasFreeTronClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer)
         with pytest.raises(InsufficientGasFreeBalance):
             await mechanism.create_payment_payload(nile_requirements, "https://example.com")
 
@@ -108,6 +108,6 @@ class TestGasFreeClient:
 
         mock_api_client.get_address_info.return_value["active"] = False
 
-        mechanism = GasFreeTronClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer)
         with pytest.raises(GasFreeAccountNotActivated):
             await mechanism.create_payment_payload(nile_requirements, "https://example.com")
