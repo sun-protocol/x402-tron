@@ -42,6 +42,7 @@ export interface GasFreeSubmitResponseData {
   tokenAddress: string;
   amount: string;
   expiredAt: string;
+  reason?: string;
   txnHash?: string;
   txnState?: 'INIT' | 'NOT_ON_CHAIN' | 'ON_CHAIN' | 'SOLIDITY' | 'ON_CHAIN_FAILED';
 }
@@ -92,7 +93,7 @@ export class GasFreeAPIClient {
   private async generateSignature(method: string, path: string, timestamp: number): Promise<string> {
     if (!this.apiSecret) return '';
 
-    const message = `${method}${path}${timestamp}`;
+    const message = `${method.toUpperCase()}${path}${timestamp}`;
     
     // Check if we are in Node.js environment
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -246,7 +247,7 @@ export class GasFreeAPIClient {
         return statusData;
       }
       if (state === 'FAILED' || txnState === 'ON_CHAIN_FAILED') {
-        throw new Error(`GasFree transaction failed.`);
+        throw new Error(`GasFree transaction failed. Reason: ${statusData.reason || 'Unknown'}`);
       }
 
       console.debug(`GasFree transaction ${traceId} is ${state} (${txnState}), waiting...`);
