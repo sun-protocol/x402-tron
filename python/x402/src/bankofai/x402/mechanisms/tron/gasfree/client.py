@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Any
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import TronAddressConverter
 from bankofai.x402.config import NetworkConfig
-from bankofai.x402.tokens.registry import TokenRegistry
 from bankofai.x402.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from bankofai.x402.mechanisms._base.client import ClientMechanism
+from bankofai.x402.tokens.registry import TokenRegistry
 from bankofai.x402.types import (
     PAYMENT_ONLY,
     Fee,
