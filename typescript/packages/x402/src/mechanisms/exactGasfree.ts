@@ -27,8 +27,7 @@ export class ExactGasFreeClientMechanism implements ClientMechanism {
     if (client) {
       return client;
     }
-    const apiBaseUrl = getGasFreeApiBaseUrl(network);
-    return new GasFreeAPIClient(apiBaseUrl);
+    throw new Error(`GasFree is not configured for network: ${network}`);
   }
 
   scheme(): string {

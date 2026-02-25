@@ -2,7 +2,6 @@
 ExactGasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for TRON.
 """
 
-import logging
 import time
 from typing import Any, Dict, Optional
 
@@ -241,7 +240,8 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
                 )
 
             self._logger.info(
-                f"GasFree settlement successful. State: {result_data.get('state')}, Hash: {txn_hash}"
+                f"GasFree settlement successful. State: {result_data.get('state')}, "
+                f"Hash: {txn_hash}"
             )
 
             return SettleResponse(
