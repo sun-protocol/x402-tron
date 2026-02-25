@@ -63,7 +63,7 @@ class TronClientSigner(ClientSigner):
             pk = PrivateKey(bytes.fromhex(private_key))
             return pk.public_key.to_base58check_address()
         except ImportError:
-            return f"T{private_key[:33]}"
+            raise RuntimeError("tronpy is required to derive TRON addresses from private keys")
 
     def get_address(self) -> str:
         return self._address
