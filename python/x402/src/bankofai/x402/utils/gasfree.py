@@ -1,18 +1,13 @@
-"""
-GasFree utility functions for TIP-712 hashing and HTTP API interaction.
-"""
-
 import asyncio
 import base64
 import hmac
 import json
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 
 import httpx
 
-from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.utils.address import tron_address_to_evm
 
 logger = logging.getLogger(__name__)
@@ -28,7 +23,7 @@ GASFREE_DOMAIN_TYPE = [
 # GasFree TIP-712 Message Types
 GASFREE_TYPES = {
     "EIP712Domain": GASFREE_DOMAIN_TYPE,
-    GASFREE_PRIMARY_TYPE: [
+    "PermitTransfer": [
         {"name": "token", "type": "address"},
         {"name": "serviceProvider", "type": "address"},
         {"name": "user", "type": "address"},
@@ -41,29 +36,21 @@ GASFREE_TYPES = {
     ],
 }
 
-GASFREE_API_BASE_URL = "https://open.gasfree.io/tron"
-
 
 class GasFreeAPIClient:
-    """Official GasFree HTTP API client implementation with HMAC authentication"""
-
-    def __init__(
-        self, base_url: str, api_key: Optional[str] = None, api_secret: Optional[str] = None
-    ):
+    def __init__(self, base_url: str, api_key: str | None = None, api_secret: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.api_secret = api_secret
 
     def _generate_signature(self, method: str, path: str, timestamp: int) -> str:
-        """Generate HMAC-SHA256 signature for API authentication"""
+        """Generate HMAC signature for authentication"""
         if not self.api_secret:
             return ""
 
-        msg = f"{method.upper()}{path}{timestamp}"
-        logger.debug(f"GasFree HMAC base string: {msg}")
-
+        message = f"{method}{path}{timestamp}"
         signature_bytes = hmac.new(
-            self.api_secret.encode("utf-8"), msg.encode("utf-8"), digestmod="sha256"
+            self.api_secret.encode("utf-8"), message.encode("utf-8"), digestmod="sha256"
         ).digest()
         return base64.b64encode(signature_bytes).decode("utf-8")
 
@@ -74,8 +61,6 @@ class GasFreeAPIClient:
             return headers
 
         # Ensure path includes the network prefix if it's not already there
-        # but the logic in get_address_info/submit already provides the relative path from base_url.
-        # However, for signature, the Provider expects the FULL path including /nile or /tron
         full_path = path
         base_url_parts = self.base_url.split("/")
         # If base_url is https://open-test.gasfree.io/nile, the prefix is /nile
@@ -93,7 +78,29 @@ class GasFreeAPIClient:
         )
         return headers
 
-    async def get_providers(self) -> list[Dict[str, Any]]:
+    async def get_address_info(self, user: str) -> Dict[str, Any]:
+        """Get full account info (activation, balance, nonce) for a user"""
+        path = f"/api/v1/address/{user}"
+        async with httpx.AsyncClient() as client:
+            url = f"{self.base_url}{path}"
+            try:
+                headers = self._get_headers("GET", path)
+                response = await client.get(url, headers=headers)
+                if response.status_code != 200:
+                    logger.error(f"GasFree API error {response.status_code}: {response.text}")
+                    response.raise_for_status()
+                result = response.json()
+                if result.get("code") != 200:
+                    message = result.get("message") or result.get("reason")
+                    raise RuntimeError(f"API business error: {message} - Body: {response.text}")
+                return result.get("data", {})
+            except Exception as e:
+                if isinstance(e, httpx.HTTPStatusError):
+                    logger.error(f"HTTP Status Error Body: {e.response.text}")
+                logger.error(f"Failed to get address info from GasFree API from {url}: {e}")
+                raise
+
+    async def get_providers(self) -> List[Dict[str, Any]]:
         """Get all supported service providers from configuration"""
         path = "/api/v1/config/provider/all"
         async with httpx.AsyncClient() as client:
@@ -112,39 +119,17 @@ class GasFreeAPIClient:
                 data = result.get("data", {})
                 return data.get("providers", [])
             except Exception as e:
-                logger.error(
-                    f"Failed to get providers from GasFree API from {url}: {e}", exc_info=True
-                )
+                logger.error(f"Failed to get providers from GasFree API: {e}")
                 raise
 
     async def get_nonce(self, user: str, token: str, chain_id: int) -> int:
-        """Get the recommended nonce for a user account"""
-        data = await self.get_address_info(user)
-        return int(data.get("nonce", 0))
-
-    async def get_address_info(self, user: str) -> Dict[str, Any]:
-        """Get account info (activation, balance, nonce) for a user"""
-        path = f"/api/v1/address/{user}"
-        async with httpx.AsyncClient() as client:
-            url = f"{self.base_url}{path}"
-            try:
-                headers = self._get_headers("GET", path)
-                response = await client.get(url, headers=headers)
-                if response.status_code != 200:
-                    logger.error(f"GasFree API error {response.status_code}: {response.text}")
-                    response.raise_for_status()
-                result = response.json()
-                if result.get("code") != 200:
-                    message = result.get("message") or result.get("reason")
-                    raise RuntimeError(f"API business error: {message} - Body: {response.text}")
-                return result.get("data", {})
-            except Exception as e:
-                if isinstance(e, httpx.HTTPStatusError):
-                    logger.error(f"HTTP Status Error Body: {e.response.text}")
-                logger.error(
-                    f"Failed to get address info from GasFree API from {url}: {e}", exc_info=True
-                )
-                raise
+        """Get current recommended nonce for a user"""
+        try:
+            data = await self.get_address_info(user)
+            return data.get("nonce", 0)
+        except Exception as e:
+            logger.warning(f"Failed to get nonce from GasFree API: {e}. Defaulting to 0.")
+            return 0
 
     async def get_status(self, trace_id: str) -> Dict[str, Any]:
         """Get status of a submitted GasFree transaction"""
@@ -166,19 +151,16 @@ class GasFreeAPIClient:
                 logger.info(f"GasFree Status Response for {trace_id}: {json.dumps(data)}")
                 return data
             except Exception as e:
-                logger.error(
-                    f"Failed to get GasFree transaction status from {url}: {e}", exc_info=True
-                )
+                logger.error(f"Failed to get GasFree transaction status: {e}")
                 raise
 
     async def wait_for_success(
-        self, trace_id: str, timeout: int = 180, poll_interval: int = 5
+        self, trace_id: str, timeout: int = 120, poll_interval: int = 5
     ) -> Dict[str, Any]:
-        """Wait for a GasFree transaction to reach a terminal state or acceptable timeout state"""
+        """Wait for a GasFree transaction to reach a terminal state or ON_CHAIN state"""
         start_time = time.time()
         logger.info(f"Start polling for GasFree transaction {trace_id} (timeout={timeout}s)...")
 
-        status_data = {}
         while time.time() - start_time < timeout:
             status_data = await self.get_status(trace_id)
             state = (status_data.get("state") or "").upper()
@@ -186,9 +168,12 @@ class GasFreeAPIClient:
 
             logger.info(f"GasFree transaction {trace_id}: state={state}, txnState={txn_state}")
 
-            # 1. Immediate return for final states
-            if state == "SUCCEED":
+            # 1. Immediate return for successful or "good enough" states
+            if state == "SUCCEED" or (
+                status_data.get("txnHash") and txn_state in ["ON_CHAIN", "SOLIDITY"]
+            ):
                 return status_data
+
             if state == "FAILED" or txn_state == "ON_CHAIN_FAILED":
                 raise RuntimeError(
                     f"GasFree transaction failed. Reason: {status_data.get('reason')}"
@@ -196,22 +181,7 @@ class GasFreeAPIClient:
 
             await asyncio.sleep(poll_interval)
 
-        # 2. Timeout reached - check for "acceptable" states
-        final_state = (status_data.get("state") or "").upper()
-        final_txn_state = (status_data.get("txnState") or "").upper()
-
-        if final_state == "CONFIRMING" and final_txn_state == "ON_CHAIN":
-            logger.info(
-                f"GasFree transaction {trace_id} reached CONFIRMING/ON_CHAIN at timeout. "
-                "Treating as successful (degraded confirmation)."
-            )
-            return status_data
-
-        msg = (
-            f"GasFree transaction {trace_id} failed or timed out. "
-            f"State: {final_state}, TxnState: {final_txn_state}"
-        )
-        raise TimeoutError(msg)
+        raise TimeoutError(f"GasFree transaction {trace_id} timed out after {timeout}s")
 
     async def submit(self, domain: Dict[str, Any], message: Dict[str, Any], signature: str) -> str:
         """Submit a signed GasFree transaction to the official relayer"""
@@ -227,7 +197,7 @@ class GasFreeAPIClient:
                 "value": str(message["value"]),
                 "maxFee": str(message["maxFee"]),
                 "deadline": int(message["deadline"]),
-                "version": int(message["version"]),
+                "version": 1,
                 "nonce": int(message["nonce"]),
                 "sig": sig,
                 "requestId": f"x402-{int(time.time())}-{sig[:8]}",

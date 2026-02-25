@@ -58,6 +58,7 @@ class ClientSigner(ABC):
         self,
         token: str,
         network: str,
+        address: str | None = None,
     ) -> int:
         """
         Check token balance.
@@ -65,6 +66,7 @@ class ClientSigner(ABC):
         Args:
             token: Token contract address
             network: Network identifier
+            address: Optional address to check. Defaults to signer's address.
 
         Returns:
             Current balance (raw units)

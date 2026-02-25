@@ -119,6 +119,10 @@ class ExactGasFreeClientMechanism(ClientMechanism):
         skip_balance_check = (extensions or {}).get("skipBalanceCheck", False)
         if not skip_balance_check:
             self._logger.debug(f"Verifying balance for {gasfree_address}...")
+            # Fetch balance directly from the contract for the gasfree_address
+            asset_balance = await self._signer.check_balance(
+                requirements.asset, network, address=gasfree_address
+            )
             required_total = int(requirements.amount) + max_fee_val
             if asset_balance < required_total:
                 raise InsufficientGasFreeBalance(gasfree_address, required_total, asset_balance)

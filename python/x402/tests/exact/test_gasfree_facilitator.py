@@ -89,7 +89,9 @@ class TestGasFreeFacilitator:
     async def test_verify_calls_signer_with_correct_data(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(
+            mock_facilitator_signer, base_fee={"USDT": 1000000}
+        )
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")
@@ -120,7 +122,9 @@ class TestGasFreeFacilitator:
     async def test_settle_submits_to_api(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(
+            mock_facilitator_signer, base_fee={"USDT": 1000000}
+        )
 
         with patch(
             "bankofai.x402.mechanisms.tron.exact_gasfree.facilitator.GasFreeAPIClient"
@@ -142,9 +146,12 @@ class TestGasFreeFacilitator:
     async def test_verify_fail_on_amount_mismatch(
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
-        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(
+            mock_facilitator_signer, base_fee={"USDT": 1000000}
+        )
 
         # Client signed for 0.5 USDT, but server requirements is 1 USDT
+
         gasfree_payload.payload.payment_permit.payment.pay_amount = "500000"
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
@@ -159,7 +166,9 @@ class TestGasFreeFacilitator:
         self, mock_facilitator_signer, gasfree_requirements, gasfree_payload
     ):
         mock_facilitator_signer.verify_typed_data.return_value = False
-        mechanism = ExactGasFreeFacilitatorMechanism(mock_facilitator_signer, base_fee={"USDT": 1000000})
+        mechanism = ExactGasFreeFacilitatorMechanism(
+            mock_facilitator_signer, base_fee={"USDT": 1000000}
+        )
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")

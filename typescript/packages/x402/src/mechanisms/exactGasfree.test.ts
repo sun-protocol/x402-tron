@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ExactGasFreeClientMechanism } from './gasfree.js';
+import { ExactGasFreeClientMechanism } from './exactGasfree.js';
 import { GasFreeAPIClient } from '../utils/gasfree.js';
 import { PaymentRequirements, ClientSigner } from '../index.js';
 
@@ -39,6 +39,7 @@ describe('ExactGasFreeClientMechanism', () => {
     mockSigner = {
       getAddress: vi.fn().mockReturnValue(MOCK_ADDR),
       signTypedData: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(65)),
+      checkBalance: vi.fn().mockResolvedValue(5000000n),
     };
     mechanism = new ExactGasFreeClientMechanism(mockSigner as unknown as ClientSigner);
   });

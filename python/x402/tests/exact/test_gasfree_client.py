@@ -18,6 +18,7 @@ def mock_signer():
     signer = MagicMock()
     signer.get_address.return_value = "THKbWd2g5aS9tY59xk8hp5xMnbE8m3B3E"
     signer.sign_typed_data = AsyncMock(return_value="0x" + "ab" * 65)
+    signer.check_balance = AsyncMock(return_value=5000000)
     return signer
 
 
@@ -96,7 +97,7 @@ class TestGasFreeClient:
     async def test_insufficient_balance(self, mock_signer, nile_requirements, mock_api_client):
         from bankofai.x402.exceptions import InsufficientGasFreeBalance
 
-        mock_api_client.get_address_info.return_value["assets"][0]["balance"] = 1000000
+        mock_signer.check_balance = AsyncMock(return_value=1000000)
 
         mechanism = ExactGasFreeClientMechanism(mock_signer)
         with pytest.raises(InsufficientGasFreeBalance):

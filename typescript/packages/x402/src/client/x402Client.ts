@@ -50,7 +50,7 @@ export interface ClientSigner {
   ): Promise<string>;
   
   /** Check token balance */
-  checkBalance(token: string, network: string): Promise<bigint>;
+  checkBalance(token: string, network: string, address?: string): Promise<bigint>;
 
   /** Check token allowance */
   checkAllowance(token: string, amount: bigint, network: string): Promise<bigint>;

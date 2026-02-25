@@ -123,6 +123,36 @@ class TronFacilitatorSigner(FacilitatorSigner):
         except Exception:
             return address
 
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+        address: str | None = None,
+    ) -> int:
+        """Check TRC20 token balance"""
+        client = self._ensure_async_tron_client(network)
+        if client is None:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning("AsyncTron client not available, returning 0 balance")
+            return 0
+
+        from bankofai.x402.abi import ERC20_ABI
+
+        target_address = address or self._address
+        try:
+            contract = await client.get_contract(token)
+            contract.abi = ERC20_ABI
+            balance = await contract.functions.balanceOf(target_address)
+            return int(balance)
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to check balance for {target_address}: {e}")
+            return 0
+
     async def write_contract(
         self,
         contract_address: str,

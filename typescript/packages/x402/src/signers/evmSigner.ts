@@ -73,16 +73,17 @@ export class EvmClientSigner implements ClientSigner {
     });
   }
 
-  async checkBalance(token: string, network: string): Promise<bigint> {
+  async checkBalance(token: string, network: string, address?: string): Promise<bigint> {
     const chainId = this.parseNetworkToChainId(network);
     const client = this.getPublicClient(chainId, network);
+    const targetAddress = (address || this.account.address) as Hex;
 
     try {
       return await client.readContract({
         address: token as Hex,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
-        args: [this.account.address],
+        args: [targetAddress],
       });
     } catch (error) {
       console.error(

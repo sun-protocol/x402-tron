@@ -89,7 +89,8 @@ export class ExactGasFreeClientMechanism implements ClientMechanism {
     const skipBalanceCheck = (extensions as any)?.skipBalanceCheck || false;
     if (!skipBalanceCheck) {
       if (asset) {
-          const assetBalance = BigInt(asset.balance || '0');
+          // Fetch balance directly from the contract for the gasfreeAddress
+          const assetBalance = await this.signer.checkBalance(requirements.asset, requirements.network, gasfreeAddress);
           const requiredTotal = BigInt(requirements.amount) + maxFeeBig;
           if (assetBalance < requiredTotal) {
             throw new Error(`Insufficient balance in GasFree wallet ${gasfreeAddress}.`);

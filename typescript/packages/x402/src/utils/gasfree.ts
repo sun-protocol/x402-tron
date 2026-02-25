@@ -233,42 +233,31 @@ export class GasFreeAPIClient {
   }
 
   /**
-   * Wait for a GasFree transaction to reach a terminal state or acceptable timeout state
+   * Wait for a GasFree transaction to reach a terminal state or ON_CHAIN state
    */
   async waitForSuccess(
     traceId: string,
-    timeout: number = 180000,
+    timeout: number = 120000,
     pollInterval: number = 5000
   ): Promise<GasFreeSubmitResponseData> {
     const startTime = Date.now();
-    let statusData: GasFreeSubmitResponseData | undefined;
 
     while (Date.now() - startTime < timeout) {
-      statusData = await this.getStatus(traceId);
+      const statusData = await this.getStatus(traceId);
       const state = statusData.state.toUpperCase();
       const txnState = (statusData.txnState || '').toUpperCase();
 
-      // 1. Immediate return for final states
-      if (state === 'SUCCEED') {
+      // 1. Immediate return for successful or "good enough" states
+      if (state === 'SUCCEED' || (statusData.txnHash && ['ON_CHAIN', 'SOLIDITY'].includes(txnState))) {
         return statusData;
       }
+
       if (state === 'FAILED' || txnState === 'ON_CHAIN_FAILED') {
         throw new Error(`GasFree transaction failed. Reason: ${statusData.reason || 'Unknown'}`);
       }
 
       console.debug(`GasFree transaction ${traceId} is ${state} (${txnState}), waiting...`);
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    }
-
-    // 2. Timeout reached
-    if (statusData) {
-      const finalState = statusData.state.toUpperCase();
-      const finalTxnState = (statusData.txnState || '').toUpperCase();
-
-      if (finalState === 'CONFIRMING' && finalTxnState === 'ON_CHAIN') {
-        console.info(`GasFree transaction ${traceId} reached CONFIRMING/ON_CHAIN at timeout. Treating as successful (degraded confirmation).`);
-        return statusData;
-      }
     }
 
     throw new Error(`GasFree transaction ${traceId} timed out after ${timeout / 1000}s`);

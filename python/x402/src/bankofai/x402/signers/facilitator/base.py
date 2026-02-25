@@ -69,6 +69,26 @@ class FacilitatorSigner(ABC):
         pass
 
     @abstractmethod
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+        address: str | None = None,
+    ) -> int:
+        """
+        Check token balance.
+
+        Args:
+            token: Token contract address
+            network: Network identifier
+            address: Optional address to check. Defaults to signer's address.
+
+        Returns:
+            Current balance (raw units)
+        """
+        pass
+
+    @abstractmethod
     async def wait_for_transaction_receipt(
         self,
         tx_hash: str,

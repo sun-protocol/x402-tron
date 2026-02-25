@@ -80,6 +80,27 @@ class EvmFacilitatorSigner(FacilitatorSigner):
             logger.error("Signature verification failed", extra={"error": str(e)})
             return False
 
+    async def check_balance(
+        self,
+        token: str,
+        network: str,
+        address: str | None = None,
+    ) -> int:
+        """Check ERC20 token balance"""
+        w3 = self._ensure_async_web3_client(network)
+        if not w3:
+            return 0
+
+        from bankofai.x402.abi import ERC20_ABI
+
+        target_address = address or self._address
+        try:
+            contract = w3.eth.contract(address=token, abi=ERC20_ABI)
+            return await contract.functions.balanceOf(target_address).call()
+        except Exception as e:
+            logger.error(f"Failed to check balance for {target_address}: {e}")
+            return 0
+
     async def write_contract(
         self,
         contract_address: str,

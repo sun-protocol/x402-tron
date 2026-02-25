@@ -113,9 +113,10 @@ export class TronClientSigner implements ClientSigner {
     );
   }
 
-  async checkBalance(token: string, network: string): Promise<bigint> {
+  async checkBalance(token: string, network: string, address?: string): Promise<bigint> {
     try {
-      const ownerHex = toEvmHex(this.address);
+      const targetAddress = address || this.address;
+      const ownerHex = toEvmHex(targetAddress);
 
       const tw = this.getTronWeb(network);
       const result = await tw.transactionBuilder.triggerConstantContract(

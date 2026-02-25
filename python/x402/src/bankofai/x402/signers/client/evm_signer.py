@@ -90,14 +90,15 @@ class EvmClientSigner(ClientSigner):
         except Exception as e:
             raise SignatureCreationError(f"Failed to sign typed data: {e}")
 
-    async def check_balance(self, token: str, network: str) -> int:
+    async def check_balance(self, token: str, network: str, address: str | None = None) -> int:
         """Check ERC20 token balance"""
         try:
             w3 = self._ensure_async_web3_client(network)
             if not w3:
                 return 0
+            target_address = address or self._address
             contract = w3.eth.contract(address=token, abi=ERC20_ABI)
-            return await contract.functions.balanceOf(self._address).call()
+            return await contract.functions.balanceOf(target_address).call()
         except (ImportError, ModuleNotFoundError):
             logger.warning("web3 not available, returning 0 balance")
             return 0

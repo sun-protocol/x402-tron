@@ -160,20 +160,36 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         if not verify_result.is_valid:
             return SettleResponse(
                 success=False,
-                errorReason=verify_result.invalid_reason or "verification_failed",
+                error_reason=verify_result.invalid_reason or "verification_failed",
                 network=requirements.network,
             )
 
         # 2. Extract permit and signature
         permit = payload.payload.payment_permit
         signature = payload.payload.signature
+        gasfree_address = (payload.extensions or {}).get("gasfreeAddress")
 
-        if not permit or not signature:
+        if not permit or not signature or not gasfree_address:
             return SettleResponse(
                 success=False,
-                errorReason="missing_payload_data",
+                error_reason="missing_payload_data",
                 network=requirements.network,
             )
+
+        # 3. Final balance check before submission
+        try:
+            asset_balance = await self._signer.check_balance(
+                requirements.asset, requirements.network, address=gasfree_address
+            )
+            required_total = int(requirements.amount) + int(permit.fee.fee_amount)
+            if asset_balance < required_total:
+                return SettleResponse(
+                    success=False,
+                    error_reason=f"insufficient balance in gasfree wallet {gasfree_address}",
+                    network=requirements.network,
+                )
+        except Exception as e:
+            self._logger.warning(f"Final balance check failed: {e}")
 
         self._logger.info(f"Starting GasFree API settlement: paymentId={permit.meta.payment_id}")
 
