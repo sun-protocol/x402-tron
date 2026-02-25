@@ -18,15 +18,15 @@ vi.mock('../utils/gasfree.js', () => {
               balance: '5000000',
               transferFee: '1000000',
             },
-              ],
-            }),
-            getProviders: vi.fn().mockResolvedValue([
-              { address: 'TKtWbdzEq5ss9vTS9kwRhBp5mXmBfBns3E' }
-            ]),
-          };
+          ],
         }),
+        getProviders: vi.fn().mockResolvedValue([
+          { address: 'TKtWbdzEq5ss9vTS9kwRhBp5mXmBfBns3E' }
+        ]),
       };
-    });
+    }),
+  };
+});
 
 
 describe('ExactGasFreeClientMechanism', () => {
@@ -34,14 +34,16 @@ describe('ExactGasFreeClientMechanism', () => {
   const MOCK_ADDR = 'TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC';
   let mockSigner: any;
   let mechanism: ExactGasFreeClientMechanism;
+  let mockApiClient: any;
 
   beforeEach(() => {
+    mockApiClient = new GasFreeAPIClient('url');
     mockSigner = {
       getAddress: vi.fn().mockReturnValue(MOCK_ADDR),
       signTypedData: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(65)),
       checkBalance: vi.fn().mockResolvedValue(5000000n),
     };
-    mechanism = new ExactGasFreeClientMechanism(mockSigner as unknown as ClientSigner);
+    mechanism = new ExactGasFreeClientMechanism(mockSigner as unknown as ClientSigner, { "tron:nile": mockApiClient });
   });
 
   it('should create a valid payment payload', async () => {
@@ -79,5 +81,18 @@ describe('ExactGasFreeClientMechanism', () => {
     
     // Should be adjusted to 1 USDT (1,000,000)
     expect(payload.payload.paymentPermit?.fee.feeAmount).toBe('1000000');
+  });
+
+  it('should throw error if network is not configured', async () => {
+    const requirements: PaymentRequirements = {
+      scheme: 'exact_gasfree',
+      network: 'tron:mainnet',
+      amount: '1000000',
+      asset: USDT_ADDRESS,
+      payTo: MOCK_ADDR,
+    };
+
+    await expect(mechanism.createPaymentPayload(requirements, 'url'))
+      .rejects.toThrow('GasFree is not configured for network: tron:mainnet');
   });
 });

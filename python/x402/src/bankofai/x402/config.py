@@ -133,6 +133,13 @@ class NetworkConfig:
         """Get GasFree API Key from environment"""
         import os
 
+        # 1. Try network-specific key (e.g. GASFREE_API_KEY_NILE)
+        suffix = network.split(":")[-1].upper()
+        key = os.environ.get(f"GASFREE_API_KEY_{suffix}")
+        if key:
+            return key
+
+        # 2. Fallback to generic key
         return os.environ.get("GASFREE_API_KEY")
 
     @classmethod
@@ -140,4 +147,11 @@ class NetworkConfig:
         """Get GasFree API Secret from environment"""
         import os
 
+        # 1. Try network-specific secret (e.g. GASFREE_API_SECRET_NILE)
+        suffix = network.split(":")[-1].upper()
+        secret = os.environ.get(f"GASFREE_API_SECRET_{suffix}")
+        if secret:
+            return secret
+
+        # 2. Fallback to generic secret
         return os.environ.get("GASFREE_API_SECRET")

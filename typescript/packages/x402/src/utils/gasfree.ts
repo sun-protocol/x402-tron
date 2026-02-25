@@ -1,4 +1,8 @@
-import { GASFREE_PRIMARY_TYPE, GASFREE_DOMAIN_TYPE } from '../abi.js';
+import {
+  GASFREE_PRIMARY_TYPE,
+  GASFREE_DOMAIN_TYPE,
+} from '../abi.js';
+import { getGasFreeApiKey, getGasFreeApiSecret } from '../config.js';
 
 /**
  * GasFree utility functions for API interaction and domain helpers.
@@ -83,8 +87,20 @@ export class GasFreeAPIClient {
 
   constructor(baseUrl: string, apiKey?: string, apiSecret?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.apiKey = apiKey;
-    this.apiSecret = apiSecret;
+
+    // Fallback to environment variables if keys are missing
+    if (!apiKey || !apiSecret) {
+      let network = 'tron:mainnet';
+      if (this.baseUrl.includes('open-test')) {
+        if (this.baseUrl.includes('nile')) network = 'tron:nile';
+        else if (this.baseUrl.includes('shasta')) network = 'tron:shasta';
+      }
+      this.apiKey = apiKey || getGasFreeApiKey(network);
+      this.apiSecret = apiSecret || getGasFreeApiSecret(network);
+    } else {
+      this.apiKey = apiKey;
+      this.apiSecret = apiSecret;
+    }
   }
 
   /**

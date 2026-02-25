@@ -6,7 +6,8 @@ describe('GasFreeAPIClient', () => {
   let client: GasFreeAPIClient;
 
   beforeEach(() => {
-    client = new GasFreeAPIClient(baseUrl);
+    // Provide dummy keys to trigger HMAC logic in tests
+    client = new GasFreeAPIClient(baseUrl, 'test-key', 'test-secret');
     vi.stubGlobal('fetch', vi.fn());
   });
 
@@ -31,9 +32,11 @@ describe('GasFreeAPIClient', () => {
     expect(info.gasFreeAddress).toBe('0x456');
     expect(info.nonce).toBe(5);
     expect(fetch).toHaveBeenCalledWith(
-      `${baseUrl}/api/v1/address/0x123`,
+      expect.stringContaining('/api/v1/address/0x123'),
       expect.objectContaining({
-        headers: { 'Content-Type': 'application/json' },
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        })
       })
     );
   });
@@ -64,10 +67,12 @@ describe('GasFreeAPIClient', () => {
     const traceId = await client.submit({}, message, '0xabc');
     expect(traceId).toBe('trace-123');
     expect(fetch).toHaveBeenCalledWith(
-      `${baseUrl}/api/v1/gasfree/submit`,
+      expect.stringContaining('/api/v1/gasfree/submit'),
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
       })
     );
   });
@@ -86,9 +91,11 @@ describe('GasFreeAPIClient', () => {
     const status = await client.getStatus('trace-123');
     expect(status.state).toBe('SUCCEED');
     expect(fetch).toHaveBeenCalledWith(
-      `${baseUrl}/api/v1/gasfree/trace-123`,
+      expect.stringContaining('/api/v1/gasfree/trace-123'),
       expect.objectContaining({
-        headers: { 'Content-Type': 'application/json' },
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
       })
     );
   });

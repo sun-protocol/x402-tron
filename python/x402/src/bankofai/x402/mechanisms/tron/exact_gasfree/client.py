@@ -5,7 +5,7 @@ ExactGasFreeClientMechanism - GasFree payment scheme client mechanism for TRON.
 import logging
 import random
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import TronAddressConverter
@@ -37,10 +37,20 @@ if TYPE_CHECKING:
 class ExactGasFreeClientMechanism(ClientMechanism):
     """GasFree payment mechanism for TRON (USDT/USDD)"""
 
-    def __init__(self, signer: "ClientSigner") -> None:
+    def __init__(self, signer: "ClientSigner", clients: Dict[str, GasFreeAPIClient]) -> None:
         self._signer = signer
+        self._clients = clients
         self._address_converter = TronAddressConverter()
         self._logger = logging.getLogger(self.__class__.__name__)
+
+    def _get_api_client(self, network: str) -> GasFreeAPIClient:
+        """Get API client for a specific network"""
+        client = self._clients.get(network)
+        if not client:
+            from bankofai.x402.exceptions import UnsupportedNetworkError
+
+            raise UnsupportedNetworkError(f"GasFree is not configured for network: {network}")
+        return client
 
     def scheme(self) -> str:
         return "exact_gasfree"
@@ -57,10 +67,7 @@ class ExactGasFreeClientMechanism(ClientMechanism):
         """Create GasFree payment payload using official API for status checks and nonce"""
         network = requirements.network
         user_address = self._signer.get_address()
-        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
-        api_key = NetworkConfig.get_gasfree_api_key(network)
-        api_secret = NetworkConfig.get_gasfree_api_secret(network)
-        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
+        api_client = self._get_api_client(network)
 
         # 1. Fetch account info
         self._logger.debug(f"Fetching account info for {user_address} from GasFree API...")
@@ -89,13 +96,11 @@ class ExactGasFreeClientMechanism(ClientMechanism):
         self._logger.debug(f"Selected GasFree provider: {service_provider_addr}")
 
         assets = account_info.get("assets", [])
-        asset_balance = 0
         transfer_fee = 0
         target_token = self._address_converter.normalize(requirements.asset)
 
         for asset in assets:
             if asset.get("tokenAddress") == target_token:
-                asset_balance = int(asset.get("balance", 0))
                 transfer_fee = int(asset.get("transferFee", 0))
                 break
 

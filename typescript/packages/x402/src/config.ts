@@ -143,8 +143,13 @@ export function getGasFreeApiBaseUrl(network: string): string {
 /**
  * Get GasFree API Key
  */
-export function getGasFreeApiKey(): string | undefined {
+export function getGasFreeApiKey(network?: string): string | undefined {
   if (typeof process !== 'undefined') {
+    if (network) {
+      const suffix = network.split(':').pop()?.toUpperCase();
+      const networkKey = process.env[`GASFREE_API_KEY_${suffix}`];
+      if (networkKey) return networkKey;
+    }
     return process.env.GASFREE_API_KEY;
   }
   return undefined;
@@ -153,8 +158,13 @@ export function getGasFreeApiKey(): string | undefined {
 /**
  * Get GasFree API Secret
  */
-export function getGasFreeApiSecret(): string | undefined {
+export function getGasFreeApiSecret(network?: string): string | undefined {
   if (typeof process !== 'undefined') {
+    if (network) {
+      const suffix = network.split(':').pop()?.toUpperCase();
+      const networkSecret = process.env[`GASFREE_API_SECRET_${suffix}`];
+      if (networkSecret) return networkSecret;
+    }
     return process.env.GASFREE_API_SECRET;
   }
   return undefined;

@@ -39,9 +39,24 @@ GASFREE_TYPES = {
 
 class GasFreeAPIClient:
     def __init__(self, base_url: str, api_key: str | None = None, api_secret: str | None = None):
+        from bankofai.x402.config import NetworkConfig
+
         self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
-        self.api_secret = api_secret
+
+        # If keys are missing, try to infer the network from base_url to fetch env-specific keys
+        if not api_key or not api_secret:
+            network = "tron:mainnet"
+            if "open-test" in base_url:
+                if "nile" in base_url:
+                    network = "tron:nile"
+                elif "shasta" in base_url:
+                    network = "tron:shasta"
+
+            self.api_key = api_key or NetworkConfig.get_gasfree_api_key(network)
+            self.api_secret = api_secret or NetworkConfig.get_gasfree_api_secret(network)
+        else:
+            self.api_key = api_key
+            self.api_secret = api_secret
 
     def _generate_signature(self, method: str, path: str, timestamp: int) -> str:
         """Generate HMAC signature for authentication"""

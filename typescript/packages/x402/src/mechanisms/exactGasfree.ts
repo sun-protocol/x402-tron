@@ -7,20 +7,28 @@ import {
   ClientMechanism,
   ClientSigner,
   GASFREE_PRIMARY_TYPE,
-  KIND_MAP,
   getChainId,
   getGasFreeApiBaseUrl,
-  getGasFreeApiKey,
-  getGasFreeApiSecret,
 } from '../index.js';
 import { GASFREE_TYPES, GasFreeAPIClient } from '../utils/gasfree.js';
 import { findByAddress } from '../tokens.js';
 
 export class ExactGasFreeClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
+  private clients: Record<string, GasFreeAPIClient>;
 
-  constructor(signer: ClientSigner) {
+  constructor(signer: ClientSigner, clients: Record<string, GasFreeAPIClient> = {}) {
     this.signer = signer;
+    this.clients = clients;
+  }
+
+  private getApiClient(network: string): GasFreeAPIClient {
+    const client = this.clients[network];
+    if (client) {
+      return client;
+    }
+    const apiBaseUrl = getGasFreeApiBaseUrl(network);
+    return new GasFreeAPIClient(apiBaseUrl);
   }
 
   scheme(): string {
@@ -33,12 +41,8 @@ export class ExactGasFreeClientMechanism implements ClientMechanism {
     extensions?: Record<string, unknown>
   ): Promise<PaymentPayload> {
     const chainId = getChainId(requirements.network);
-    const apiBaseUrl = getGasFreeApiBaseUrl(requirements.network);
-    const apiKey = getGasFreeApiKey();
-    const apiSecret = getGasFreeApiSecret();
+    const apiClient = this.getApiClient(requirements.network);
     const userAddress = await this.signer.getAddress();
-    
-    const apiClient = new GasFreeAPIClient(apiBaseUrl, apiKey, apiSecret);
 
     // 1. Fetch account info
     console.debug(`Fetching account info for ${userAddress} from GasFree API...`);

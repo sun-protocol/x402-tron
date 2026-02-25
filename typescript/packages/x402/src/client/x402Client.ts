@@ -5,6 +5,7 @@
  */
 
 import { ExactGasFreeClientMechanism } from '../mechanisms/exactGasfree.js';
+import { GasFreeAPIClient } from '../utils/gasfree.js';
 import type {
   PaymentRequirements,
   PaymentPayload,
@@ -154,10 +155,11 @@ export class X402Client {
    * Register built-in GasFree mechanism for TRON
    * 
    * @param signer - Client signer instance
+   * @param clients - Optional GasFree API clients per network
    * @returns this for method chaining
    */
-  registerGasFree(signer: ClientSigner): X402Client {
-    return this.register('tron:*', new ExactGasFreeClientMechanism(signer));
+  registerGasFree(signer: ClientSigner, clients: Record<string, GasFreeAPIClient> = {}): X402Client {
+    return this.register('tron:*', new ExactGasFreeClientMechanism(signer, clients));
   }
 
   /**

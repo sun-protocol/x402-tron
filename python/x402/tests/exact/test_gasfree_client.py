@@ -62,7 +62,7 @@ def mock_api_client():
 class TestGasFreeClient:
     @pytest.mark.anyio
     async def test_create_payment_payload(self, mock_signer, nile_requirements, mock_api_client):
-        mechanism = ExactGasFreeClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer, clients={"tron:nile": mock_api_client})
         payload = await mechanism.create_payment_payload(
             nile_requirements, "https://example.com/resource"
         )
@@ -85,7 +85,7 @@ class TestGasFreeClient:
         nile_requirements.extra.fee = MagicMock()
         nile_requirements.extra.fee.fee_amount = "100000"
 
-        mechanism = ExactGasFreeClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer, clients={"tron:nile": mock_api_client})
         payload = await mechanism.create_payment_payload(
             nile_requirements, "https://example.com/resource"
         )
@@ -99,7 +99,7 @@ class TestGasFreeClient:
 
         mock_signer.check_balance = AsyncMock(return_value=1000000)
 
-        mechanism = ExactGasFreeClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer, clients={"tron:nile": mock_api_client})
         with pytest.raises(InsufficientGasFreeBalance):
             await mechanism.create_payment_payload(nile_requirements, "https://example.com")
 
@@ -109,6 +109,6 @@ class TestGasFreeClient:
 
         mock_api_client.get_address_info.return_value["active"] = False
 
-        mechanism = ExactGasFreeClientMechanism(mock_signer)
+        mechanism = ExactGasFreeClientMechanism(mock_signer, clients={"tron:nile": mock_api_client})
         with pytest.raises(GasFreeAccountNotActivated):
             await mechanism.create_payment_payload(nile_requirements, "https://example.com")

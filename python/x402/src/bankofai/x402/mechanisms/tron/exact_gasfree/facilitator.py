@@ -2,8 +2,9 @@
 ExactGasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for TRON.
 """
 
+import logging
 import time
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import AddressConverter, TronAddressConverter
@@ -27,6 +28,26 @@ from bankofai.x402.utils.gasfree import (
 
 class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
     """GasFree facilitator mechanism for TRON (API Proxy mode)"""
+
+    def __init__(
+        self,
+        signer: Any,
+        clients: Dict[str, GasFreeAPIClient],
+        fee_to: str | None = None,
+        base_fee: dict[str, int] | None = None,
+        allowed_tokens: set[str] | None = None,
+    ) -> None:
+        super().__init__(signer, fee_to, base_fee, allowed_tokens)
+        self._clients = clients
+
+    def _get_api_client(self, network: str) -> GasFreeAPIClient:
+        """Get API client for a specific network"""
+        client = self._clients.get(network)
+        if not client:
+            from bankofai.x402.exceptions import UnsupportedNetworkError
+
+            raise UnsupportedNetworkError(f"GasFree is not configured for network: {network}")
+        return client
 
     def scheme(self) -> str:
         return "exact_gasfree"
@@ -60,10 +81,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
 
         # Provider validation: The serviceProvider in GasFree permit must be valid
         network = requirements.network
-        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
-        api_key = NetworkConfig.get_gasfree_api_key(network)
-        api_secret = NetworkConfig.get_gasfree_api_secret(network)
-        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
+        api_client = self._get_api_client(network)
 
         try:
             providers = await api_client.get_providers()
@@ -74,9 +92,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
                 self._logger.warning(f"Provider {permit.fee.fee_to} is not in allowed list")
                 return "fee_to_mismatch"
         except Exception as e:
-            self._logger.error(
-                f"Failed to fetch providers for validation from {api_base_url}: {e}", exc_info=True
-            )
+            self._logger.error(f"Failed to fetch providers for validation from API: {e}")
             # Fallback to self._fee_to if API fails
             if norm(permit.fee.fee_to) != norm(self._fee_to):
                 return "fee_to_mismatch"
@@ -195,10 +211,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
 
         # 3. Call API Proxy and Wait
         network = requirements.network
-        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
-        api_key = NetworkConfig.get_gasfree_api_key(network)
-        api_secret = NetworkConfig.get_gasfree_api_secret(network)
-        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
+        api_client = self._get_api_client(network)
 
         try:
             # Submit
@@ -228,8 +241,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
                 )
 
             self._logger.info(
-                f"GasFree settlement successful. State: {result_data.get('state')}, "
-                f"Hash: {txn_hash}"
+                f"GasFree settlement successful. State: {result_data.get('state')}, Hash: {txn_hash}"
             )
 
             return SettleResponse(
@@ -257,10 +269,8 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         network = requirements.network
         controller = NetworkConfig.get_gasfree_controller_address(network)
         chain_id = NetworkConfig.get_chain_id(network)
-        api_base_url = NetworkConfig.get_gasfree_api_base_url(network)
-        api_key = NetworkConfig.get_gasfree_api_key(network)
-        api_secret = NetworkConfig.get_gasfree_api_secret(network)
-        api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
+        api_client = self._get_api_client(network)
+
         # Build the message for the API.
         # Note: GasFree API requires TRON Base58 addresses in the payload body,
         # while the signature (TIP-712) uses EVM hex format.
