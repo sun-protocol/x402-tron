@@ -37,6 +37,12 @@ http_client = httpx.AsyncClient()
 client = X402HttpClient(http_client=http_client, x402_client=x402_client)
 ```
 
+## Supported Schemes
+
+- **`exact_permit`**: Standard x402 payment scheme using TIP-712/EIP-712 permits.
+- **`exact_gasfree`**: (TRON) Pay with USDT/USDD without TRX gas using the GasFree protocol.
+- **`exact`**: (EVM) Native direct payment using ERC-3009.
+
 ## Links
 
 - Repository: https://github.com/bankofai/x402

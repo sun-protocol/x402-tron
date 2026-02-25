@@ -246,6 +246,16 @@ x402 currently supports TRC-20 tokens on the TRON network and BEP-20 tokens on t
 - **USDT** (Tether)
 - **USDD** (Decentralized USD)
 
+## Supported Payment Schemes
+
+The x402 protocol supports multiple payment schemes to accommodate different user needs and blockchain capabilities.
+
+| Scheme | Chain | Description |
+|--------|-------|-------------|
+| **`exact_permit`** | TRON, EVM | Standard x402 scheme using TIP-712/EIP-712 permits. Requires a `PaymentPermit` contract. |
+| **`exact_gasfree`**| TRON | Allows users to pay with USDT/USDD without holding TRX for gas. Settled via the official GasFree Proxy. |
+| **`exact`** | EVM | Native direct payment using ERC-3009 (`TransferWithAuthorization`) where supported by the token (e.g., USDC). |
+
 ## Development
 
 ### Prerequisites

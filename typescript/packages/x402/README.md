@@ -311,15 +311,21 @@ const nileClient = new X402Client()
 
 ## Payment Schemes
 
-### Exact Scheme
+### Exact Permit Scheme (`exact_permit`)
 
-The `exact` scheme allows payments for a specified exact amount. Useful for:
+The standard x402 payment scheme using TIP-712/EIP-712 permits. Requires a pre-deployed `PaymentPermit` contract on the network.
 
-- Pay-per-use APIs (e.g., LLM token generation)
-- Fixed-price resources
-- Predictable pricing for API calls
+### GasFree Scheme (`exact_gasfree`)
 
-The server charges the exact amount specified in the payment permit.
+Allows users to pay using TRC-20 tokens (USDT/USDD) without holding any TRX for gas.
+
+- **Accountless**: Uses the official GasFree HTTP Proxy for settlement.
+- **Dynamic**: Automatically discovers available service providers.
+- **Status Tracking**: Built-in polling for transaction confirmation.
+
+### Exact Scheme (`exact`)
+
+Direct payment scheme using ERC-3009 (`TransferWithAuthorization`) where supported by the token contract (primarily for EVM networks like BSC).
 
 ## Security
 
