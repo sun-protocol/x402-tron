@@ -8,7 +8,6 @@ import pytest
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.mechanisms.tron.gasfree.facilitator import GasFreeFacilitatorMechanism
-from bankofai.x402.utils.gasfree import GASFREE_TYPES
 from bankofai.x402.types import (
     Fee,
     Payment,
@@ -125,15 +124,19 @@ class TestGasFreeFacilitator:
 
         with patch(
             "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
-        ) as mock_api:
-            mock_api.return_value.submit = AsyncMock(return_value="trace-id-123")
+        ) as mock_class:
+            mock_api = mock_class.return_value
+            mock_api.get_providers = AsyncMock(return_value=[{"address": FACILITATOR_ADDR}])
+            mock_api.submit = AsyncMock(return_value="trace-id-123")
+            mock_api.wait_for_success = AsyncMock(return_value={"state": "SUCCEED"})
+
             with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
                 mock_find.return_value = MagicMock(symbol="USDT")
                 result = await mechanism.settle(gasfree_payload, gasfree_requirements)
 
         assert result.success is True
         assert result.transaction == "trace-id-123"
-        mock_api.return_value.submit.assert_called_once()
+        mock_api.submit.assert_called_once()
 
     @pytest.mark.anyio
     async def test_verify_fail_on_amount_mismatch(

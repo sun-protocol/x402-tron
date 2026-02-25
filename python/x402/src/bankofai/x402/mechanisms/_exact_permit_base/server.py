@@ -9,7 +9,6 @@ from abc import abstractmethod
 from typing import Any
 
 from bankofai.x402.abi import (
-    PAYMENT_PERMIT_EIP712_DOMAIN_TYPE,
     PAYMENT_PERMIT_PRIMARY_TYPE,
     get_payment_permit_eip712_types,
 )

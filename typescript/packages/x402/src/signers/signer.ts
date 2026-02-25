@@ -106,8 +106,8 @@ export class TronClientSigner implements ClientSigner {
     // Pure Passthrough: Let TronWeb handle the domain and types as-is.
     return signFn.call(
       tw.trx,
-      domain,
-      types,
+      domain as any,
+      types as any,
       message,
       this.privateKey
     );

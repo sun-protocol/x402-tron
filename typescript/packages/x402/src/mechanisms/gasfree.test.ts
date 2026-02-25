@@ -18,12 +18,16 @@ vi.mock('../utils/gasfree.js', () => {
               balance: '5000000',
               transferFee: '1000000',
             },
-          ],
+              ],
+            }),
+            getProviders: vi.fn().mockResolvedValue([
+              { address: 'TKtWbdzEq5ss9vTS9kwRhBp5mXmBfBns3E' }
+            ]),
+          };
         }),
       };
-    }),
-  };
-});
+    });
+
 
 describe('GasFreeTronClientMechanism', () => {
   const USDT_ADDRESS = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';

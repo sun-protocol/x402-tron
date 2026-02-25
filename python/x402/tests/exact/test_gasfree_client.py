@@ -8,7 +8,6 @@ import pytest
 
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.mechanisms.tron.gasfree.client import GasFreeTronClientMechanism
-from bankofai.x402.utils.gasfree import GASFREE_TYPES
 from bankofai.x402.types import PaymentRequirements
 
 USDT_ADDRESS = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"

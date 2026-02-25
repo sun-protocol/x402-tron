@@ -2,7 +2,6 @@
 EvmClientSigner - EVM client signer implementation
 """
 
-import json
 import logging
 from typing import Any
 
@@ -93,13 +92,15 @@ class EvmClientSigner(ClientSigner):
 
     async def check_balance(self, token: str, network: str) -> int:
         """Check ERC20 token balance"""
-        w3 = self._ensure_async_web3_client(network)
-        if not w3:
-            return 0
-
         try:
+            w3 = self._ensure_async_web3_client(network)
+            if not w3:
+                return 0
             contract = w3.eth.contract(address=token, abi=ERC20_ABI)
             return await contract.functions.balanceOf(self._address).call()
+        except (ImportError, ModuleNotFoundError):
+            logger.warning("web3 not available, returning 0 balance")
+            return 0
         except Exception as e:
             logger.error(
                 "Failed to check ERC20 balance",
@@ -109,14 +110,16 @@ class EvmClientSigner(ClientSigner):
 
     async def check_allowance(self, token: str, amount: int, network: str) -> int:
         """Check ERC20 allowance"""
-        spender = self._get_spender_address(network)
-        w3 = self._ensure_async_web3_client(network)
-        if not spender or not w3:
-            return 0
-
         try:
+            spender = self._get_spender_address(network)
+            w3 = self._ensure_async_web3_client(network)
+            if not spender or not w3:
+                return 0
             contract = w3.eth.contract(address=token, abi=ERC20_ABI)
             return await contract.functions.allowance(self._address, spender).call()
+        except (ImportError, ModuleNotFoundError):
+            logger.warning("web3 not available, returning 0 allowance")
+            return 0
         except Exception as e:
             logger.error(
                 "Failed to check ERC20 allowance",
@@ -142,11 +145,11 @@ class EvmClientSigner(ClientSigner):
         if mode == "interactive":
             raise InsufficientAllowanceError("Interactive approval required")
 
-        w3 = self._ensure_async_web3_client(network)
-        if not w3:
-            raise InsufficientAllowanceError("Web3 provider not configured")
-
         try:
+            w3 = self._ensure_async_web3_client(network)
+            if not w3:
+                raise InsufficientAllowanceError("Web3 provider not configured")
+
             spender = self._get_spender_address(network)
             contract = w3.eth.contract(address=token, abi=ERC20_ABI)
 
@@ -169,6 +172,8 @@ class EvmClientSigner(ClientSigner):
                     extra={"token": token, "tx_hash": tx_hash.hex()},
                 )
             return success
+        except (ImportError, ModuleNotFoundError):
+            raise InsufficientAllowanceError("web3 not available for approval")
         except Exception as e:
             raise InsufficientAllowanceError(f"ERC20 approval transaction failed: {e}")
 

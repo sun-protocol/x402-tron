@@ -8,7 +8,10 @@ import logging
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from bankofai.x402.abi import get_payment_permit_eip712_types
+from bankofai.x402.abi import (
+    PAYMENT_PERMIT_PRIMARY_TYPE,
+    get_payment_permit_eip712_types,
+)
 from bankofai.x402.address import AddressConverter
 from bankofai.x402.config import NetworkConfig
 from bankofai.x402.exceptions import PermitValidationError

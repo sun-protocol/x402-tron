@@ -132,9 +132,8 @@ class GasFreeAPIClient:
                     response.raise_for_status()
                 result = response.json()
                 if result.get("code") != 200:
-                    raise RuntimeError(
-                        f"API business error: {result.get('message') or result.get('reason')} - Body: {response.text}"
-                    )
+                    message = result.get("message") or result.get("reason")
+                    raise RuntimeError(f"API business error: {message} - Body: {response.text}")
                 return result.get("data", {})
             except Exception as e:
                 if isinstance(e, httpx.HTTPStatusError):
@@ -200,9 +199,11 @@ class GasFreeAPIClient:
             )
             return status_data
 
-        raise TimeoutError(
-            f"GasFree transaction {trace_id} failed or timed out. State: {final_state}, TxnState: {final_txn_state}"
+        msg = (
+            f"GasFree transaction {trace_id} failed or timed out. "
+            f"State: {final_state}, TxnState: {final_txn_state}"
         )
+        raise TimeoutError(msg)
 
     async def submit(self, domain: Dict[str, Any], message: Dict[str, Any], signature: str) -> str:
         """Submit a signed GasFree transaction to the official relayer"""
@@ -232,9 +233,8 @@ class GasFreeAPIClient:
                     response.raise_for_status()
                 result = response.json()
                 if result.get("code") != 200:
-                    raise RuntimeError(
-                        f"API business error: {result.get('message') or result.get('reason')} - Body: {response.text}"
-                    )
+                    message = result.get("message") or result.get("reason")
+                    raise RuntimeError(f"API business error: {message} - Body: {response.text}")
                 data = result.get("data", {})
                 return data.get("id")  # Returns traceId
             except Exception as e:

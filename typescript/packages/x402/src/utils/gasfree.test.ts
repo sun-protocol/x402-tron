@@ -30,7 +30,12 @@ describe('GasFreeAPIClient', () => {
     const info = await client.getAddressInfo('0x123');
     expect(info.gasFreeAddress).toBe('0x456');
     expect(info.nonce).toBe(5);
-    expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/v1/address/0x123`);
+    expect(fetch).toHaveBeenCalledWith(
+      `${baseUrl}/api/v1/address/0x123`,
+      expect.objectContaining({
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
   });
 
   it('should submit transaction', async () => {
@@ -80,7 +85,12 @@ describe('GasFreeAPIClient', () => {
 
     const status = await client.getStatus('trace-123');
     expect(status.state).toBe('SUCCEED');
-    expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/v1/gasfree/trace-123`);
+    expect(fetch).toHaveBeenCalledWith(
+      `${baseUrl}/api/v1/gasfree/trace-123`,
+      expect.objectContaining({
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
   });
 
   it('should wait for success', async () => {

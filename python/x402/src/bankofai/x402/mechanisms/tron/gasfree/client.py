@@ -7,11 +7,11 @@ import random
 import time
 from typing import TYPE_CHECKING, Any
 
+from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import TronAddressConverter
 from bankofai.x402.config import NetworkConfig
 from bankofai.x402.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from bankofai.x402.mechanisms._base.client import ClientMechanism
-from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.types import (
     PAYMENT_ONLY,
     Fee,
@@ -72,7 +72,8 @@ class GasFreeTronClientMechanism(ClientMechanism):
             raise RuntimeError(f"Could not retrieve GasFree address for {user_address}")
 
         # 2. Check activation status
-        # If active is False but allowSubmit is True, we can proceed (e.g. for first-time activation)
+        # If active is False but allowSubmit is True, we can proceed
+        # (e.g. for first-time activation)
         allow_submit = account_info.get("allowSubmit", False)
         if not is_active and not allow_submit:
             raise GasFreeAccountNotActivated(user_address, gasfree_address)

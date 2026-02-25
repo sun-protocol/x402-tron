@@ -2,10 +2,10 @@
 GasFreeFacilitatorMechanism - GasFree payment scheme facilitator mechanism for TRON.
 """
 
-import logging
 import time
 from typing import Optional
 
+from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import AddressConverter, TronAddressConverter
 from bankofai.x402.config import NetworkConfig
 from bankofai.x402.mechanisms._exact_permit_base.facilitator import (
@@ -18,7 +18,6 @@ from bankofai.x402.types import (
     SettleResponse,
     VerifyResponse,
 )
-from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.utils.gasfree import (
     GASFREE_TYPES,
     GasFreeAPIClient,
@@ -226,7 +225,6 @@ class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         api_key = NetworkConfig.get_gasfree_api_key(network)
         api_secret = NetworkConfig.get_gasfree_api_secret(network)
         api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
-        converter = self._address_converter
 
         # Build the message for the API.
         # Note: GasFree API requires TRON Base58 addresses in the payload body,
