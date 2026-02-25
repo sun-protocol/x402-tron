@@ -14,6 +14,7 @@ import {
   getGasFreeApiSecret,
 } from '../index.js';
 import { GASFREE_TYPES, GasFreeAPIClient } from '../utils/gasfree.js';
+import { findByAddress } from '../tokens.js';
 
 export class GasFreeTronClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
@@ -67,8 +68,14 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     
     let maxFee = requirements.extra?.fee?.feeAmount;
     if (!maxFee) {
-        // Default to transferFee from API, or 1 USDT (10^6) as a safe fallback
-        maxFee = transferFee > 0n ? transferFee.toString() : '1000000';
+        // Default to transferFee from API, or 1.0 token units as a safe fallback
+        if (transferFee > 0n) {
+            maxFee = transferFee.toString();
+        } else {
+            const tokenInfo = findByAddress(requirements.network, requirements.asset);
+            const decimals = tokenInfo?.decimals ?? 6;
+            maxFee = (10 ** decimals).toString();
+        }
     }
 
     let maxFeeBig = BigInt(maxFee);

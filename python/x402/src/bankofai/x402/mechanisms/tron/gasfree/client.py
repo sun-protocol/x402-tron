@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.address.converter import TronAddressConverter
 from bankofai.x402.config import NetworkConfig
+from bankofai.x402.tokens.registry import TokenRegistry
 from bankofai.x402.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from bankofai.x402.mechanisms._base.client import ClientMechanism
 from bankofai.x402.types import (
@@ -103,7 +104,10 @@ class GasFreeTronClientMechanism(ClientMechanism):
         if requirements.extra and requirements.extra.fee:
             max_fee = requirements.extra.fee.fee_amount
         elif transfer_fee == 0:
-            max_fee = "1000000"  # Default fallback to 1 USDT if API returns 0
+            # Get decimals from registry, default to 6 (USDT)
+            token_info = TokenRegistry.find_by_address(network, requirements.asset)
+            decimals = token_info.decimals if token_info else 6
+            max_fee = str(10**decimals)  # Default fallback to 1.0 token if API returns 0
 
         max_fee_val = int(max_fee)
         if max_fee_val < transfer_fee:

@@ -94,6 +94,7 @@ export class GasFreeAPIClient {
     if (!this.apiSecret) return '';
 
     const message = `${method.toUpperCase()}${path}${timestamp}`;
+    console.debug(`GasFree HMAC base string: ${message}`);
     
     // Check if we are in Node.js environment
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -162,10 +163,12 @@ export class GasFreeAPIClient {
     const bodyText = await response.text();
 
     if (!response.ok) {
+      console.error(`GasFree config API HTTP error ${response.status} at ${url}: ${bodyText}`);
       throw new Error(`GasFree config API error: ${response.status}`);
     }
     const result = JSON.parse(bodyText) as GasFreeResponse<{ providers: GasFreeProvider[] }>;
     if (result.code !== 200) {
+      console.error(`GasFree config API business error at ${url}: ${result.message || result.reason}`);
       throw new Error(`GasFree config API error: ${result.message || result.reason}`);
     }
     return result.data.providers;
@@ -196,11 +199,12 @@ export class GasFreeAPIClient {
     const bodyText = await response.text();
 
     if (!response.ok) {
-      console.error(`GasFree API HTTP error ${response.status}: ${bodyText}`);
+      console.error(`GasFree API HTTP error ${response.status} at ${url}: ${bodyText}`);
       throw new Error(`GasFree API HTTP error: ${response.status} - Body: ${bodyText}`);
     }
     const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeAddressInfo>;
     if (result.code !== 200) {
+      console.error(`GasFree API business error at ${url}: ${result.message || result.reason} - Body: ${bodyText}`);
       throw new Error(`GasFree API error: ${result.message || result.reason} - Body: ${bodyText}`);
     }
     return result.data;
@@ -217,10 +221,12 @@ export class GasFreeAPIClient {
     const bodyText = await response.text();
 
     if (!response.ok) {
+      console.error(`GasFree status API HTTP error ${response.status} at ${url}: ${bodyText}`);
       throw new Error(`GasFree status API error: ${response.status}`);
     }
     const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeSubmitResponseData>;
     if (result.code !== 200) {
+      console.error(`GasFree status API business error at ${url}: ${result.message || result.reason}`);
       throw new Error(`GasFree status API error: ${result.message || result.reason}`);
     }
     return result.data;
@@ -260,7 +266,7 @@ export class GasFreeAPIClient {
       const finalTxnState = (statusData.txnState || '').toUpperCase();
 
       if (finalState === 'CONFIRMING' && finalTxnState === 'ON_CHAIN') {
-        console.info(`GasFree transaction ${traceId} reached CONFIRMING/ON_CHAIN at timeout. Success.`);
+        console.info(`GasFree transaction ${traceId} reached CONFIRMING/ON_CHAIN at timeout. Treating as successful (degraded confirmation).`);
         return statusData;
       }
     }
@@ -300,12 +306,13 @@ export class GasFreeAPIClient {
       const bodyText = await response.text();
 
       if (!response.ok) {
-        console.error(`GasFree submit HTTP error ${response.status}: ${bodyText}`);
+        console.error(`GasFree submit HTTP error ${response.status} at ${url}: ${bodyText}`);
         throw new Error(`GasFree submit HTTP error: ${response.status} - Body: ${bodyText}`);
       }
 
       const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeSubmitResponseData>;
       if (result.code !== 200) {
+        console.error(`GasFree submit API business error at ${url}: ${result.message || result.reason} - Body: ${bodyText}`);
         throw new Error(`GasFree submit API error: ${result.message || result.reason} - Body: ${bodyText}`);
       }
       return result.data.id;

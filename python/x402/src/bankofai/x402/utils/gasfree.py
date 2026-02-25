@@ -60,6 +60,7 @@ class GasFreeAPIClient:
             return ""
 
         msg = f"{method.upper()}{path}{timestamp}"
+        logger.debug(f"GasFree HMAC base string: {msg}")
 
         signature_bytes = hmac.new(
             self.api_secret.encode("utf-8"), msg.encode("utf-8"), digestmod="sha256"
@@ -111,7 +112,9 @@ class GasFreeAPIClient:
                 data = result.get("data", {})
                 return data.get("providers", [])
             except Exception as e:
-                logger.error(f"Failed to get providers from GasFree API: {e}")
+                logger.error(
+                    f"Failed to get providers from GasFree API from {url}: {e}", exc_info=True
+                )
                 raise
 
     async def get_nonce(self, user: str, token: str, chain_id: int) -> int:
@@ -138,7 +141,9 @@ class GasFreeAPIClient:
             except Exception as e:
                 if isinstance(e, httpx.HTTPStatusError):
                     logger.error(f"HTTP Status Error Body: {e.response.text}")
-                logger.error(f"Failed to get address info from GasFree API: {e}")
+                logger.error(
+                    f"Failed to get address info from GasFree API from {url}: {e}", exc_info=True
+                )
                 raise
 
     async def get_status(self, trace_id: str) -> Dict[str, Any]:
@@ -161,7 +166,9 @@ class GasFreeAPIClient:
                 logger.info(f"GasFree Status Response for {trace_id}: {json.dumps(data)}")
                 return data
             except Exception as e:
-                logger.error(f"Failed to get GasFree transaction status: {e}")
+                logger.error(
+                    f"Failed to get GasFree transaction status from {url}: {e}", exc_info=True
+                )
                 raise
 
     async def wait_for_success(
@@ -195,7 +202,8 @@ class GasFreeAPIClient:
 
         if final_state == "CONFIRMING" and final_txn_state == "ON_CHAIN":
             logger.info(
-                f"GasFree transaction {trace_id} reached CONFIRMING/ON_CHAIN at timeout. Success."
+                f"GasFree transaction {trace_id} reached CONFIRMING/ON_CHAIN at timeout. "
+                "Treating as successful (degraded confirmation)."
             )
             return status_data
 
@@ -240,7 +248,7 @@ class GasFreeAPIClient:
             except Exception as e:
                 if isinstance(e, httpx.HTTPStatusError):
                     logger.error(f"HTTP Status Error Body: {e.response.text}")
-                logger.error(f"Failed to submit GasFree transaction: {e}")
+                logger.error(f"Failed to submit GasFree transaction to {url}: {e}", exc_info=True)
                 raise
 
 

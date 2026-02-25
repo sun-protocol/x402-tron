@@ -74,7 +74,9 @@ class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
                 self._logger.warning(f"Provider {permit.fee.fee_to} is not in allowed list")
                 return "fee_to_mismatch"
         except Exception as e:
-            self._logger.error(f"Failed to fetch providers for validation: {e}")
+            self._logger.error(
+                f"Failed to fetch providers for validation from {api_base_url}: {e}", exc_info=True
+            )
             # Fallback to self._fee_to if API fails
             if norm(permit.fee.fee_to) != norm(self._fee_to):
                 return "fee_to_mismatch"
@@ -105,7 +107,7 @@ class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         if not is_valid_sig:
             return VerifyResponse(isValid=False, invalidReason="invalid_signature")
 
-        return VerifyResponse(isValid=True)
+        return VerifyResponse(isValid=True, invalidReason=None)
 
     async def _verify_signature(
         self,
@@ -202,9 +204,12 @@ class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
                 success=True,
                 transaction=trace_id,
                 network=requirements.network,
+                errorReason=None,
             )
         except Exception as e:
-            self._logger.error(f"GasFree settlement or wait failed: {e}")
+            self._logger.error(
+                f"GasFree settlement or wait failed for network {network}: {e}", exc_info=True
+            )
             return SettleResponse(
                 success=False,
                 errorReason=str(e),
