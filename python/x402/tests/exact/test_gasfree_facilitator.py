@@ -132,14 +132,16 @@ class TestGasFreeFacilitator:
             mock_api = mock_class.return_value
             mock_api.get_providers = AsyncMock(return_value=[{"address": FACILITATOR_ADDR}])
             mock_api.submit = AsyncMock(return_value="trace-id-123")
-            mock_api.wait_for_success = AsyncMock(return_value={"state": "SUCCEED"})
+            mock_api.wait_for_success = AsyncMock(
+                return_value={"state": "SUCCEED", "txnHash": "0xhash123"}
+            )
 
             with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
                 mock_find.return_value = MagicMock(symbol="USDT")
                 result = await mechanism.settle(gasfree_payload, gasfree_requirements)
 
         assert result.success is True
-        assert result.transaction == "trace-id-123"
+        assert result.transaction == "0xhash123"
         mock_api.submit.assert_called_once()
 
     @pytest.mark.anyio

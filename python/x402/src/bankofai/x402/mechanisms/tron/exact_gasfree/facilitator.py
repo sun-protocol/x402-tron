@@ -94,20 +94,20 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         """Override verify to use async validation"""
         permit = payload.payload.payment_permit
         if not permit:
-            return VerifyResponse(isValid=False, invalidReason="missing_permit")
+            return VerifyResponse(is_valid=False, invalid_reason="missing_permit")
 
         reason = await self._validate_permit_async(permit, requirements)
         if reason:
-            return VerifyResponse(isValid=False, invalidReason=reason)
+            return VerifyResponse(is_valid=False, invalid_reason=reason)
 
         # Signature verification
         is_valid_sig = await self._verify_signature(
             permit, payload.payload.signature, requirements.network
         )
         if not is_valid_sig:
-            return VerifyResponse(isValid=False, invalidReason="invalid_signature")
+            return VerifyResponse(is_valid=False, invalid_reason="invalid_signature")
 
-        return VerifyResponse(isValid=True, invalidReason=None)
+        return VerifyResponse(is_valid=True, invalid_reason=None)
 
     async def _verify_signature(
         self,
@@ -206,7 +206,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
             if not trace_id:
                 return SettleResponse(
                     success=False,
-                    errorReason="api_no_response",
+                    error_reason="api_no_response",
                     network=requirements.network,
                 )
 
@@ -215,12 +215,27 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
             # Wait for success (like wait_for_transaction_receipt)
             result_data = await api_client.wait_for_success(trace_id)
 
-            self._logger.info(f"GasFree settlement successful. State: {result_data.get('state')}")
+            # 4. Return success with the ACTUAL TRON transaction hash if available
+            txn_hash = result_data.get("txnHash")
+            if not txn_hash:
+                self._logger.error(
+                    f"GasFree polling returned success but txnHash is missing for {trace_id}"
+                )
+                return SettleResponse(
+                    success=False,
+                    error_reason="missing_transaction_hash",
+                    network=requirements.network,
+                )
+
+            self._logger.info(
+                f"GasFree settlement successful. State: {result_data.get('state')}, "
+                f"Hash: {txn_hash}"
+            )
+
             return SettleResponse(
                 success=True,
-                transaction=trace_id,
+                transaction=txn_hash,
                 network=requirements.network,
-                errorReason=None,
             )
         except Exception as e:
             self._logger.error(
@@ -228,7 +243,7 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
             )
             return SettleResponse(
                 success=False,
-                errorReason=str(e),
+                error_reason=str(e),
                 network=requirements.network,
             )
 
@@ -246,7 +261,6 @@ class ExactGasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
         api_key = NetworkConfig.get_gasfree_api_key(network)
         api_secret = NetworkConfig.get_gasfree_api_secret(network)
         api_client = GasFreeAPIClient(api_base_url, api_key, api_secret)
-
         # Build the message for the API.
         # Note: GasFree API requires TRON Base58 addresses in the payload body,
         # while the signature (TIP-712) uses EVM hex format.
