@@ -141,6 +141,26 @@ export function getGasFreeApiBaseUrl(network: string): string {
 }
 
 /**
+ * Get GasFree API Key
+ */
+export function getGasFreeApiKey(): string | undefined {
+  if (typeof process !== 'undefined') {
+    return process.env.GASFREE_API_KEY;
+  }
+  return undefined;
+}
+
+/**
+ * Get GasFree API Secret
+ */
+export function getGasFreeApiSecret(): string | undefined {
+  if (typeof process !== 'undefined') {
+    return process.env.GASFREE_API_SECRET;
+  }
+  return undefined;
+}
+
+/**
  * Check if network is TRON
  */
 export function isTronNetwork(network: string): boolean {

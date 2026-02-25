@@ -333,6 +333,8 @@ class BaseExactPermitFacilitatorMechanism(FacilitatorMechanism):
         logger.info(f"[VERIFY] Signature: {signature}")
         logger.info(f"[VERIFY] Buyer address: {permit.buyer}")
 
+        from bankofai.x402.abi import PAYMENT_PERMIT_PRIMARY_TYPE
+
         return await self._signer.verify_typed_data(
             address=permit.buyer,
             domain={
@@ -343,6 +345,7 @@ class BaseExactPermitFacilitatorMechanism(FacilitatorMechanism):
             types=get_payment_permit_eip712_types(),
             message=message,
             signature=signature,
+            primary_type=PAYMENT_PERMIT_PRIMARY_TYPE,
         )
 
     @abstractmethod

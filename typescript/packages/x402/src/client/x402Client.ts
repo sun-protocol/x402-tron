@@ -45,7 +45,8 @@ export interface ClientSigner {
   signTypedData(
     domain: Record<string, unknown>,
     types: Record<string, unknown>,
-    message: Record<string, unknown>
+    message: Record<string, unknown>,
+    primaryType: string
   ): Promise<string>;
   
   /** Check token balance */
@@ -237,7 +238,7 @@ export class X402Client {
   async handlePayment(
     accepts: PaymentRequirements[],
     resource: string,
-    extensions?: { paymentPermitContext?: PaymentPermitContext },
+    extensions?: Record<string, unknown>,
     selector?: PaymentRequirementsSelector
   ): Promise<PaymentPayload> {
     const requirements = selector

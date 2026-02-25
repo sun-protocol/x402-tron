@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.mechanisms.tron.gasfree.facilitator import GasFreeFacilitatorMechanism
+from bankofai.x402.utils.gasfree import GASFREE_TYPES
 from bankofai.x402.types import (
     Fee,
     Payment,
@@ -92,7 +94,13 @@ class TestGasFreeFacilitator:
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")
-            result = await mechanism.verify(gasfree_payload, gasfree_requirements)
+            with patch(
+                "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
+            ) as mock_api:
+                mock_api.return_value.get_providers = AsyncMock(
+                    return_value=[{"address": FACILITATOR_ADDR}]
+                )
+                result = await mechanism.verify(gasfree_payload, gasfree_requirements)
 
         assert result.is_valid is True
 
@@ -107,6 +115,7 @@ class TestGasFreeFacilitator:
         assert message["user"].startswith("0x")
         assert message["receiver"].startswith("0x")
         assert message["value"] == 1000000
+        assert call_args.kwargs["primary_type"] == GASFREE_PRIMARY_TYPE
 
     @pytest.mark.anyio
     async def test_settle_submits_to_api(
@@ -151,7 +160,13 @@ class TestGasFreeFacilitator:
 
         with patch("bankofai.x402.tokens.TokenRegistry.find_by_address") as mock_find:
             mock_find.return_value = MagicMock(symbol="USDT")
-            result = await mechanism.verify(gasfree_payload, gasfree_requirements)
+            with patch(
+                "bankofai.x402.mechanisms.tron.gasfree.facilitator.GasFreeAPIClient"
+            ) as mock_api:
+                mock_api.return_value.get_providers = AsyncMock(
+                    return_value=[{"address": FACILITATOR_ADDR}]
+                )
+                result = await mechanism.verify(gasfree_payload, gasfree_requirements)
 
         assert result.is_valid is False
         assert result.invalid_reason == "invalid_signature"

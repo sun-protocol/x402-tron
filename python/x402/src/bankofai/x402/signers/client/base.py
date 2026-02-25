@@ -37,16 +37,16 @@ class ClientSigner(ABC):
         domain: dict[str, Any],
         types: dict[str, Any],
         message: dict[str, Any],
+        primary_type: str,
     ) -> str:
         """
         Sign typed data (EIP-712).
-
-        TODO: Add primary_type argument to avoid heuristic deduction from types dict.
 
         Args:
             domain: EIP-712 domain
             types: Type definitions
             message: Message to sign
+            primary_type: The root type name of the message
 
         Returns:
             Signature string (hex)

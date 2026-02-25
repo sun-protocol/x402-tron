@@ -26,6 +26,7 @@ class FacilitatorSigner(ABC):
         types: dict[str, Any],
         message: dict[str, Any],
         signature: str,
+        primary_type: str,
     ) -> bool:
         """
         Verify EIP-712 typed data signature.
@@ -36,6 +37,7 @@ class FacilitatorSigner(ABC):
             types: Type definitions
             message: Signed message
             signature: Signature to verify
+            primary_type: The root type name of the message
 
         Returns:
             True if signature is valid

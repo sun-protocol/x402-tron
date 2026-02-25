@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.mechanisms.tron.gasfree.client import GasFreeTronClientMechanism
+from bankofai.x402.utils.gasfree import GASFREE_TYPES
 from bankofai.x402.types import PaymentRequirements
 
 USDT_ADDRESS = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"
@@ -51,6 +53,9 @@ def mock_api_client():
                 ],
             }
         )
+        client_instance.get_providers = AsyncMock(
+            return_value=[{"address": "TMerchantAddr12345678901234567890"}]
+        )
         yield client_instance
 
 
@@ -68,6 +73,10 @@ class TestGasFreeClient:
         assert payload.payload.signature == "0x" + "ab" * 65
         assert payload.extensions["gasfreeAddress"] == "TLCvf7MktLG7XkbJRyUwnvCeDnaEXYkcbC"
         assert payload.payload.payment_permit.meta.nonce == "1"
+
+        # Verify primary_type was passed
+        mock_signer.sign_typed_data.assert_called_once()
+        assert mock_signer.sign_typed_data.call_args.kwargs["primary_type"] == GASFREE_PRIMARY_TYPE
 
     @pytest.mark.anyio
     async def test_max_fee_adjustment(self, mock_signer, nile_requirements, mock_api_client):

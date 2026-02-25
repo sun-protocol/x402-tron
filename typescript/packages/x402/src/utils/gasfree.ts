@@ -1,3 +1,5 @@
+import { GASFREE_PRIMARY_TYPE, GASFREE_DOMAIN_TYPE } from '../abi.js';
+
 /**
  * GasFree utility functions for API interaction and domain helpers.
  */
@@ -30,14 +32,142 @@ export interface GasFreeAddressInfo {
 
 export interface GasFreeSubmitResponseData {
   id: string;
-  state: string;
+  state: 'WAITING' | 'INPROGRESS' | 'CONFIRMING' | 'SUCCEED' | 'FAILED';
+  createdAt: string;
+  accountAddress: string;
+  gasFreeAddress: string;
+  providerAddress: string;
+  targetAddress: string;
+  nonce: number;
+  tokenAddress: string;
+  amount: string;
+  expiredAt: string;
+  txnHash?: string;
+  txnState?: 'INIT' | 'NOT_ON_CHAIN' | 'ON_CHAIN' | 'SOLIDITY' | 'ON_CHAIN_FAILED';
 }
+
+export interface GasFreeProvider {
+  address: string;
+  name: string;
+  icon: string;
+  website: string;
+  config: {
+    maxPendingTransfer: number;
+    minDeadlineDuration: number;
+    maxDeadlineDuration: number;
+    defaultDeadlineDuration: number;
+  };
+}
+
+// GasFree TIP-712 Types
+export const GASFREE_TYPES = {
+  EIP712Domain: GASFREE_DOMAIN_TYPE,
+  [GASFREE_PRIMARY_TYPE]: [
+    { name: 'token', type: 'address' },
+    { name: 'serviceProvider', type: 'address' },
+    { name: 'user', type: 'address' },
+    { name: 'receiver', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'maxFee', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+    { name: 'version', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+  ],
+} as const;
 
 export class GasFreeAPIClient {
   private baseUrl: string;
+  private apiKey?: string;
+  private apiSecret?: string;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, apiKey?: string, apiSecret?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.apiKey = apiKey;
+    this.apiSecret = apiSecret;
+  }
+
+  /**
+   * Generate HMAC signature for authentication
+   */
+  private async generateSignature(method: string, path: string, timestamp: number): Promise<string> {
+    if (!this.apiSecret) return '';
+
+    const message = `${method}${path}${timestamp}`;
+    
+    // Check if we are in Node.js environment
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      const crypto = await import('node:crypto');
+      return crypto
+        .createHmac('sha256', this.apiSecret)
+        .update(message)
+        .digest('base64');
+    } else {
+      // Browser implementation using Web Crypto API
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(this.apiSecret);
+      const msgData = encoder.encode(message);
+      
+      const cryptoKey = await globalThis.crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      
+      const signature = await globalThis.crypto.subtle.sign('HMAC', cryptoKey, msgData);
+      return btoa(String.fromCharCode(...new Uint8Array(signature)));
+    }
+  }
+
+  /**
+   * Get headers with authentication if keys are provided
+   */
+  private async getHeaders(method: string, path: string): Promise<Record<string, string>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.apiKey && this.apiSecret) {
+      const timestamp = Math.floor(Date.now() / 1000);
+      
+      // The Provider expects the FULL path including /nile or /tron for signature
+      let fullPath = path;
+      const urlParts = this.baseUrl.split('/');
+      if (urlParts.length > 3) {
+        const prefix = '/' + urlParts.slice(3).join('/');
+        if (!fullPath.startsWith(prefix)) {
+          fullPath = prefix + path;
+        }
+      }
+
+      const signature = await this.generateSignature(method, fullPath, timestamp);
+      headers['Timestamp'] = timestamp.toString();
+      headers['Authorization'] = `ApiKey ${this.apiKey}:${signature}`;
+    }
+
+    return headers;
+  }
+
+  /**
+   * Get all supported service providers
+   */
+  async getProviders(): Promise<GasFreeProvider[]> {
+    const path = '/api/v1/config/provider/all';
+    const url = `${this.baseUrl}${path}`;
+    const headers = await this.getHeaders('GET', path);
+    
+    const response = await fetch(url, { headers });
+    const bodyText = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`GasFree config API error: ${response.status}`);
+    }
+    const result = JSON.parse(bodyText) as GasFreeResponse<{ providers: GasFreeProvider[] }>;
+    if (result.code !== 200) {
+      throw new Error(`GasFree config API error: ${result.message || result.reason}`);
+    }
+    return result.data.providers;
   }
 
   /**
@@ -57,17 +187,84 @@ export class GasFreeAPIClient {
    * Get full account info (activation, balance, nonce) for a user
    */
   async getAddressInfo(user: string): Promise<GasFreeAddressInfo> {
-    const url = `${this.baseUrl}/api/v1/address/${user}`;
+    const path = `/api/v1/address/${user}`;
+    const url = `${this.baseUrl}${path}`;
+    const headers = await this.getHeaders('GET', path);
 
-    const response = await fetch(url);
+    const response = await fetch(url, { headers });
+    const bodyText = await response.text();
+
     if (!response.ok) {
-      throw new Error(`GasFree API HTTP error: ${response.status}`);
+      console.error(`GasFree API HTTP error ${response.status}: ${bodyText}`);
+      throw new Error(`GasFree API HTTP error: ${response.status} - Body: ${bodyText}`);
     }
-    const result = (await response.json()) as GasFreeResponse<GasFreeAddressInfo>;
+    const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeAddressInfo>;
     if (result.code !== 200) {
-      throw new Error(`GasFree API error: ${result.message || result.reason}`);
+      throw new Error(`GasFree API error: ${result.message || result.reason} - Body: ${bodyText}`);
     }
     return result.data;
+  }
+
+  /**
+   * Get status of a submitted GasFree transaction
+   */
+  async getStatus(traceId: string): Promise<GasFreeSubmitResponseData> {
+    const path = `/api/v1/gasfree/${traceId}`;
+    const url = `${this.baseUrl}${path}`;
+    const headers = await this.getHeaders('GET', path);
+    const response = await fetch(url, { headers });
+    const bodyText = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`GasFree status API error: ${response.status}`);
+    }
+    const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeSubmitResponseData>;
+    if (result.code !== 200) {
+      throw new Error(`GasFree status API error: ${result.message || result.reason}`);
+    }
+    return result.data;
+  }
+
+  /**
+   * Wait for a GasFree transaction to reach a terminal state or acceptable timeout state
+   */
+  async waitForSuccess(
+    traceId: string,
+    timeout: number = 180000,
+    pollInterval: number = 5000
+  ): Promise<GasFreeSubmitResponseData> {
+    const startTime = Date.now();
+    let statusData: GasFreeSubmitResponseData | undefined;
+
+    while (Date.now() - startTime < timeout) {
+      statusData = await this.getStatus(traceId);
+      const state = statusData.state.toUpperCase();
+      const txnState = (statusData.txnState || '').toUpperCase();
+
+      // 1. Immediate return for final states
+      if (state === 'SUCCEED') {
+        return statusData;
+      }
+      if (state === 'FAILED' || txnState === 'ON_CHAIN_FAILED') {
+        throw new Error(`GasFree transaction failed.`);
+      }
+
+      console.debug(`GasFree transaction ${traceId} is ${state} (${txnState}), waiting...`);
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+
+    // 2. Timeout reached
+    if (statusData) {
+      const finalState = statusData.state.toUpperCase();
+      const finalTxnState = (statusData.txnState || '').toUpperCase();
+
+      if (finalState === 'CONFIRMING' && finalTxnState === 'ON_CHAIN') {
+        console.info(`GasFree transaction ${traceId} reached CONFIRMING/ON_CHAIN at timeout. Success.`);
+        return statusData;
+      }
+    }
+
+    throw new Error(`GasFree transaction ${traceId} timed out after ${timeout / 1000}s`);
   }
 
   /**
@@ -85,26 +282,30 @@ export class GasFreeAPIClient {
       value: message.value.toString(),
       maxFee: message.maxFee.toString(),
       deadline: Number(message.deadline),
-      version: Number(message.version),
+      version: 1,
       nonce: Number(message.nonce),
       sig: signature.startsWith('0x') ? signature.slice(2) : signature,
       requestId: `x402-${Date.now()}-${signature.slice(2, 10)}`,
     };
 
     try {
+      const headers = await this.getHeaders('POST', path);
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
 
+      const bodyText = await response.text();
+
       if (!response.ok) {
-        throw new Error(`GasFree submit HTTP error: ${response.status}`);
+        console.error(`GasFree submit HTTP error ${response.status}: ${bodyText}`);
+        throw new Error(`GasFree submit HTTP error: ${response.status} - Body: ${bodyText}`);
       }
 
-      const result = (await response.json()) as GasFreeResponse<GasFreeSubmitResponseData>;
+      const result = JSON.parse(bodyText) as GasFreeResponse<GasFreeSubmitResponseData>;
       if (result.code !== 200) {
-        throw new Error(`GasFree submit API error: ${result.message || result.reason}`);
+        throw new Error(`GasFree submit API error: ${result.message || result.reason} - Body: ${bodyText}`);
       }
       return result.data.id;
     } catch (error) {

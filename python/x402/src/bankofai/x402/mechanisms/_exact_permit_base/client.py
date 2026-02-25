@@ -179,4 +179,5 @@ class BaseExactPermitClientMechanism(ClientMechanism):
             },
             types=get_payment_permit_eip712_types(),
             message=message,
+            primary_type=PAYMENT_PERMIT_PRIMARY_TYPE,
         )

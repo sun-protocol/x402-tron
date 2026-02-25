@@ -3,6 +3,7 @@ GasFreeTronClientMechanism - GasFree payment scheme client mechanism for TRON.
 """
 
 import logging
+import random
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,7 @@ from bankofai.x402.address.converter import TronAddressConverter
 from bankofai.x402.config import NetworkConfig
 from bankofai.x402.exceptions import GasFreeAccountNotActivated, InsufficientGasFreeBalance
 from bankofai.x402.mechanisms._base.client import ClientMechanism
+from bankofai.x402.abi import GASFREE_PRIMARY_TYPE
 from bankofai.x402.types import (
     PAYMENT_ONLY,
     Fee,
@@ -22,7 +24,7 @@ from bankofai.x402.types import (
     ResourceInfo,
 )
 from bankofai.x402.utils.gasfree import (
-    GASFREE_PERMIT_TRANSFER_TYPES,
+    GASFREE_TYPES,
     GasFreeAPIClient,
     get_gasfree_domain,
 )
@@ -70,10 +72,20 @@ class GasFreeTronClientMechanism(ClientMechanism):
             raise RuntimeError(f"Could not retrieve GasFree address for {user_address}")
 
         # 2. Check activation status
-        if not is_active:
+        # If active is False but allowSubmit is True, we can proceed (e.g. for first-time activation)
+        allow_submit = account_info.get("allowSubmit", False)
+        if not is_active and not allow_submit:
             raise GasFreeAccountNotActivated(user_address, gasfree_address)
 
-        # 3. Prepare maxFee and validate against protocol transferFee
+        # 3. Prepare maxFee and providers
+        providers = await api_client.get_providers()
+        if not providers:
+            raise RuntimeError("No GasFree service providers available")
+
+        # Pick a random provider from the supported list
+        service_provider_addr = random.choice(providers)["address"]
+        self._logger.debug(f"Selected GasFree provider: {service_provider_addr}")
+
         assets = account_info.get("assets", [])
         asset_balance = 0
         transfer_fee = 0
@@ -124,10 +136,10 @@ class GasFreeTronClientMechanism(ClientMechanism):
 
         signature = await self._signer.sign_typed_data(
             domain=domain,
-            types=GASFREE_PERMIT_TRANSFER_TYPES,
+            types=GASFREE_TYPES,
             message={
                 "token": self._address_converter.to_evm_format(requirements.asset),
-                "serviceProvider": self._address_converter.to_evm_format(requirements.pay_to),
+                "serviceProvider": self._address_converter.to_evm_format(service_provider_addr),
                 "user": self._address_converter.to_evm_format(user_address),
                 "receiver": self._address_converter.to_evm_format(requirements.pay_to),
                 "value": int(requirements.amount),
@@ -136,6 +148,7 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 "version": 1,
                 "nonce": nonce,
             },
+            primary_type=GASFREE_PRIMARY_TYPE,
         )
 
         # 6. Pack into PaymentPayload
@@ -154,14 +167,14 @@ class GasFreeTronClientMechanism(ClientMechanism):
                 validBefore=int(deadline),
             ),
             buyer=user_address,
-            caller=controller,
+            caller=service_provider_addr,  # Caller is the one who will submit (Relayer)
             payment=Payment(
                 payToken=requirements.asset,
                 payAmount=requirements.amount,
                 payTo=requirements.pay_to,
             ),
             fee=Fee(
-                feeTo=requirements.pay_to,
+                feeTo=service_provider_addr,
                 feeAmount=max_fee,
             ),
         )

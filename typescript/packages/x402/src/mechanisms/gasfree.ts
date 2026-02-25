@@ -6,13 +6,15 @@ import {
   DeliveryKind,
   ClientMechanism,
   ClientSigner,
+  GASFREE_PRIMARY_TYPE,
+  KIND_MAP,
+  getChainId,
+  getGasFreeApiBaseUrl,
+  getGasFreeApiKey,
+  getGasFreeApiSecret,
 } from '../index.js';
-import { getChainId, getGasFreeApiBaseUrl } from '../config.js';
-import { GasFreeAPIClient } from '../utils/gasfree.js';
+import { GASFREE_TYPES, GasFreeAPIClient } from '../utils/gasfree.js';
 
-/**
- * GasFreeTronClientMechanism - GasFree payment mechanism for TRON (USDT/USDD).
- */
 export class GasFreeTronClientMechanism implements ClientMechanism {
   private signer: ClientSigner;
 
@@ -29,11 +31,13 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     resource: string,
     extensions?: Record<string, unknown>
   ): Promise<PaymentPayload> {
-    const network = requirements.network;
-    const chainId = getChainId(network);
-    const userAddress = this.signer.getAddress();
-    const apiBaseUrl = getGasFreeApiBaseUrl(network);
-    const apiClient = new GasFreeAPIClient(apiBaseUrl);
+    const chainId = getChainId(requirements.network);
+    const apiBaseUrl = getGasFreeApiBaseUrl(requirements.network);
+    const apiKey = getGasFreeApiKey();
+    const apiSecret = getGasFreeApiSecret();
+    const userAddress = await this.signer.getAddress();
+    
+    const apiClient = new GasFreeAPIClient(apiBaseUrl, apiKey, apiSecret);
 
     // 1. Fetch account info
     console.debug(`Fetching account info for ${userAddress} from GasFree API...`);
@@ -45,11 +49,19 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     }
 
     // 2. Check activation status
-    if (!accountInfo.active) {
+    const allowSubmit = (accountInfo as any).allowSubmit || false;
+    if (!accountInfo.active && !allowSubmit) {
       throw new Error(`GasFree account for ${userAddress} (${gasfreeAddress}) is not activated.`);
     }
 
-    // 3. Prepare maxFee and validate against protocol transferFee
+    // 3. Prepare maxFee and providers
+    const providers = await apiClient.getProviders();
+    if (!providers || providers.length === 0) {
+        throw new Error('No GasFree service providers available');
+    }
+    const serviceProviderAddr = providers[Math.floor(Math.random() * providers.length)].address;
+    console.debug(`Selected GasFree provider: ${serviceProviderAddr}`);
+
     const asset = accountInfo.assets.find((a: any) => a.tokenAddress === requirements.asset);
     const transferFee = BigInt(asset?.transferFee || '0');
     
@@ -87,7 +99,7 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
     // 5. Sign TIP-712 typed data
     const { domain, types, message } = gasFree.assembleGasFreeTransactionJson({
       token: requirements.asset,
-      serviceProvider: requirements.payTo,
+      serviceProvider: serviceProviderAddr,
       user: userAddress,
       receiver: requirements.payTo,
       value: requirements.amount,
@@ -97,7 +109,7 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
       nonce: accountInfo.nonce.toString(),
     });
     
-    const signature = await this.signer.signTypedData(domain, types, message);
+    const signature = await this.signer.signTypedData(domain, types, message, GASFREE_PRIMARY_TYPE);
 
     // 6. Build PaymentPermit structure
     const paymentPermit: PaymentPermit = {
@@ -109,20 +121,15 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
         validBefore: Number(deadline),
       },
       buyer: userAddress,
-      caller: domain.verifyingContract, 
+      caller: serviceProviderAddr, 
       payment: {
         payToken: requirements.asset,
         payAmount: requirements.amount,
         payTo: requirements.payTo,
       },
       fee: {
-        feeTo: requirements.payTo,
+        feeTo: serviceProviderAddr,
         feeAmount: maxFee,
-      },
-      delivery: {
-        receiveToken: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
-        miniReceiveAmount: '0',
-        tokenId: '0',
       },
     };
 

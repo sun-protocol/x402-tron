@@ -2,14 +2,15 @@
 EvmClientSigner - EVM client signer implementation
 """
 
+import json
 import logging
 from typing import Any
 
-from bankofai.x402.abi import ERC20_ABI, PAYMENT_PERMIT_PRIMARY_TYPE
+from bankofai.x402.abi import ERC20_ABI
 from bankofai.x402.config import NetworkConfig
 from bankofai.x402.exceptions import InsufficientAllowanceError, SignatureCreationError
 from bankofai.x402.signers.client.base import ClientSigner
-from bankofai.x402.signers.utils import _eip712_domain_type_from_keys, resolve_provider_uri
+from bankofai.x402.signers.utils import resolve_provider_uri
 
 logger = logging.getLogger(__name__)
 
@@ -70,25 +71,15 @@ class EvmClientSigner(ClientSigner):
         domain: dict[str, Any],
         types: dict[str, Any],
         message: dict[str, Any],
+        primary_type: str,
     ) -> str:
-        """Sign EIP-712 typed data."""
+        """Sign EIP-712 typed data (Pure Passthrough)."""
         try:
             from eth_account import Account
             from eth_account.messages import encode_typed_data
 
-            # TODO: Refactor ClientSigner interface to accept primary_type explicitly
-            primary_type = (
-                PAYMENT_PERMIT_PRIMARY_TYPE
-                if PAYMENT_PERMIT_PRIMARY_TYPE in types
-                else list(types.keys())[-1]
-            )
-
-            # Build EIP712Domain type dynamically from domain keys
-            # so it works for both exact_permit (no version) and exact (with version)
-            domain_type = _eip712_domain_type_from_keys(domain)
-
             full_data = {
-                "types": {"EIP712Domain": domain_type, **types},
+                "types": types,
                 "domain": domain,
                 "primaryType": primary_type,
                 "message": message,
@@ -182,4 +173,5 @@ class EvmClientSigner(ClientSigner):
             raise InsufficientAllowanceError(f"ERC20 approval transaction failed: {e}")
 
     def _get_spender_address(self, network: str) -> str:
+        """Get payment permit contract address (spender)"""
         return NetworkConfig.get_payment_permit_address(network)

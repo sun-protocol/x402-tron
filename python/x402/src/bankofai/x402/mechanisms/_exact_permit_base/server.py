@@ -9,7 +9,7 @@ from abc import abstractmethod
 from typing import Any
 
 from bankofai.x402.abi import (
-    EIP712_DOMAIN_TYPE,
+    PAYMENT_PERMIT_EIP712_DOMAIN_TYPE,
     PAYMENT_PERMIT_PRIMARY_TYPE,
     get_payment_permit_eip712_types,
 )
@@ -135,10 +135,7 @@ class BaseExactPermitServerMechanism(ServerMechanism):
             )
 
             # Build EIP-712 typed data
-            full_types = {
-                "EIP712Domain": EIP712_DOMAIN_TYPE,
-                **get_payment_permit_eip712_types(),
-            }
+            full_types = get_payment_permit_eip712_types()
 
             verifying_contract = self._get_verifying_contract(permit_address)
             domain = {

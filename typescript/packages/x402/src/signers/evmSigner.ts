@@ -63,16 +63,8 @@ export class EvmClientSigner implements ClientSigner {
     domain: Record<string, unknown>,
     types: Record<string, unknown>,
     message: Record<string, unknown>,
+    primaryType: string
   ): Promise<string> {
-    // TODO: Add explicit primaryType to ClientSigner interface
-    const primaryType = types.PaymentPermitDetails
-      ? 'PaymentPermitDetails'
-      : Object.keys(types).pop();
-
-    if (!primaryType) {
-      throw new Error('No primary type found in types definition');
-    }
-
     return this.walletClient.signTypedData({
       domain: domain as any,
       types: types as any,

@@ -19,7 +19,9 @@ class GasFreeFacilitator(X402Facilitator):
         self,
         networks: list[str],
         signer: Any,
-        base_fee: int = 1_000_000,
+        base_fee: dict[str, int] | None = None,
     ) -> None:
         super().__init__()
-        self.register(networks, GasFreeFacilitatorMechanism(signer, base_fee=base_fee))
+        # Default base fee if none provided
+        fee_map = base_fee or {"USDT": 1_000_000, "USDD": 1_000_000_000_000_000_000}
+        self.register(networks, GasFreeFacilitatorMechanism(signer, base_fee=fee_map))

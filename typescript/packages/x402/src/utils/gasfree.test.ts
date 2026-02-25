@@ -24,7 +24,7 @@ describe('GasFreeAPIClient', () => {
 
     (fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
     });
 
     const info = await client.getAddressInfo('0x123');
@@ -41,7 +41,7 @@ describe('GasFreeAPIClient', () => {
 
     (fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => mockResponse,
+      text: async () => JSON.stringify(mockResponse),
     });
 
     const message = {
@@ -65,6 +65,37 @@ describe('GasFreeAPIClient', () => {
         headers: { 'Content-Type': 'application/json' },
       })
     );
+  });
+
+  it('should get transaction status', async () => {
+    const mockResponse = {
+      code: 200,
+      data: { id: 'trace-123', state: 'SUCCEED' },
+    };
+
+    (fetch as any).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify(mockResponse),
+    });
+
+    const status = await client.getStatus('trace-123');
+    expect(status.state).toBe('SUCCEED');
+    expect(fetch).toHaveBeenCalledWith(`${baseUrl}/api/v1/gasfree/trace-123`);
+  });
+
+  it('should wait for success', async () => {
+    const mockResponse = {
+      code: 200,
+      data: { id: 'trace-123', state: 'SUCCEED' },
+    };
+
+    (fetch as any).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify(mockResponse),
+    });
+
+    const result = await client.waitForSuccess('trace-123', 1000, 100);
+    expect(result.state).toBe('SUCCEED');
   });
 
   it('should get nonce', async () => {
