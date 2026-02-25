@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-25
+
+### Added
+- **GasFree Support**: Full integration for the GasFree payment scheme on TRON.
+- **Transaction Polling**: Facilitator now supports asynchronous polling for GasFree transaction status (`SUCCEED`/`FAILED`) with a 3-minute grace period.
+- **Dynamic Provider Discovery**: Client SDKs now automatically discover and randomly select from available GasFree service providers.
+- **Cross-Language Integration**: Validated interoperability between TypeScript Client and Python Facilitator for GasFree payments.
+
+### Changed
+- **Signer Refactor**: Standardized EIP-712 / TIP-712 signers to be **Domain Neutral**.
+- **Interface Upgrade**: `sign_typed_data` and `verify_typed_data` now require an explicit `primary_type` argument.
+- **Constants Standardized**: Standardized naming for protocol-specific EIP-712 constants (`GASFREE_PRIMARY_TYPE`, `PAYMENT_PERMIT_EIP712_DOMAIN_TYPE`).
+- **Improved Logging**: Enhanced facilitator audit logs and resource usage tracking.
+
+### Fixed
+- Fixed EIP-712 Domain compatibility for protocols requiring the `version` field (like GasFree).
+- Fixed Pydantic field naming consistency in response models.
+- Fixed `web3.py` dependency handling in EVM signers for environments where it's optional.
+
 ## [0.1.6] - 2026-02-06
 
 ### Fixed

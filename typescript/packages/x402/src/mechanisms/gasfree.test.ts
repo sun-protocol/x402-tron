@@ -45,7 +45,7 @@ describe('GasFreeTronClientMechanism', () => {
 
   it('should create a valid payment payload', async () => {
     const requirements: PaymentRequirements = {
-      scheme: 'gasfree_exact',
+      scheme: 'exact_gasfree',
       network: 'tron:nile',
       amount: '1000000',
       asset: USDT_ADDRESS,
@@ -61,7 +61,7 @@ describe('GasFreeTronClientMechanism', () => {
 
   it('should adjust maxFee to protocol minimum', async () => {
     const requirements: PaymentRequirements = {
-      scheme: 'gasfree_exact',
+      scheme: 'exact_gasfree',
       network: 'tron:nile',
       amount: '1000000',
       asset: USDT_ADDRESS,

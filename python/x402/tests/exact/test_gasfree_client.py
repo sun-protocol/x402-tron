@@ -24,7 +24,7 @@ def mock_signer():
 @pytest.fixture
 def nile_requirements():
     return PaymentRequirements(
-        scheme="gasfree_exact",
+        scheme="exact_gasfree",
         network="tron:nile",
         amount="1000000",
         asset=USDT_ADDRESS,

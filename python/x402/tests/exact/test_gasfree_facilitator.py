@@ -40,7 +40,7 @@ def mock_facilitator_signer():
 @pytest.fixture
 def gasfree_requirements():
     return PaymentRequirements(
-        scheme="gasfree_exact",
+        scheme="exact_gasfree",
         network="tron:nile",
         amount="1000000",
         asset=USDT_ADDR,

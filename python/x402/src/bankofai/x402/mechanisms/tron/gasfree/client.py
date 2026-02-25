@@ -43,7 +43,7 @@ class GasFreeTronClientMechanism(ClientMechanism):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def scheme(self) -> str:
-        return "gasfree_exact"
+        return "exact_gasfree"
 
     def get_signer(self) -> Any:
         return self._signer
@@ -195,6 +195,6 @@ class GasFreeTronClientMechanism(ClientMechanism):
             ),
             extensions={
                 "gasfreeAddress": gasfree_address,
-                "scheme": "gasfree_exact",
+                "scheme": "exact_gasfree",
             },
         )

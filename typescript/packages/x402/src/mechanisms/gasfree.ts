@@ -24,7 +24,7 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
   }
 
   scheme(): string {
-    return 'gasfree_exact';
+    return 'exact_gasfree';
   }
 
   async createPaymentPayload(
@@ -151,7 +151,7 @@ export class GasFreeTronClientMechanism implements ClientMechanism {
       extensions: {
         ...extensions,
         gasfreeAddress,
-        scheme: 'gasfree_exact',
+        scheme: 'exact_gasfree',
       },
     };
   }

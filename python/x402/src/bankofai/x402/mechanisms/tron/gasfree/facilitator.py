@@ -29,7 +29,7 @@ class GasFreeFacilitatorMechanism(BaseExactPermitFacilitatorMechanism):
     """GasFree facilitator mechanism for TRON (API Proxy mode)"""
 
     def scheme(self) -> str:
-        return "gasfree_exact"
+        return "exact_gasfree"
 
     def _get_address_converter(self) -> AddressConverter:
         return TronAddressConverter()
